@@ -3,6 +3,7 @@ import { db } from "@/lib/db"
 import { verifyCronAuth } from "@/modules/jobs/cron-auth"
 import { items } from "@/modules/items/schema"
 import { files } from "@/modules/files/schema"
+import { orgContainers, posts } from "@/modules/org-structure/schema"
 import { audit } from "@/modules/audit/audit"
 import { blob } from "@/lib/blob"
 import { log } from "@/lib/log"
@@ -99,11 +100,76 @@ export async function GET(request: Request) {
     }
   }
 
+  // -------- Posts --------
+  // Posts must be purged BEFORE org_containers (posts.parentContainerId has FK ON DELETE RESTRICT).
+  const postRows = await db
+    .select({ id: posts.id, organizationId: posts.organizationId })
+    .from(posts)
+    .where(and(isNotNull(posts.deletedAt), lt(posts.deletedAt, cutoff)))
+    .limit(BATCH_LIMIT)
+
+  const postOrgCounts = new Map<string, number>()
+  for (const r of postRows) {
+    postOrgCounts.set(r.organizationId, (postOrgCounts.get(r.organizationId) ?? 0) + 1)
+  }
+  for (const [orgId, count] of postOrgCounts) {
+    await audit({ db, organizationId: orgId, actorUserId: null }, "purge.posts", {
+      metadata: { count, retentionDays: RETENTION_DAYS },
+    })
+  }
+  if (postRows.length > 0) {
+    await db.delete(posts).where(
+      inArray(
+        posts.id,
+        postRows.map((r) => r.id),
+      ),
+    )
+  }
+
+  // -------- Org Containers --------
+  // Self-referential FK with ON DELETE RESTRICT: a parent container can't be hard-deleted
+  // until its children are gone. The cron drains nested levels over multiple runs.
+  const containerRows = await db
+    .select({ id: orgContainers.id, organizationId: orgContainers.organizationId })
+    .from(orgContainers)
+    .where(and(isNotNull(orgContainers.deletedAt), lt(orgContainers.deletedAt, cutoff)))
+    .limit(BATCH_LIMIT)
+
+  const containerOrgCounts = new Map<string, number>()
+  for (const r of containerRows) {
+    containerOrgCounts.set(r.organizationId, (containerOrgCounts.get(r.organizationId) ?? 0) + 1)
+  }
+  for (const [orgId, count] of containerOrgCounts) {
+    await audit({ db, organizationId: orgId, actorUserId: null }, "purge.org_containers", {
+      metadata: { count, retentionDays: RETENTION_DAYS },
+    })
+  }
+  let containersDeleted = 0
+  for (const r of containerRows) {
+    try {
+      await db.delete(orgContainers).where(inArray(orgContainers.id, [r.id]))
+      containersDeleted += 1
+    } catch (e) {
+      // Likely a FK violation because a child container or post is still around.
+      // Leave for a subsequent run; nothing fatal.
+      log.warn({ err: e, id: r.id }, "[purge] org_containers delete deferred (likely FK)")
+    }
+  }
+
   return Response.json({
     ok: true,
-    purged: { items: itemRows.length, files: fileRows.length },
+    purged: {
+      items: itemRows.length,
+      files: fileRows.length,
+      posts: postRows.length,
+      orgContainers: containersDeleted,
+    },
     cutoff: cutoff.toISOString(),
     batchLimit: BATCH_LIMIT,
-    moreToProcess: itemRows.length === BATCH_LIMIT || fileRows.length === BATCH_LIMIT,
+    moreToProcess:
+      itemRows.length === BATCH_LIMIT ||
+      fileRows.length === BATCH_LIMIT ||
+      postRows.length === BATCH_LIMIT ||
+      containerRows.length === BATCH_LIMIT,
   })
 }
