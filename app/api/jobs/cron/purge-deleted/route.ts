@@ -4,6 +4,7 @@ import { verifyCronAuth } from "@/modules/jobs/cron-auth"
 import { items } from "@/modules/items/schema"
 import { files } from "@/modules/files/schema"
 import { orgContainers, posts } from "@/modules/org-structure/schema"
+import { particleTypes, particles } from "@/modules/particles/schema"
 import { audit } from "@/modules/audit/audit"
 import { blob } from "@/lib/blob"
 import { log } from "@/lib/log"
@@ -126,6 +127,61 @@ export async function GET(request: Request) {
     )
   }
 
+  // -------- Particles --------
+  // Particles must be purged BEFORE particle_types (FK ON DELETE RESTRICT).
+  const particleRows = await db
+    .select({ id: particles.id, organizationId: particles.organizationId })
+    .from(particles)
+    .where(and(isNotNull(particles.deletedAt), lt(particles.deletedAt, cutoff)))
+    .limit(BATCH_LIMIT)
+
+  const particleOrgCounts = new Map<string, number>()
+  for (const r of particleRows) {
+    particleOrgCounts.set(r.organizationId, (particleOrgCounts.get(r.organizationId) ?? 0) + 1)
+  }
+  for (const [orgId, count] of particleOrgCounts) {
+    await audit({ db, organizationId: orgId, actorUserId: null }, "purge.particles", {
+      metadata: { count, retentionDays: RETENTION_DAYS },
+    })
+  }
+  if (particleRows.length > 0) {
+    await db.delete(particles).where(
+      inArray(
+        particles.id,
+        particleRows.map((r) => r.id),
+      ),
+    )
+  }
+
+  // -------- Particle Types --------
+  const particleTypeRows = await db
+    .select({ id: particleTypes.id, organizationId: particleTypes.organizationId })
+    .from(particleTypes)
+    .where(and(isNotNull(particleTypes.deletedAt), lt(particleTypes.deletedAt, cutoff)))
+    .limit(BATCH_LIMIT)
+
+  const particleTypeOrgCounts = new Map<string, number>()
+  for (const r of particleTypeRows) {
+    particleTypeOrgCounts.set(
+      r.organizationId,
+      (particleTypeOrgCounts.get(r.organizationId) ?? 0) + 1,
+    )
+  }
+  for (const [orgId, count] of particleTypeOrgCounts) {
+    await audit({ db, organizationId: orgId, actorUserId: null }, "purge.particle_types", {
+      metadata: { count, retentionDays: RETENTION_DAYS },
+    })
+  }
+  let particleTypesDeleted = 0
+  for (const r of particleTypeRows) {
+    try {
+      await db.delete(particleTypes).where(inArray(particleTypes.id, [r.id]))
+      particleTypesDeleted += 1
+    } catch (e) {
+      log.warn({ err: e, id: r.id }, "[purge] particle_types delete deferred (likely FK)")
+    }
+  }
+
   // -------- Org Containers --------
   // Self-referential FK with ON DELETE RESTRICT: a parent container can't be hard-deleted
   // until its children are gone. The cron drains nested levels over multiple runs.
@@ -163,6 +219,8 @@ export async function GET(request: Request) {
       files: fileRows.length,
       posts: postRows.length,
       orgContainers: containersDeleted,
+      particles: particleRows.length,
+      particleTypes: particleTypesDeleted,
     },
     cutoff: cutoff.toISOString(),
     batchLimit: BATCH_LIMIT,
@@ -170,6 +228,8 @@ export async function GET(request: Request) {
       itemRows.length === BATCH_LIMIT ||
       fileRows.length === BATCH_LIMIT ||
       postRows.length === BATCH_LIMIT ||
-      containerRows.length === BATCH_LIMIT,
+      containerRows.length === BATCH_LIMIT ||
+      particleRows.length === BATCH_LIMIT ||
+      particleTypeRows.length === BATCH_LIMIT,
   })
 }

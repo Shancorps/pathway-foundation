@@ -36,6 +36,13 @@
       "when": 1778184805920,
       "tag": "0004_sloppy_sabra",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1778186579124,
+      "tag": "0005_chunky_sunfire",
+      "breakpoints": true
     }
   ]
 }

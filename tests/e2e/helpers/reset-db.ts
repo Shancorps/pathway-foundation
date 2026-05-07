@@ -11,6 +11,8 @@ const TABLES_TO_TRUNCATE = [
   "audit_log",
   "files",
   "items",
+  "particles",
+  "particle_types",
   "posts",
   "org_containers",
   "invitation",
