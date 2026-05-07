@@ -40,3 +40,7 @@ next-env.d.ts
 
 # vercel
 .vercel
+
+# Local-only reference material (not for the public repo).
+# Alpha screenshots from prior dev — kept locally for design reference only.
+docs/Screen Shots (Alpha)/
