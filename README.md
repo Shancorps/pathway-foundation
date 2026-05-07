@@ -1,6 +1,6 @@
 # Pathway Foundation
 
-Production-grade Next.js 16 + Vercel + Postgres starter, opinionated for Claude Code agentic development.
+Production-grade Next.js 16 + Vercel + Postgres starter, opinionated for Claude Code agentic development. Built for Pathway.
 
 ## Quick start
 
