@@ -43,6 +43,13 @@
       "when": 1778186579124,
       "tag": "0005_chunky_sunfire",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1778269822049,
+      "tag": "0006_typical_vance_astro",
+      "breakpoints": true
     }
   ]
 }
