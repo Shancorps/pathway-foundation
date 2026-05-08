@@ -1,0 +1,1 @@
+ALTER TABLE "rail_nodes" ADD COLUMN "checklist_items" jsonb DEFAULT '[]'::jsonb NOT NULL;

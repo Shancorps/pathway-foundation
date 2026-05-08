@@ -7,7 +7,7 @@ import { ActionError, orgAction } from "@/lib/safe-action"
 import { audit } from "@/modules/audit/audit"
 import { posts } from "@/modules/org-structure/schema"
 import { particleTypes } from "@/modules/particles/schema"
-import { railNodes, rails, type RailNode } from "./schema"
+import { railNodes, rails, type RailNode, type RailNodeChecklistItem } from "./schema"
 import {
   addTaskNodeInput,
   createRailInput,
@@ -22,6 +22,22 @@ import {
 } from "./types"
 
 const RAILS_PATH = "/rails"
+
+/**
+ * Normalize inbound checklist items into the stored shape. Existing items keep
+ * their `id` so runtime check-state can survive a rail edit; new items (no id)
+ * get a fresh CUID. Positions are reassigned to match the submitted order.
+ */
+function normalizeChecklist(
+  items: readonly { id?: string; label: string; required: boolean }[],
+): RailNodeChecklistItem[] {
+  return items.map((item, position) => ({
+    id: item.id ?? createId(),
+    label: item.label,
+    required: item.required,
+    position,
+  }))
+}
 
 async function loadRail(
   ctx: Parameters<Parameters<typeof orgAction.action>[0]>[0]["ctx"],
@@ -264,6 +280,7 @@ export const addTaskNode = orgAction
       description: parsedInput.description,
       postId: parsedInput.postId,
       position: nextPosition,
+      checklistItems: normalizeChecklist(parsedInput.checklistItems ?? []),
       createdBy: ctx.session.user.id,
       updatedBy: ctx.session.user.id,
     })
@@ -324,6 +341,12 @@ export const updateNode = orgAction
     if (parsedInput.name !== undefined) patch.name = parsedInput.name
     if (parsedInput.description !== undefined) patch.description = parsedInput.description
     if (parsedInput.postId !== undefined) patch.postId = parsedInput.postId
+    if (parsedInput.checklistItems !== undefined) {
+      if (node.type === "trigger" && parsedInput.checklistItems.length > 0) {
+        throw new ActionError("VALIDATION", "Trigger nodes cannot have a checklist")
+      }
+      patch.checklistItems = normalizeChecklist(parsedInput.checklistItems)
+    }
     await ctx.db
       .update(railNodes)
       .set({ ...patch, updatedAt: new Date(), updatedBy: ctx.session.user.id })

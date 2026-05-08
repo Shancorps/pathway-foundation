@@ -1,4 +1,4 @@
-import { index, integer, pgTable, text, timestamp } from "drizzle-orm/pg-core"
+import { index, integer, jsonb, pgTable, text, timestamp } from "drizzle-orm/pg-core"
 import { organization, user } from "@/modules/auth/schema"
 import { posts } from "@/modules/org-structure/schema"
 import { particleTypes } from "@/modules/particles/schema"
@@ -19,6 +19,18 @@ export type RailStatus = (typeof railStatuses)[number]
  */
 export const railNodeTypes = ["trigger", "task"] as const
 export type RailNodeType = (typeof railNodeTypes)[number]
+
+/**
+ * One sub-step a worker ticks off while running a Task. The Task is the Cycle;
+ * its checklist is the granular breakdown of how to produce the sub-product.
+ * Stored as a jsonb array on rail_nodes.checklist_items.
+ */
+export interface RailNodeChecklistItem {
+  id: string
+  label: string
+  required: boolean
+  position: number
+}
 
 export const rails = pgTable(
   "rails",
@@ -66,6 +78,7 @@ export const railNodes = pgTable(
     // hard-deleting a Post that's wired into a rail — forces deliberate cleanup.
     postId: text("post_id").references(() => posts.id, { onDelete: "restrict" }),
     position: integer("position").notNull().default(0),
+    checklistItems: jsonb("checklist_items").$type<RailNodeChecklistItem[]>().notNull().default([]),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
     createdBy: text("created_by").references(() => user.id, { onDelete: "set null" }),

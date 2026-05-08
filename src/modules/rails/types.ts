@@ -1,5 +1,14 @@
 import { z } from "zod"
 
+// A checklist item submitted from the form. `id` is optional on input — the
+// action assigns one for new items; existing items keep theirs so per-item
+// runtime state can survive an edit.
+export const checklistItemInput = z.object({
+  id: z.string().optional(),
+  label: z.string().min(1).max(500),
+  required: z.boolean(),
+})
+
 export const createRailInput = z.object({
   particleTypeId: z.string(),
   name: z.string().min(1).max(200),
@@ -22,6 +31,7 @@ export const addTaskNodeInput = z.object({
   name: z.string().min(1).max(200),
   description: z.string().max(2000).optional(),
   postId: z.string(),
+  checklistItems: z.array(checklistItemInput).optional(),
 })
 
 export const updateNodeInput = z.object({
@@ -29,6 +39,7 @@ export const updateNodeInput = z.object({
   name: z.string().min(1).max(200).optional(),
   description: z.string().max(2000).nullable().optional(),
   postId: z.string().nullable().optional(),
+  checklistItems: z.array(checklistItemInput).optional(),
 })
 
 export const deleteNodeInput = z.object({ id: z.string() })
