@@ -79,6 +79,9 @@ export const railNodes = pgTable(
     postId: text("post_id").references(() => posts.id, { onDelete: "restrict" }),
     position: integer("position").notNull().default(0),
     checklistItems: jsonb("checklist_items").$type<RailNodeChecklistItem[]>().notNull().default([]),
+    // Target time to complete this Cycle, in minutes. Snapshotted onto each
+    // Cycle when issued, then displayed alongside actual elapsed time.
+    idealMinutes: integer("ideal_minutes"),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
     createdBy: text("created_by").references(() => user.id, { onDelete: "set null" }),

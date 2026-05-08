@@ -32,6 +32,7 @@ export const addTaskNodeInput = z.object({
   description: z.string().max(2000).optional(),
   postId: z.string(),
   checklistItems: z.array(checklistItemInput).optional(),
+  idealMinutes: z.number().int().positive().optional(),
 })
 
 export const updateNodeInput = z.object({
@@ -40,6 +41,7 @@ export const updateNodeInput = z.object({
   description: z.string().max(2000).nullable().optional(),
   postId: z.string().nullable().optional(),
   checklistItems: z.array(checklistItemInput).optional(),
+  idealMinutes: z.number().int().positive().nullable().optional(),
 })
 
 export const deleteNodeInput = z.object({ id: z.string() })

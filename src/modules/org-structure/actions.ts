@@ -6,7 +6,7 @@ import { createId } from "@paralleldrive/cuid2"
 import { ActionError, orgAction } from "@/lib/safe-action"
 import { audit } from "@/modules/audit/audit"
 import { member } from "@/modules/auth/schema"
-import { orgContainers, posts, type OrgContainerLevel } from "./schema"
+import { orgContainers, postAssignments, posts, type OrgContainerLevel } from "./schema"
 import {
   assignPostInput,
   createOrgContainerInput,
@@ -15,7 +15,7 @@ import {
   deletePostInput,
   restoreOrgContainerInput,
   restorePostInput,
-  unassignPostInput,
+  unassignUserFromPostInput,
   updateOrgContainerInput,
   updatePostInput,
 } from "./types"
@@ -395,6 +395,29 @@ export const restorePost = orgAction
     return { id: parsedInput.id }
   })
 
+async function assertPostInOrgById(
+  ctx: Parameters<Parameters<typeof orgAction.action>[0]>[0]["ctx"],
+  postId: string,
+) {
+  const [row] = await ctx.db
+    .select({ id: posts.id })
+    .from(posts)
+    .where(
+      and(
+        eq(posts.id, postId),
+        eq(posts.organizationId, ctx.activeOrg.id),
+        isNull(posts.deletedAt),
+      ),
+    )
+    .limit(1)
+  if (!row) throw new ActionError("NOT_FOUND", "Post not found")
+}
+
+/**
+ * Adds a user to a Post's holders. Idempotent — re-assigning the same user is
+ * a no-op (the unique index would otherwise raise a CONFLICT, which would be
+ * confusing UX).
+ */
 export const assignPost = orgAction
   .metadata({ actionName: "org_structure.post.assign" })
   .inputSchema(assignPostInput)
@@ -409,22 +432,30 @@ export const assignPost = orgAction
     if (!assignee) {
       throw new ActionError("VALIDATION", "User is not a member of this organization")
     }
-    const result = await ctx.db
-      .update(posts)
-      .set({
-        userId: parsedInput.userId,
-        updatedAt: new Date(),
-        updatedBy: ctx.session.user.id,
-      })
+    await assertPostInOrgById(ctx, parsedInput.id)
+
+    const [existing] = await ctx.db
+      .select({ id: postAssignments.id })
+      .from(postAssignments)
       .where(
         and(
-          eq(posts.id, parsedInput.id),
-          eq(posts.organizationId, ctx.activeOrg.id),
-          isNull(posts.deletedAt),
+          eq(postAssignments.postId, parsedInput.id),
+          eq(postAssignments.userId, parsedInput.userId),
         ),
       )
-      .returning({ id: posts.id })
-    if (result.length === 0) throw new ActionError("NOT_FOUND", "Post not found")
+      .limit(1)
+    if (existing) {
+      // Already assigned — nothing to do.
+      return { id: parsedInput.id, alreadyAssigned: true }
+    }
+
+    await ctx.db.insert(postAssignments).values({
+      id: createId(),
+      organizationId: ctx.activeOrg.id,
+      postId: parsedInput.id,
+      userId: parsedInput.userId,
+      createdBy: ctx.session.user.id,
+    })
     await audit(
       {
         db: ctx.db,
@@ -444,22 +475,28 @@ export const assignPost = orgAction
     return { id: parsedInput.id }
   })
 
-export const unassignPost = orgAction
-  .metadata({ actionName: "org_structure.post.unassign" })
-  .inputSchema(unassignPostInput)
+/**
+ * Removes one specific user's assignment from a Post. Other holders are
+ * unaffected. The Post becomes vacant only if this was the last holder.
+ */
+export const unassignUserFromPost = orgAction
+  .metadata({ actionName: "org_structure.post.unassign_user" })
+  .inputSchema(unassignUserFromPostInput)
   .action(async ({ parsedInput, ctx }) => {
+    await assertPostInOrgById(ctx, parsedInput.postId)
     const result = await ctx.db
-      .update(posts)
-      .set({ userId: null, updatedAt: new Date(), updatedBy: ctx.session.user.id })
+      .delete(postAssignments)
       .where(
         and(
-          eq(posts.id, parsedInput.id),
-          eq(posts.organizationId, ctx.activeOrg.id),
-          isNull(posts.deletedAt),
+          eq(postAssignments.postId, parsedInput.postId),
+          eq(postAssignments.userId, parsedInput.userId),
+          eq(postAssignments.organizationId, ctx.activeOrg.id),
         ),
       )
-      .returning({ id: posts.id })
-    if (result.length === 0) throw new ActionError("NOT_FOUND", "Post not found")
+      .returning({ id: postAssignments.id })
+    if (result.length === 0) {
+      throw new ActionError("NOT_FOUND", "Assignment not found")
+    }
     await audit(
       {
         db: ctx.db,
@@ -469,8 +506,12 @@ export const unassignPost = orgAction
         userAgent: ctx.userAgent,
       },
       "posts.unassigned",
-      { resourceType: "post", resourceId: parsedInput.id },
+      {
+        resourceType: "post",
+        resourceId: parsedInput.postId,
+        metadata: { removedUserId: parsedInput.userId },
+      },
     )
     revalidatePath(STRUCTURE_PATH)
-    return { id: parsedInput.id }
+    return { postId: parsedInput.postId }
   })

@@ -54,7 +54,12 @@ export const assignPostInput = z.object({
   id: z.string(),
   userId: z.string(),
 })
-export const unassignPostInput = z.object({ id: z.string() })
+
+// Removes a single user's assignment from a Post. Other holders are unaffected.
+export const unassignUserFromPostInput = z.object({
+  postId: z.string(),
+  userId: z.string(),
+})
 
 export type CreateOrgContainerInput = z.infer<typeof createOrgContainerInput>
 export type UpdateOrgContainerInput = z.infer<typeof updateOrgContainerInput>

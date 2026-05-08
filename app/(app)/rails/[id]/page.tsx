@@ -46,7 +46,7 @@ export default async function RailEditPage({ params }: { params: Promise<{ id: s
           containerLabel: p.parentContainerId
             ? (containerById.get(p.parentContainerId) ?? null)
             : null,
-          vacant: !p.userId,
+          vacant: p.assignedUsers.length === 0,
         }))}
       />
     </div>

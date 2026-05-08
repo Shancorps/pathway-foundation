@@ -1,0 +1,1 @@
+ALTER TABLE "rail_nodes" ADD COLUMN "ideal_minutes" integer;

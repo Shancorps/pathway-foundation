@@ -57,6 +57,20 @@
       "when": 1778271472203,
       "tag": "0007_old_northstar",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1778273270009,
+      "tag": "0008_many_vermin",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1778273825167,
+      "tag": "0009_lively_impossible_man",
+      "breakpoints": true
     }
   ]
 }

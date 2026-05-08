@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react"
 import { useRouter } from "next/navigation"
-import { Plus, Star, Trash2, UserMinus, UserPlus2 } from "lucide-react"
+import { Plus, Star, Trash2, UserPlus2, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -28,9 +28,16 @@ import {
   createPost,
   deleteContainer,
   deletePost,
-  unassignPost,
+  unassignUserFromPost,
 } from "../actions"
 import { type OrgContainer, type OrgContainerLevel } from "../schema"
+
+interface AssignedUser {
+  id: string
+  name: string
+  email: string
+  image: string | null
+}
 
 interface SerializablePost {
   id: string
@@ -39,18 +46,12 @@ interface SerializablePost {
   description: string | null
   vfp: string | null
   parentContainerId: string | null
-  userId: string | null
   isSenior: boolean
   isAreaManager: boolean
   position: number
   createdAt: string
   deletedAt: string | null
-  assignedUser: {
-    id: string
-    name: string
-    email: string
-    image: string | null
-  } | null
+  assignedUsers: AssignedUser[]
 }
 
 interface Member {
@@ -282,50 +283,72 @@ function PostNode({ post, members }: { post: SerializablePost; members: Member[]
     else router.refresh()
   }
 
-  async function handleUnassign() {
-    const result = await unassignPost({ id: post.id })
+  async function handleUnassign(userId: string) {
+    const result = await unassignUserFromPost({ postId: post.id, userId })
     if (result.serverError) alert(result.serverError)
     else router.refresh()
   }
 
-  const displayName = post.assignedUser
-    ? post.assignedUser.name || post.assignedUser.email
-    : "Vacant"
+  const assignedIds = new Set(post.assignedUsers.map((u) => u.id))
+  const availableMembers = members.filter((m) => !assignedIds.has(m.userId))
 
   return (
-    <div className="flex items-center justify-between rounded-md bg-[var(--color-muted)]/30 p-3">
-      <div className="flex items-center gap-2">
-        {post.isAreaManager && <Star className="size-3 fill-amber-400 text-amber-400" />}
-        <div>
-          <p className="text-sm font-medium">{post.title}</p>
-          <p className="text-xs text-[var(--color-muted-foreground)]">{displayName}</p>
+    <div className="rounded-md bg-[var(--color-muted)]/30 p-3">
+      <div className="flex items-start justify-between">
+        <div className="flex items-start gap-2">
+          {post.isAreaManager && <Star className="mt-0.5 size-3 fill-amber-400 text-amber-400" />}
+          <div>
+            <p className="text-sm font-medium">{post.title}</p>
+            {post.assignedUsers.length === 0 ? (
+              <p className="text-xs text-[var(--color-muted-foreground)]">Vacant</p>
+            ) : (
+              <div className="mt-1 flex flex-wrap gap-1">
+                {post.assignedUsers.map((u) => (
+                  <span
+                    key={u.id}
+                    className="inline-flex items-center gap-1 rounded-full bg-[var(--color-background)] px-2 py-0.5 text-xs"
+                  >
+                    {u.name || u.email}
+                    <button
+                      type="button"
+                      onClick={() => void handleUnassign(u.id)}
+                      className="text-[var(--color-muted-foreground)] hover:text-red-500"
+                      aria-label={`Remove ${u.name || u.email}`}
+                    >
+                      <X className="size-3" />
+                    </button>
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
-      </div>
-      <div className="flex gap-1">
-        {post.userId ? (
-          <Button size="sm" variant="ghost" onClick={handleUnassign}>
-            <UserMinus className="size-3" />
-          </Button>
-        ) : (
+        <div className="flex gap-1">
           <Button
             size="sm"
             variant="ghost"
             onClick={() => {
               setShowAssign(true)
             }}
+            disabled={availableMembers.length === 0}
+            title={
+              availableMembers.length === 0
+                ? "Every team member is already assigned"
+                : "Assign a team member"
+            }
           >
             <UserPlus2 className="size-3" />
           </Button>
-        )}
-        <Button size="sm" variant="ghost" onClick={handleDelete}>
-          <Trash2 className="size-3" />
-        </Button>
+          <Button size="sm" variant="ghost" onClick={handleDelete}>
+            <Trash2 className="size-3" />
+          </Button>
+        </div>
       </div>
       <AssignPostDialog
         open={showAssign}
         onOpenChange={setShowAssign}
         postId={post.id}
-        members={members}
+        members={availableMembers}
       />
     </div>
   )

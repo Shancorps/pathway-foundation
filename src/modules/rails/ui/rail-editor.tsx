@@ -42,6 +42,13 @@ interface PostOption {
   vacant: boolean
 }
 
+function formatMinutes(minutes: number): string {
+  if (minutes < 60) return `${String(minutes)}m`
+  const hours = Math.floor(minutes / 60)
+  const rest = minutes % 60
+  return rest === 0 ? `${String(hours)}h` : `${String(hours)}h ${String(rest)}m`
+}
+
 export function RailEditor({
   rail,
   nodes,
@@ -231,6 +238,9 @@ export function RailEditor({
                         {node.checklistItems.length === 1 ? "item" : "items"}
                       </Badge>
                     )}
+                    {node.type === "task" && node.idealMinutes != null && (
+                      <Badge variant="outline">{formatMinutes(node.idealMinutes)}</Badge>
+                    )}
                   </div>
                   {node.type === "task" && (
                     <p className="text-xs text-[var(--color-muted-foreground)]">
@@ -348,6 +358,9 @@ function TaskNodeDialog({
           .map((c) => ({ id: c.id, label: c.label, required: c.required }))
       : [],
   )
+  const [idealMinutesText, setIdealMinutesText] = useState(
+    initial?.idealMinutes != null ? String(initial.idealMinutes) : "",
+  )
   const [submitting, setSubmitting] = useState(false)
 
   function resetForm() {
@@ -355,6 +368,7 @@ function TaskNodeDialog({
     setDescription("")
     setPostId("")
     setChecklist([])
+    setIdealMinutesText("")
   }
 
   function updateItem(idx: number, patch: Partial<ChecklistDraftItem>) {
@@ -393,6 +407,19 @@ function TaskNodeDialog({
         required: c.required,
       }))
 
+    const idealTrimmed = idealMinutesText.trim()
+    let parsedIdeal: number | null = null
+    let hasIdealInput = false
+    if (idealTrimmed !== "") {
+      const parsed = Number(idealTrimmed)
+      if (!Number.isFinite(parsed) || parsed <= 0 || !Number.isInteger(parsed)) {
+        alert("Ideal time must be a whole number of minutes greater than 0.")
+        return
+      }
+      parsedIdeal = parsed
+      hasIdealInput = true
+    }
+
     setSubmitting(true)
     const result =
       mode === "add"
@@ -402,6 +429,7 @@ function TaskNodeDialog({
             description: description || undefined,
             postId,
             checklistItems: cleanedChecklist,
+            ...(hasIdealInput && parsedIdeal !== null ? { idealMinutes: parsedIdeal } : {}),
           })
         : await updateNode({
             id: initial?.id ?? "",
@@ -409,6 +437,8 @@ function TaskNodeDialog({
             description: description || null,
             postId,
             checklistItems: cleanedChecklist,
+            // edit mode: empty input clears the value (null), filled input sets it
+            idealMinutes: hasIdealInput ? parsedIdeal : null,
           })
     setSubmitting(false)
     if (result.serverError) {
@@ -477,6 +507,24 @@ function TaskNodeDialog({
               }}
               rows={2}
             />
+          </div>
+
+          <div>
+            <Label htmlFor="task-ideal">Ideal time (minutes, optional)</Label>
+            <Input
+              id="task-ideal"
+              type="number"
+              min="1"
+              step="1"
+              value={idealMinutesText}
+              onChange={(e) => {
+                setIdealMinutesText(e.target.value)
+              }}
+              placeholder="e.g. 120 for a 2-hour cycle"
+            />
+            <p className="mt-1 text-xs text-[var(--color-muted-foreground)]">
+              How long this Cycle should take. Used to compare against actual time at runtime.
+            </p>
           </div>
 
           <div className="space-y-2 rounded-md border border-[var(--color-border)] p-3">

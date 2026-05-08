@@ -31,9 +31,18 @@ export default async function StructurePage() {
       <StructureTree
         containers={containers}
         posts={posts.map((p) => ({
-          ...p,
+          id: p.id,
+          organizationId: p.organizationId,
+          title: p.title,
+          description: p.description,
+          vfp: p.vfp,
+          parentContainerId: p.parentContainerId,
+          isSenior: p.isSenior,
+          isAreaManager: p.isAreaManager,
+          position: p.position,
           createdAt: p.createdAt.toISOString(),
           deletedAt: p.deletedAt ? p.deletedAt.toISOString() : null,
+          assignedUsers: p.assignedUsers,
         }))}
         members={members.map((m) => ({
           userId: m.userId,

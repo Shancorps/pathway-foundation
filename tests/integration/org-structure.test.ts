@@ -3,7 +3,7 @@ import { and, eq, isNull } from "drizzle-orm"
 import { createId } from "@paralleldrive/cuid2"
 import { withTestDb } from "../helpers/db"
 import { createOrganization, createUser } from "../helpers/factories"
-import { orgContainers, posts } from "@/modules/org-structure/schema"
+import { orgContainers, postAssignments, posts } from "@/modules/org-structure/schema"
 
 describe("org-structure module — db-level invariants", () => {
   it("scopes containers and posts to a single organization", async () => {
@@ -76,7 +76,7 @@ describe("org-structure module — db-level invariants", () => {
     })
   })
 
-  it("listPostsHeldByUser-style query returns only that user's posts in this org", async () => {
+  it("listPostsHeldByUser-style query returns only that user's posts in this org (multi-holder model)", async () => {
     await withTestDb(async (db) => {
       const owner = await createUser(db)
       const alice = await createUser(db)
@@ -85,18 +85,36 @@ describe("org-structure module — db-level invariants", () => {
       const otherOrg = await createOrganization(db, owner)
 
       // Alice holds two posts in orgId, one in otherOrg. Bob holds one in orgId.
+      // Sales Director is shared between Alice AND Bob — multi-holder model.
+      const salesDir = createId()
+      const accountMgr = createId()
+      const cashier = createId()
+      const founder = createId()
       await db.insert(posts).values([
-        { id: createId(), organizationId: orgId, title: "Sales Director", userId: alice },
-        { id: createId(), organizationId: orgId, title: "Account Manager", userId: alice },
-        { id: createId(), organizationId: orgId, title: "Cashier", userId: bob },
-        { id: createId(), organizationId: otherOrg, title: "Founder", userId: alice },
+        { id: salesDir, organizationId: orgId, title: "Sales Director" },
+        { id: accountMgr, organizationId: orgId, title: "Account Manager" },
+        { id: cashier, organizationId: orgId, title: "Cashier" },
+        { id: founder, organizationId: otherOrg, title: "Founder" },
+      ])
+      await db.insert(postAssignments).values([
+        { id: createId(), organizationId: orgId, postId: salesDir, userId: alice },
+        { id: createId(), organizationId: orgId, postId: salesDir, userId: bob },
+        { id: createId(), organizationId: orgId, postId: accountMgr, userId: alice },
+        { id: createId(), organizationId: orgId, postId: cashier, userId: bob },
+        { id: createId(), organizationId: otherOrg, postId: founder, userId: alice },
       ])
 
+      // Query: posts in this org that Alice holds (joining through assignments)
       const alicePostsInOrg = await db
-        .select()
+        .select({ id: posts.id, title: posts.title })
         .from(posts)
+        .innerJoin(postAssignments, eq(postAssignments.postId, posts.id))
         .where(
-          and(eq(posts.organizationId, orgId), eq(posts.userId, alice), isNull(posts.deletedAt)),
+          and(
+            eq(posts.organizationId, orgId),
+            eq(postAssignments.userId, alice),
+            isNull(posts.deletedAt),
+          ),
         )
 
       expect(alicePostsInOrg).toHaveLength(2)
@@ -104,6 +122,52 @@ describe("org-structure module — db-level invariants", () => {
         "Account Manager",
         "Sales Director",
       ])
+    })
+  })
+
+  it("the same Post can have multiple holders (3 salesmen, 2 foremen pattern)", async () => {
+    await withTestDb(async (db) => {
+      const owner = await createUser(db)
+      const alice = await createUser(db)
+      const bob = await createUser(db)
+      const carl = await createUser(db)
+      const orgId = await createOrganization(db, owner)
+
+      const salesPostId = createId()
+      await db.insert(posts).values({
+        id: salesPostId,
+        organizationId: orgId,
+        title: "Salesperson",
+      })
+      await db.insert(postAssignments).values([
+        { id: createId(), organizationId: orgId, postId: salesPostId, userId: alice },
+        { id: createId(), organizationId: orgId, postId: salesPostId, userId: bob },
+        { id: createId(), organizationId: orgId, postId: salesPostId, userId: carl },
+      ])
+
+      const holders = await db
+        .select({ userId: postAssignments.userId })
+        .from(postAssignments)
+        .where(eq(postAssignments.postId, salesPostId))
+      expect(holders.map((h) => h.userId).sort()).toEqual([alice, bob, carl].sort())
+    })
+  })
+
+  it("UNIQUE(post_id, user_id) prevents double-assigning the same user", async () => {
+    await withTestDb(async (db) => {
+      const owner = await createUser(db)
+      const alice = await createUser(db)
+      const orgId = await createOrganization(db, owner)
+      const postId = createId()
+      await db.insert(posts).values({ id: postId, organizationId: orgId, title: "Lead" })
+      await db
+        .insert(postAssignments)
+        .values({ id: createId(), organizationId: orgId, postId, userId: alice })
+      await expect(
+        db
+          .insert(postAssignments)
+          .values({ id: createId(), organizationId: orgId, postId, userId: alice }),
+      ).rejects.toThrow()
     })
   })
 

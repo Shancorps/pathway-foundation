@@ -154,7 +154,53 @@ async function main() {
       console.log(`✓ Created org ${DEMO_ORG_NAME} (${demoOrgId}) with ${DEMO_EMAIL} as owner`)
     }
 
-    // 3. Demo items
+    // 3. Extra demo team members so multi-holder Posts are demonstrable.
+    // Each gets a credential account with the same password as the owner so
+    // you can sign in as any of them to test perspective changes.
+    const teammates = [
+      { email: "alice@pathway.local", name: "Alice Chen" },
+      { email: "bob@pathway.local", name: "Bob Garcia" },
+      { email: "carla@pathway.local", name: "Carla Patel" },
+    ]
+    for (const tm of teammates) {
+      const existing = await db.query.user.findFirst({ where: eq(user.email, tm.email) })
+      let userId: string
+      if (existing) {
+        userId = existing.id
+      } else {
+        userId = createId()
+        await db.insert(user).values({
+          id: userId,
+          name: tm.name,
+          email: tm.email,
+          emailVerified: true,
+        })
+        await db.insert(account).values({
+          id: createId(),
+          userId,
+          accountId: userId,
+          providerId: "credential",
+          password: passwordHash,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        })
+      }
+      const existingMember = await db.query.member.findFirst({
+        where: and(eq(member.organizationId, demoOrgId), eq(member.userId, userId)),
+      })
+      if (!existingMember) {
+        await db.insert(member).values({
+          id: createId(),
+          organizationId: demoOrgId,
+          userId,
+          role: "member",
+          createdAt: new Date(),
+        })
+      }
+    }
+    console.log(`✓ Demo teammates ready (${String(teammates.length)} members)`)
+
+    // 4. Demo items
     const existingItems = await db.query.items.findMany({
       where: eq(items.organizationId, demoOrgId),
     })

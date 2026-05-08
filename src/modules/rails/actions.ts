@@ -281,6 +281,7 @@ export const addTaskNode = orgAction
       postId: parsedInput.postId,
       position: nextPosition,
       checklistItems: normalizeChecklist(parsedInput.checklistItems ?? []),
+      idealMinutes: parsedInput.idealMinutes ?? null,
       createdBy: ctx.session.user.id,
       updatedBy: ctx.session.user.id,
     })
@@ -346,6 +347,12 @@ export const updateNode = orgAction
         throw new ActionError("VALIDATION", "Trigger nodes cannot have a checklist")
       }
       patch.checklistItems = normalizeChecklist(parsedInput.checklistItems)
+    }
+    if (parsedInput.idealMinutes !== undefined) {
+      if (node.type === "trigger" && parsedInput.idealMinutes !== null) {
+        throw new ActionError("VALIDATION", "Trigger nodes cannot have an ideal time")
+      }
+      patch.idealMinutes = parsedInput.idealMinutes
     }
     await ctx.db
       .update(railNodes)
