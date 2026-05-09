@@ -60,13 +60,17 @@ export function RailEditor({
   const [editingNode, setEditingNode] = useState<RailNode | null>(null)
   const [showSettings, setShowSettings] = useState(false)
 
-  // Client-side UI lock — prevents accidental edits even on draft rails. Per
-  // browser per rail. Independent of publish state.
-  const [locked, setLockedState] = useState(false)
+  // Client-side UI lock — DEFAULT LOCKED so a freshly opened rail is safe
+  // from accidental edits regardless of publish state. Click the lock icon
+  // in the top bar to unlock + edit. Per browser per rail.
+  const [locked, setLockedState] = useState(true)
   useEffect(() => {
     if (typeof window === "undefined") return
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- localStorage hydrate
-    setLockedState(window.localStorage.getItem(lockKey(rail.id)) === "1")
+    const stored = window.localStorage.getItem(lockKey(rail.id))
+    if (stored !== null) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- localStorage hydrate
+      setLockedState(stored === "1")
+    }
   }, [rail.id])
   const setLocked = (next: boolean) => {
     setLockedState(next)
@@ -163,6 +167,10 @@ export function RailEditor({
             posts={posts}
             isPublished={editsDisabled}
             onEdit={(node) => {
+              // When locked, the canvas swallows clicks at the affordance
+              // level, but a stray click on the node body could still fire
+              // this callback. Guard against opening the dialog.
+              if (editsDisabled) return
               if (node.type === "trigger") return
               setEditingNode(node)
             }}

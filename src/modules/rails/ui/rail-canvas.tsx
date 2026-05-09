@@ -371,7 +371,16 @@ function RailCanvasInner({
       onDragOver={handleDragOver}
     >
       <LayoutToggle layout={layout} onChange={setLayout} />
+      {/*
+        key={layout} forces ReactFlow to remount when the orientation flips.
+        Without this, xyflow's internal node state holds the previous
+        layout's positions and the toggle has no visible effect — the user
+        sees the toggle highlight change but the nodes don't move. Remount
+        is cheap (auto-fits) and pan/zoom resets are acceptable since the
+        whole point of the toggle is "rearrange the canvas."
+      */}
       <ReactFlow
+        key={layout}
         nodes={nodes}
         edges={edges}
         nodeTypes={NODE_TYPES}
