@@ -1,6 +1,6 @@
 "use client"
 
-import { useCallback, useMemo } from "react"
+import { useCallback, useEffect, useMemo, useState } from "react"
 import {
   Background,
   BaseEdge,
@@ -19,7 +19,17 @@ import {
   type Node,
   type NodeProps,
 } from "@xyflow/react"
-import { CheckSquare, Clock, Link as LinkIcon, MapPin, Plus, X, Zap } from "lucide-react"
+import {
+  ArrowDownToLine,
+  ArrowRightToLine,
+  CheckSquare,
+  Clock,
+  Link as LinkIcon,
+  MapPin,
+  Plus,
+  X,
+  Zap,
+} from "lucide-react"
 import "@xyflow/react/dist/style.css"
 import type { RailNode } from "../schema"
 
@@ -30,17 +40,21 @@ interface PostOption {
   vacant: boolean
 }
 
+type Layout = "horizontal" | "vertical"
+
 interface CanvasNodeData extends Record<string, unknown> {
   node: RailNode
   postTitle: string | null
   postVacant: boolean
   isPublished: boolean
+  layout: Layout
   onEdit: (node: RailNode) => void
   onDelete: (node: RailNode) => void
 }
 
 interface CanvasEdgeData extends Record<string, unknown> {
   isPublished: boolean
+  layout: Layout
   /** Position number for the new task that would be inserted after this edge's source node. */
   insertAfterPosition: number
   onAddAfter: (afterPosition: number) => void
@@ -48,14 +62,15 @@ interface CanvasEdgeData extends Record<string, unknown> {
 
 const NODE_WIDTH = 320
 const NODE_HEIGHT = 92
-const NODE_VERTICAL_GAP = 56
-const NODE_X = 0
+const HORIZONTAL_GAP = 64
+const VERTICAL_GAP = 56
+const LAYOUT_STORAGE_KEY = "pathway.rail-canvas.layout"
 
 /**
- * n8n-style canvas for the rail builder. Vertical flow (Trigger top → Tasks
- * down), small chip nodes, dashed orange edges. Click to edit, drag to
- * reorder, "+" between nodes to add, "×" on a node to delete. All mutations
- * route through the existing rails actions in the parent.
+ * n8n-style canvas for the rail builder. Horizontal flow by default; toggleable
+ * to vertical via the layout button (preference stored in localStorage). Click
+ * to edit, drag to reorder, "+" between nodes to add, "×" on a node to delete.
+ * All mutations route through the existing rails actions in the parent.
  */
 export function RailCanvas(props: {
   nodes: RailNode[]
@@ -71,6 +86,19 @@ export function RailCanvas(props: {
       <RailCanvasInner {...props} />
     </ReactFlowProvider>
   )
+}
+
+function readStoredLayout(): Layout {
+  if (typeof window === "undefined") return "horizontal"
+  const raw = window.localStorage.getItem(LAYOUT_STORAGE_KEY)
+  return raw === "vertical" ? "vertical" : "horizontal"
+}
+
+function positionFor(idx: number, layout: Layout): { x: number; y: number } {
+  if (layout === "horizontal") {
+    return { x: idx * (NODE_WIDTH + HORIZONTAL_GAP), y: 0 }
+  }
+  return { x: 0, y: idx * (NODE_HEIGHT + VERTICAL_GAP) }
 }
 
 function RailCanvasInner({
@@ -90,6 +118,20 @@ function RailCanvasInner({
   onAddAfter: (afterPosition: number) => void
   onReorder: (newIdsInOrder: string[]) => void
 }) {
+  // Default to horizontal; honor a stored preference once the client has
+  // mounted (avoids SSR/CSR mismatch — server always renders horizontal).
+  const [layout, setLayoutState] = useState<Layout>("horizontal")
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional SSR→CSR sync
+    setLayoutState(readStoredLayout())
+  }, [])
+  const setLayout = useCallback((next: Layout) => {
+    setLayoutState(next)
+    if (typeof window !== "undefined") {
+      window.localStorage.setItem(LAYOUT_STORAGE_KEY, next)
+    }
+  }, [])
+
   const postById = useMemo(() => new Map(posts.map((p) => [p.id, p])), [posts])
 
   const initialNodes = useMemo<Node<CanvasNodeData>[]>(() => {
@@ -103,26 +145,23 @@ function RailCanvasInner({
         // until the first interaction.
         width: NODE_WIDTH,
         height: NODE_HEIGHT,
-        position: {
-          x: NODE_X,
-          y: idx * (NODE_HEIGHT + NODE_VERTICAL_GAP),
-        },
+        position: positionFor(idx, layout),
         data: {
           node: n,
           postTitle: post?.title ?? null,
           postVacant: post?.vacant ?? false,
           isPublished,
+          layout,
           onEdit,
           onDelete,
         },
         // Trigger never moves; tasks can be reordered via drag while not
-        // published. xyflow's drag handle is the whole node; we constrain to
-        // the y-axis below in onNodeDrag.
+        // published.
         draggable: !isPublished && n.type !== "trigger",
         selectable: true,
       }
     })
-  }, [railNodes, postById, isPublished, onEdit, onDelete])
+  }, [railNodes, postById, isPublished, layout, onEdit, onDelete])
 
   const initialEdges = useMemo<Edge<CanvasEdgeData>[]>(() => {
     const edges: Edge<CanvasEdgeData>[] = []
@@ -135,35 +174,55 @@ function RailCanvasInner({
         source: a.id,
         target: b.id,
         type: "addEdge",
+        sourceHandle: layout === "horizontal" ? "out-h" : "out-v",
+        targetHandle: layout === "horizontal" ? "in-h" : "in-v",
         data: {
           isPublished,
+          layout,
           insertAfterPosition: a.position,
           onAddAfter,
         },
       })
     }
     return edges
-  }, [railNodes, isPublished, onAddAfter])
+  }, [railNodes, isPublished, layout, onAddAfter])
 
   const [nodes, setNodes, onNodesChange] = useNodesState<Node<CanvasNodeData>>(initialNodes)
-  const [edges, , onEdgesChange] = useEdgesState<Edge<CanvasEdgeData>>(initialEdges)
+  const [edges, setEdges, onEdgesChange] = useEdgesState<Edge<CanvasEdgeData>>(initialEdges)
 
-  // Sync xyflow state when the underlying rail data changes (e.g. after an
-  // action mutation triggers `router.refresh()` upstream).
-  useMemo(() => {
+  // Sync xyflow state when the underlying rail data or layout changes.
+  useEffect(() => {
     setNodes(initialNodes)
   }, [initialNodes, setNodes])
+  useEffect(() => {
+    setEdges(initialEdges)
+  }, [initialEdges, setEdges])
 
-  const { getNodes } = useReactFlow<Node<CanvasNodeData>>()
+  const { getNodes, fitView } = useReactFlow<Node<CanvasNodeData>>()
+
+  // Re-fit the view when layout flips so users see the whole rail in the new
+  // orientation without zooming/panning by hand.
+  useEffect(() => {
+    const id = window.setTimeout(() => {
+      void fitView({ padding: 0.25, duration: 300 })
+    }, 60)
+    return () => {
+      window.clearTimeout(id)
+    }
+  }, [layout, fitView])
 
   const handleNodeDragStop = useCallback(() => {
     if (isPublished) return
-    // Snap to the nearest column (x=0) and figure out the new vertical order.
     const current = getNodes()
+    // Sort axis depends on layout — x for horizontal, y for vertical.
     const sorted = [...current]
-      .map((n) => ({ id: n.id, y: n.position.y, type: n.data.node.type }))
-      .sort((a, b) => a.y - b.y)
-    // Trigger is always position 0, regardless of where it ended up vertically.
+      .map((n) => ({
+        id: n.id,
+        axis: layout === "horizontal" ? n.position.x : n.position.y,
+        type: n.data.node.type,
+      }))
+      .sort((a, b) => a.axis - b.axis)
+    // Trigger is always position 0, regardless of where it ended up.
     const trigger = sorted.find((n) => n.type === "trigger")
     const tasks = sorted.filter((n) => n.type !== "trigger")
     const newOrder = trigger ? [trigger.id, ...tasks.map((t) => t.id)] : tasks.map((t) => t.id)
@@ -182,23 +241,21 @@ function RailCanvasInner({
         const idx = newOrder.indexOf(n.id)
         return {
           ...n,
-          position: {
-            x: NODE_X,
-            y: (idx === -1 ? 0 : idx) * (NODE_HEIGHT + NODE_VERTICAL_GAP),
-          },
+          position: positionFor(idx === -1 ? 0 : idx, layout),
         }
       }),
     )
-  }, [getNodes, isPublished, railNodes, initialNodes, onReorder, setNodes])
+  }, [getNodes, isPublished, layout, railNodes, initialNodes, onReorder, setNodes])
 
   return (
     <div
-      className="h-[640px] w-full"
+      className="relative h-[640px] w-full"
       style={{
         border: "1px solid #0F0F0F",
         backgroundColor: "#fff",
       }}
     >
+      <LayoutToggle layout={layout} onChange={setLayout} />
       <ReactFlow
         nodes={nodes}
         edges={edges}
@@ -233,6 +290,69 @@ function RailCanvasInner({
   )
 }
 
+function LayoutToggle({ layout, onChange }: { layout: Layout; onChange: (l: Layout) => void }) {
+  return (
+    <div
+      className="absolute top-3 right-3 z-10 inline-flex"
+      role="tablist"
+      aria-label="Canvas layout"
+    >
+      <LayoutBtn
+        active={layout === "horizontal"}
+        onClick={() => {
+          onChange("horizontal")
+        }}
+        ariaLabel="Horizontal layout"
+      >
+        <ArrowRightToLine className="size-3.5" strokeWidth={2} aria-hidden />
+      </LayoutBtn>
+      <LayoutBtn
+        active={layout === "vertical"}
+        onClick={() => {
+          onChange("vertical")
+        }}
+        ariaLabel="Vertical layout"
+      >
+        <ArrowDownToLine className="size-3.5" strokeWidth={2} aria-hidden />
+      </LayoutBtn>
+    </div>
+  )
+}
+
+function LayoutBtn({
+  active,
+  onClick,
+  ariaLabel,
+  children,
+}: {
+  active: boolean
+  onClick: () => void
+  ariaLabel: string
+  children: React.ReactNode
+}) {
+  return (
+    <button
+      type="button"
+      role="tab"
+      aria-selected={active}
+      aria-label={ariaLabel}
+      onClick={onClick}
+      className={
+        active
+          ? "border border-[#E8711A] bg-[#E8711A] text-white"
+          : "border border-[#D4D4D4] bg-white text-[#0F0F0F] hover:border-[#0F0F0F]"
+      }
+      style={{
+        padding: "6px 8px",
+        marginLeft: ariaLabel.startsWith("Vertical") ? -1 : 0,
+        transition: "background-color 120ms, border-color 120ms",
+      }}
+    >
+      {children}
+    </button>
+  )
+}
+
 const NODE_TYPES = { railNode: RailNodeView }
 const EDGE_TYPES = { addEdge: AddEdge }
 
@@ -263,7 +383,6 @@ function RailNodeView({ data, selected }: NodeProps<Node<CanvasNodeData>>) {
       }}
       onClick={handleClick}
     >
-      {/* Left accent bar — orange for trigger, steel for task */}
       <div style={{ width: 4, backgroundColor: accentColor }} aria-hidden />
 
       <div className="min-w-0 flex-1 px-3 py-2.5">
@@ -374,7 +493,6 @@ function RailNodeView({ data, selected }: NodeProps<Node<CanvasNodeData>>) {
         </div>
       </div>
 
-      {/* Delete button (top-right, only when editable + not trigger) */}
       {canDelete && (
         <button
           type="button"
@@ -390,16 +508,31 @@ function RailNodeView({ data, selected }: NodeProps<Node<CanvasNodeData>>) {
         </button>
       )}
 
-      {/* Edge handles — vertical flow, top = target, bottom = source */}
+      {/* Two pairs of handles — one for each layout. xyflow picks the correct
+          pair via the edge's sourceHandle/targetHandle ids. */}
       <Handle
         type="target"
-        position={Position.Top}
-        style={{ background: "transparent", border: "none", width: 1, height: 1, top: 0 }}
+        id="in-h"
+        position={Position.Left}
+        style={{ background: "transparent", border: "none", width: 1, height: 1 }}
       />
       <Handle
         type="source"
+        id="out-h"
+        position={Position.Right}
+        style={{ background: "transparent", border: "none", width: 1, height: 1 }}
+      />
+      <Handle
+        type="target"
+        id="in-v"
+        position={Position.Top}
+        style={{ background: "transparent", border: "none", width: 1, height: 1 }}
+      />
+      <Handle
+        type="source"
+        id="out-v"
         position={Position.Bottom}
-        style={{ background: "transparent", border: "none", width: 1, height: 1, bottom: 0 }}
+        style={{ background: "transparent", border: "none", width: 1, height: 1 }}
       />
     </div>
   )
@@ -407,7 +540,8 @@ function RailNodeView({ data, selected }: NodeProps<Node<CanvasNodeData>>) {
 
 /**
  * Custom edge with a "+" button in the middle to insert a task between two
- * nodes. Disabled when the rail is published (must unpublish to edit).
+ * nodes. Disabled when the rail is published. Curve direction follows the
+ * canvas layout.
  */
 function AddEdge({
   sourceX,
@@ -417,13 +551,16 @@ function AddEdge({
   data,
   markerEnd,
 }: EdgeProps<Edge<CanvasEdgeData>>) {
+  const layout = data?.layout ?? "horizontal"
+  const sourcePosition = layout === "horizontal" ? Position.Right : Position.Bottom
+  const targetPosition = layout === "horizontal" ? Position.Left : Position.Top
   const [edgePath, labelX, labelY] = getSmoothStepPath({
     sourceX,
     sourceY,
-    sourcePosition: Position.Bottom,
+    sourcePosition,
     targetX,
     targetY,
-    targetPosition: Position.Top,
+    targetPosition,
   })
   const isPublished = data?.isPublished ?? false
   return (
@@ -431,11 +568,7 @@ function AddEdge({
       <BaseEdge
         path={edgePath}
         markerEnd={markerEnd}
-        style={{
-          stroke: "#E8711A",
-          strokeWidth: 1.5,
-          strokeDasharray: "4 3",
-        }}
+        style={{ stroke: "#E8711A", strokeWidth: 1.5, strokeDasharray: "4 3" }}
       />
       {!isPublished && data && (
         <EdgeLabelRenderer>
