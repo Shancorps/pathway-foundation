@@ -2,6 +2,7 @@
 
 import { useState } from "react"
 import Link from "next/link"
+import { CornerUpLeft } from "lucide-react"
 import { ParticleCube } from "@/components/ui/particle-cube"
 import { RegCard, type RegCardState } from "@/components/ui/reg-card"
 import { SectionDivider } from "@/components/ui/section-divider"
@@ -22,6 +23,10 @@ interface CycleRow {
   timeSpentMinutes: number
   timerStartedAt: string | null
   checklistItems: CycleChecklistItem[]
+  /** True when this cycle was sent to me as a re-do — needs to be solved. */
+  isLoopBackCycle: boolean
+  /** True when I sent a loop-back from this cycle and it's still open. */
+  hasActiveLoopBack: boolean
 }
 
 interface PostHeld {
@@ -195,7 +200,9 @@ function FilterChip({
 function CycleRowItem({ cycle }: { cycle: CycleRow }) {
   const totalItems = cycle.checklistItems.length
   const checkedItems = cycle.checklistItems.filter((i) => i.checked).length
-  const isActive = Boolean(cycle.timerStartedAt) || checkedItems > 0
+  // Loop-back cycles are always rendered hot — they're the receiver's
+  // "needs to be solved" tile and should pop regardless of timer/checklist.
+  const isActive = cycle.isLoopBackCycle || Boolean(cycle.timerStartedAt) || checkedItems > 0
   const state: RegCardState = isActive ? "active" : "queued"
 
   return (
@@ -231,6 +238,12 @@ function CycleRowItem({ cycle }: { cycle: CycleRow }) {
                 >
                   {cycle.title}
                 </p>
+                {(cycle.isLoopBackCycle || cycle.hasActiveLoopBack) && (
+                  <div className="mt-2 flex flex-wrap gap-1.5">
+                    {cycle.isLoopBackCycle && <LoopBackCycleTag />}
+                    {cycle.hasActiveLoopBack && <ActiveLoopBackTag />}
+                  </div>
+                )}
               </div>
               <CycleStatusBadge cycle={cycle} state={state} />
             </div>
@@ -348,4 +361,47 @@ function formatMinutes(minutes: number): string {
   const hours = Math.floor(minutes / 60)
   const rest = minutes % 60
   return rest === 0 ? `${String(hours)}h` : `${String(hours)}h${String(rest)}m`
+}
+
+function LoopBackCycleTag() {
+  // Hot — solid orange, white text. The receiver's "needs to be solved" flag.
+  return (
+    <span
+      className="inline-flex items-center gap-1.5 px-2 py-1"
+      style={{
+        fontFamily: "var(--font-mono)",
+        fontSize: 9,
+        fontWeight: 600,
+        letterSpacing: "0.18em",
+        color: "#fff",
+        backgroundColor: "#E8711A",
+        textTransform: "uppercase",
+      }}
+    >
+      <CornerUpLeft className="size-3" strokeWidth={2.25} aria-hidden />
+      <span>Loop Back Cycle</span>
+    </span>
+  )
+}
+
+function ActiveLoopBackTag() {
+  // Cool — outlined steel. The originator is blocked waiting on the re-do.
+  return (
+    <span
+      className="inline-flex items-center gap-1.5 px-2 py-1"
+      style={{
+        fontFamily: "var(--font-mono)",
+        fontSize: 9,
+        fontWeight: 600,
+        letterSpacing: "0.18em",
+        color: "#2A3D52",
+        backgroundColor: "transparent",
+        border: "1px solid #2A3D52",
+        textTransform: "uppercase",
+      }}
+    >
+      <CornerUpLeft className="size-3" strokeWidth={2.25} aria-hidden />
+      <span>Active Loop Back</span>
+    </span>
+  )
 }

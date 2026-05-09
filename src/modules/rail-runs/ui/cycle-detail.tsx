@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
-import { CornerUpLeft, ExternalLink, Pause, Play } from "lucide-react"
+import { CornerUpLeft, ExternalLink, Pause, Play, X } from "lucide-react"
 import { BlueprintButton } from "@/components/ui/blueprint-button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { ParticleCube } from "@/components/ui/particle-cube"
@@ -19,6 +19,21 @@ import {
 import type { Cycle, CycleChecklistItem } from "../schema"
 import { useNow } from "./use-now"
 
+interface LoopBackTarget {
+  id: string
+  title: string
+  position: number
+  postTitle: string
+  completedAt: Date | null
+}
+
+interface ActiveLoopBack {
+  id: string
+  targetTitle: string
+  targetPosition: number
+  reason: string | null
+}
+
 interface CycleDetailProps {
   cycle: Cycle
   particleName: string
@@ -26,6 +41,8 @@ interface CycleDetailProps {
   railRunId: string
   postTitle: string
   loopBackInitiatorName: string | null
+  loopBackTargets: LoopBackTarget[]
+  activeLoopBack: ActiveLoopBack | null
 }
 
 export function CycleDetail({
@@ -35,12 +52,16 @@ export function CycleDetail({
   railRunId,
   postTitle,
   loopBackInitiatorName,
+  loopBackTargets,
+  activeLoopBack,
 }: CycleDetailProps) {
   const router = useRouter()
   const [submittingComplete, setSubmittingComplete] = useState(false)
   const [submittingTimer, setSubmittingTimer] = useState(false)
   const [submittingLoopBack, setSubmittingLoopBack] = useState(false)
+  const [loopBackOpen, setLoopBackOpen] = useState(false)
   const isLoopBack = Boolean(cycle.loopBackOfCycleId)
+  const hasActiveLoopBack = activeLoopBack !== null
 
   const totalItems = cycle.checklistItems.length
   const checkedItems = cycle.checklistItems.filter((i) => i.checked).length
@@ -99,74 +120,27 @@ export function CycleDetail({
     }
   }
 
-  async function handleLoopBack() {
-    const reason = prompt(
-      "Why are you sending this back to the previous step? The reason is logged and shown to the upstream Terminal.",
-    )
-    if (reason === null) return
-    const trimmed = reason.trim()
-    if (!trimmed) {
-      alert("A reason is required to loop back.")
-      return
-    }
+  async function handleLoopBackSubmit(targetCycleId: string, reason: string) {
     setSubmittingLoopBack(true)
-    const result = await loopBackCycle({ cycleId: cycle.id, reason: trimmed })
+    const result = await loopBackCycle({ cycleId: cycle.id, targetCycleId, reason })
     setSubmittingLoopBack(false)
     if (result.serverError) {
       alert(result.serverError)
       return
     }
+    setLoopBackOpen(false)
     router.refresh()
   }
 
   return (
     <div className="space-y-10">
       {isLoopBack && (
-        <div
-          className="flex items-start gap-3 px-5 py-4"
-          style={{
-            backgroundColor: "#FFF8F1",
-            border: "1px solid #E8711A",
-            borderLeft: "4px solid #E8711A",
-          }}
-          role="status"
-        >
-          <CornerUpLeft
-            className="mt-0.5 size-4 shrink-0"
-            style={{ color: "#E8711A" }}
-            strokeWidth={2}
-            aria-hidden
-          />
-          <div className="min-w-0 flex-1">
-            <p
-              style={{
-                fontFamily: "var(--font-mono)",
-                fontSize: 10,
-                fontWeight: 600,
-                letterSpacing: "0.2em",
-                color: "#E8711A",
-                textTransform: "uppercase",
-              }}
-            >
-              Re-do · Loop Back
-              {loopBackInitiatorName ? ` · Requested by ${loopBackInitiatorName}` : ""}
-            </p>
-            {cycle.loopBackReason && (
-              <p
-                className="mt-1.5"
-                style={{
-                  fontFamily: "var(--font-sans)",
-                  fontSize: 14,
-                  color: "#0F0F0F",
-                  lineHeight: 1.5,
-                }}
-              >
-                {cycle.loopBackReason}
-              </p>
-            )}
-          </div>
-        </div>
+        <LoopBackReceiverBanner
+          initiatorName={loopBackInitiatorName}
+          reason={cycle.loopBackReason}
+        />
       )}
+      {activeLoopBack && <ActiveLoopBackBanner active={activeLoopBack} />}
       {/* Cycle header card */}
       <RegCard state={cardState} className="space-y-4">
         <div className="flex items-start gap-4">
@@ -374,20 +348,32 @@ export function CycleDetail({
             {!isLoopBack && (
               <BlueprintButton
                 variant="outline"
-                onClick={handleLoopBack}
-                disabled={submittingLoopBack}
-                title="Send this Particle back to the previous Terminal for re-do, with a written reason."
+                onClick={() => {
+                  setLoopBackOpen(true)
+                }}
+                disabled={submittingLoopBack || hasActiveLoopBack || loopBackTargets.length === 0}
+                title={
+                  hasActiveLoopBack
+                    ? "An active loop-back is already open from this cycle."
+                    : loopBackTargets.length === 0
+                      ? "No prior steps to loop back to."
+                      : "Send this Particle back to an earlier step for re-do."
+                }
               >
                 <CornerUpLeft className="size-3.5" />
-                {submittingLoopBack ? "Sending..." : "Loop Back"}
+                Loop Back
               </BlueprintButton>
             )}
             <BlueprintButton
               variant="primary"
               onClick={handleComplete}
-              disabled={!canComplete || submittingComplete}
+              disabled={!canComplete || submittingComplete || hasActiveLoopBack}
               title={
-                canComplete ? undefined : "Check all required items before completing the cycle"
+                hasActiveLoopBack
+                  ? "Waiting on the active loop-back to close before this cycle can complete."
+                  : canComplete
+                    ? undefined
+                    : "Check all required items before completing the cycle"
               }
               particle
             >
@@ -396,6 +382,319 @@ export function CycleDetail({
           </div>
         </div>
       )}
+
+      {loopBackOpen && (
+        <LoopBackDialog
+          targets={loopBackTargets}
+          submitting={submittingLoopBack}
+          onClose={() => {
+            setLoopBackOpen(false)
+          }}
+          onSubmit={(targetId, reason) => {
+            void handleLoopBackSubmit(targetId, reason)
+          }}
+        />
+      )}
+    </div>
+  )
+}
+
+function LoopBackReceiverBanner({
+  initiatorName,
+  reason,
+}: {
+  initiatorName: string | null
+  reason: string | null
+}) {
+  return (
+    <div
+      className="flex items-start gap-3 px-5 py-4"
+      style={{
+        backgroundColor: "#FFF8F1",
+        border: "1px solid #E8711A",
+        borderLeft: "4px solid #E8711A",
+      }}
+      role="status"
+    >
+      <CornerUpLeft
+        className="mt-0.5 size-4 shrink-0"
+        style={{ color: "#E8711A" }}
+        strokeWidth={2}
+        aria-hidden
+      />
+      <div className="min-w-0 flex-1">
+        <p
+          style={{
+            fontFamily: "var(--font-mono)",
+            fontSize: 10,
+            fontWeight: 600,
+            letterSpacing: "0.2em",
+            color: "#E8711A",
+            textTransform: "uppercase",
+          }}
+        >
+          Loop Back Cycle · Needs re-do
+          {initiatorName ? ` · Requested by ${initiatorName}` : ""}
+        </p>
+        {reason && (
+          <p
+            className="mt-1.5"
+            style={{
+              fontFamily: "var(--font-sans)",
+              fontSize: 14,
+              color: "#0F0F0F",
+              lineHeight: 1.5,
+            }}
+          >
+            {reason}
+          </p>
+        )}
+      </div>
+    </div>
+  )
+}
+
+function ActiveLoopBackBanner({ active }: { active: ActiveLoopBack }) {
+  return (
+    <div
+      className="flex items-start gap-3 px-5 py-4"
+      style={{
+        backgroundColor: "#FAFAFA",
+        border: "1px solid #2A3D52",
+        borderLeft: "4px solid #2A3D52",
+      }}
+      role="status"
+    >
+      <CornerUpLeft
+        className="mt-0.5 size-4 shrink-0"
+        style={{ color: "#2A3D52" }}
+        strokeWidth={2}
+        aria-hidden
+      />
+      <div className="min-w-0 flex-1">
+        <p
+          style={{
+            fontFamily: "var(--font-mono)",
+            fontSize: 10,
+            fontWeight: 600,
+            letterSpacing: "0.2em",
+            color: "#2A3D52",
+            textTransform: "uppercase",
+          }}
+        >
+          Active Loop Back · Waiting on re-do · Step {active.targetPosition} · {active.targetTitle}
+        </p>
+        {active.reason && (
+          <p
+            className="mt-1.5"
+            style={{
+              fontFamily: "var(--font-sans)",
+              fontSize: 14,
+              color: "#0F0F0F",
+              lineHeight: 1.5,
+            }}
+          >
+            {active.reason}
+          </p>
+        )}
+      </div>
+    </div>
+  )
+}
+
+function LoopBackDialog({
+  targets,
+  submitting,
+  onClose,
+  onSubmit,
+}: {
+  targets: LoopBackTarget[]
+  submitting: boolean
+  onClose: () => void
+  onSubmit: (targetCycleId: string, reason: string) => void
+}) {
+  const [selected, setSelected] = useState<string>(targets[0]?.id ?? "")
+  const [reason, setReason] = useState("")
+  const trimmed = reason.trim()
+  const canSubmit = selected !== "" && trimmed.length > 0 && !submitting
+
+  return (
+    <div
+      className="fixed inset-0 z-50 grid place-items-center px-4 py-8"
+      style={{ backgroundColor: "rgba(15,15,15,0.45)" }}
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="loop-back-dialog-title"
+    >
+      <div className="w-full max-w-[560px] bg-white" style={{ border: "1px solid #0F0F0F" }}>
+        <div className="flex items-start justify-between gap-4 border-b border-[#E4E4E4] px-6 py-4">
+          <div>
+            <p
+              id="loop-back-dialog-title"
+              style={{
+                fontFamily: "var(--font-mono)",
+                fontSize: 10,
+                fontWeight: 600,
+                letterSpacing: "0.2em",
+                color: "#E8711A",
+                textTransform: "uppercase",
+              }}
+            >
+              Loop Back · Re-do request
+            </p>
+            <h2
+              className="mt-1.5"
+              style={{
+                fontFamily: "var(--font-sans)",
+                fontSize: 18,
+                fontWeight: 600,
+                color: "#0F0F0F",
+                letterSpacing: "-0.005em",
+              }}
+            >
+              Send this Particle back to an earlier step
+            </h2>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="text-[#888] transition-colors hover:text-[#0F0F0F]"
+            aria-label="Close"
+          >
+            <X className="size-4" strokeWidth={2} />
+          </button>
+        </div>
+
+        <div className="space-y-5 px-6 py-5">
+          <div>
+            <p
+              style={{
+                fontFamily: "var(--font-mono)",
+                fontSize: 10,
+                fontWeight: 600,
+                letterSpacing: "0.18em",
+                color: "#0F0F0F",
+                textTransform: "uppercase",
+              }}
+            >
+              Target step
+            </p>
+            <ul className="mt-3 divide-y divide-[#E4E4E4]" style={{ border: "1px solid #E4E4E4" }}>
+              {targets.map((t) => {
+                const checked = selected === t.id
+                return (
+                  <li key={t.id}>
+                    <label
+                      className="flex cursor-pointer items-start gap-3 px-4 py-3"
+                      style={{
+                        backgroundColor: checked ? "#FFF8F1" : "transparent",
+                      }}
+                    >
+                      <input
+                        type="radio"
+                        name="target"
+                        value={t.id}
+                        checked={checked}
+                        onChange={() => {
+                          setSelected(t.id)
+                        }}
+                        className="mt-1 accent-[#E8711A]"
+                      />
+                      <div className="min-w-0 flex-1">
+                        <p
+                          style={{
+                            fontFamily: "var(--font-sans)",
+                            fontSize: 14,
+                            fontWeight: 500,
+                            color: "#0F0F0F",
+                          }}
+                        >
+                          Step {t.position} · {t.title}
+                        </p>
+                        <p
+                          className="mt-0.5"
+                          style={{
+                            fontFamily: "var(--font-mono)",
+                            fontSize: 10,
+                            letterSpacing: "0.12em",
+                            color: "#888",
+                            textTransform: "uppercase",
+                          }}
+                        >
+                          {t.postTitle} · {t.completedAt ? "Completed" : "Open"}
+                        </p>
+                      </div>
+                    </label>
+                  </li>
+                )
+              })}
+            </ul>
+          </div>
+
+          <div>
+            <label
+              htmlFor="loop-back-reason"
+              style={{
+                fontFamily: "var(--font-mono)",
+                fontSize: 10,
+                fontWeight: 600,
+                letterSpacing: "0.18em",
+                color: "#0F0F0F",
+                textTransform: "uppercase",
+              }}
+            >
+              Reason (required)
+            </label>
+            <textarea
+              id="loop-back-reason"
+              rows={4}
+              value={reason}
+              onChange={(e) => {
+                setReason(e.target.value)
+              }}
+              maxLength={2000}
+              placeholder="Explain what needs to be redone. The receiver sees this verbatim."
+              className="mt-2 block w-full px-3 py-2 outline-none focus:border-[#0F0F0F]"
+              style={{
+                fontFamily: "var(--font-sans)",
+                fontSize: 14,
+                color: "#0F0F0F",
+                border: "1px solid #D4D4D4",
+                resize: "vertical",
+              }}
+            />
+            <p
+              className="mt-1.5"
+              style={{
+                fontFamily: "var(--font-mono)",
+                fontSize: 9,
+                letterSpacing: "0.16em",
+                color: "#AAA",
+                textTransform: "uppercase",
+              }}
+            >
+              {String(trimmed.length)} / 2000
+            </p>
+          </div>
+        </div>
+
+        <div className="flex items-center justify-end gap-3 border-t border-[#E4E4E4] px-6 py-4">
+          <BlueprintButton variant="ghost" size="sm" onClick={onClose} disabled={submitting}>
+            Cancel
+          </BlueprintButton>
+          <BlueprintButton
+            variant="primary"
+            onClick={() => {
+              if (canSubmit) onSubmit(selected, trimmed)
+            }}
+            disabled={!canSubmit}
+            particle
+          >
+            <CornerUpLeft className="size-3.5" />
+            {submitting ? "Sending..." : "Send Loop Back"}
+          </BlueprintButton>
+        </div>
+      </div>
     </div>
   )
 }

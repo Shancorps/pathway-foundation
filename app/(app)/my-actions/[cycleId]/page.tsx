@@ -3,7 +3,7 @@ import { notFound, redirect } from "next/navigation"
 import { ArrowLeft } from "lucide-react"
 import { PageShell } from "@/components/ui/page-shell"
 import { getSession } from "@/modules/auth/session"
-import { getCycleForUser } from "@/modules/rail-runs/queries"
+import { getCycleForUser, listLoopBackTargetsForCycle } from "@/modules/rail-runs/queries"
 import { CycleDetail } from "@/modules/rail-runs/ui/cycle-detail"
 
 export default async function CycleDetailPage({
@@ -19,6 +19,7 @@ export default async function CycleDetailPage({
 
   const row = await getCycleForUser(orgId, session.user.id, cycleId)
   if (!row) notFound()
+  const loopBackTargets = await listLoopBackTargetsForCycle(orgId, session.user.id, cycleId)
 
   return (
     <PageShell>
@@ -46,6 +47,8 @@ export default async function CycleDetailPage({
         railRunId={row.cycle.railRunId}
         postTitle={row.postTitle}
         loopBackInitiatorName={row.loopBackInitiatorName}
+        loopBackTargets={loopBackTargets}
+        activeLoopBack={row.activeLoopBack}
       />
     </PageShell>
   )

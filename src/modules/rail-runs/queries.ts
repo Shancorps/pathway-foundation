@@ -1,5 +1,5 @@
 import "server-only"
-import { and, asc, count, desc, eq, isNull } from "drizzle-orm"
+import { and, asc, count, desc, eq, inArray, isNull, lt } from "drizzle-orm"
 import { db } from "@/lib/db"
 import { user } from "@/modules/auth/schema"
 import { posts, postAssignments } from "@/modules/org-structure/schema"
@@ -16,6 +16,11 @@ export interface MyActionCycle extends Cycle {
   railName: string
   railId: string
   postTitle: string
+  /**
+   * True when this cycle has an outstanding loop-back the user initiated —
+   * the originator is blocked from completing until that re-do closes.
+   */
+  hasActiveLoopBack: boolean
 }
 
 /**
@@ -25,7 +30,7 @@ export interface MyActionCycle extends Cycle {
  * their inboxes; whoever completes it removes it from everyone's view.
  */
 export async function listMyActionCycles(orgId: string, userId: string): Promise<MyActionCycle[]> {
-  return db
+  const rows = await db
     .select({
       id: cycles.id,
       organizationId: cycles.organizationId,
@@ -49,6 +54,7 @@ export async function listMyActionCycles(orgId: string, userId: string): Promise
       loopBackOfCycleId: cycles.loopBackOfCycleId,
       loopBackReason: cycles.loopBackReason,
       loopBackInitiatedBy: cycles.loopBackInitiatedBy,
+      loopBackInitiatedFromCycleId: cycles.loopBackInitiatedFromCycleId,
       createdAt: cycles.createdAt,
       updatedAt: cycles.updatedAt,
       deletedAt: cycles.deletedAt,
@@ -75,6 +81,32 @@ export async function listMyActionCycles(orgId: string, userId: string): Promise
       ),
     )
     .orderBy(asc(cycles.issuedAt))
+
+  // Second pass: for each non-loop-back cycle in the inbox, check whether
+  // there's an open cycle in the system whose initiating cycle is this one.
+  // If yes, the user is blocked waiting on that re-do. Cheap to do as a
+  // single IN (...) query on the inbox cycle ids.
+  const candidateIds = rows.filter((r) => !r.loopBackOfCycleId).map((r) => r.id)
+  const activeOriginatorIds = new Set<string>()
+  if (candidateIds.length > 0) {
+    const open = await db
+      .select({ from: cycles.loopBackInitiatedFromCycleId })
+      .from(cycles)
+      .where(
+        and(
+          eq(cycles.organizationId, orgId),
+          inArray(cycles.loopBackInitiatedFromCycleId, candidateIds),
+          isNull(cycles.completedAt),
+          isNull(cycles.cancelledAt),
+          isNull(cycles.deletedAt),
+        ),
+      )
+    for (const row of open) {
+      if (row.from) activeOriginatorIds.add(row.from)
+    }
+  }
+
+  return rows.map((r) => ({ ...r, hasActiveLoopBack: activeOriginatorIds.has(r.id) }))
 }
 
 export async function getCycleForUser(orgId: string, userId: string, cycleId: string) {
@@ -106,7 +138,78 @@ export async function getCycleForUser(orgId: string, userId: string, cycleId: st
       ),
     )
     .limit(1)
-  return rows[0] ?? null
+  const row = rows[0]
+  if (!row) return null
+
+  // If this cycle has an outstanding loop-back the holder initiated, surface
+  // its current state so the UI can render the "Active Loop Back" tag with
+  // target step name + reason.
+  const [activeLoopBack] = await db
+    .select({
+      id: cycles.id,
+      targetTitle: cycles.title,
+      targetPosition: cycles.position,
+      reason: cycles.loopBackReason,
+    })
+    .from(cycles)
+    .where(
+      and(
+        eq(cycles.organizationId, orgId),
+        eq(cycles.loopBackInitiatedFromCycleId, row.cycle.id),
+        isNull(cycles.completedAt),
+        isNull(cycles.cancelledAt),
+        isNull(cycles.deletedAt),
+      ),
+    )
+    .limit(1)
+
+  return { ...row, activeLoopBack: activeLoopBack ?? null }
+}
+
+/**
+ * Loop-back target picker: lists prior cycles in the same run that are valid
+ * snapshot sources. Excludes other loop-backs (so chains route to the original
+ * step) and cycles whose Post has been retired.
+ */
+export async function listLoopBackTargetsForCycle(orgId: string, userId: string, cycleId: string) {
+  // Confirm the user holds the cycle's Post first — otherwise they shouldn't
+  // see prior steps.
+  const [holding] = await db
+    .select({ position: cycles.position, railRunId: cycles.railRunId })
+    .from(cycles)
+    .innerJoin(postAssignments, eq(postAssignments.postId, cycles.postId))
+    .where(
+      and(
+        eq(cycles.id, cycleId),
+        eq(cycles.organizationId, orgId),
+        eq(postAssignments.userId, userId),
+        isNull(cycles.deletedAt),
+      ),
+    )
+    .limit(1)
+  if (!holding) return []
+
+  return db
+    .select({
+      id: cycles.id,
+      title: cycles.title,
+      position: cycles.position,
+      postTitle: posts.title,
+      completedAt: cycles.completedAt,
+    })
+    .from(cycles)
+    .innerJoin(posts, eq(posts.id, cycles.postId))
+    .where(
+      and(
+        eq(cycles.organizationId, orgId),
+        eq(cycles.railRunId, holding.railRunId),
+        lt(cycles.position, holding.position),
+        isNull(cycles.loopBackOfCycleId),
+        isNull(cycles.deletedAt),
+        isNull(posts.deletedAt),
+      ),
+    )
+    .orderBy(asc(cycles.position))
 }
 
 export async function getRailRun(orgId: string, runId: string, opts: ListOptions = {}) {

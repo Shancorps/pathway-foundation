@@ -432,6 +432,110 @@ describe("rail-runs module — the conveyor belt", () => {
     })
   })
 
+  it("loop-back can target any prior step, not just immediately prior", async () => {
+    await withTestDb(async (db) => {
+      const s = await setupCarWashScenario(db)
+      // Add a third task to the rail to give us position 3 (Drive-out check).
+      const driveOutTaskId = createId()
+      await db.insert(railNodes).values({
+        id: driveOutTaskId,
+        organizationId: s.orgId,
+        railId: s.railId,
+        type: "task",
+        name: "Drive-out check",
+        postId: s.cashierPostId,
+        position: 3,
+      })
+
+      const runId = createId()
+      await db.insert(railRuns).values({
+        id: runId,
+        organizationId: s.orgId,
+        railId: s.railId,
+        particleId: s.civicId,
+        startedBy: s.owner,
+      })
+      // Cycles 1 (wash, completed), 2 (pay, completed), 3 (drive-out, open).
+      const c1 = createId()
+      const c2 = createId()
+      const c3 = createId()
+      const checked: CycleChecklistItem[] = [
+        {
+          id: "ck1",
+          label: "Pre-rinse",
+          required: true,
+          position: 0,
+          checked: true,
+          checkedAt: new Date().toISOString(),
+          checkedBy: s.washerUser,
+        },
+      ]
+      await db.insert(cycles).values([
+        {
+          id: c1,
+          organizationId: s.orgId,
+          railRunId: runId,
+          railNodeId: s.washTaskId,
+          postId: s.washerPostId,
+          title: "Wash Car",
+          position: 1,
+          checklistItems: checked,
+          completedAt: new Date(),
+          completedBy: s.washerUser,
+        },
+        {
+          id: c2,
+          organizationId: s.orgId,
+          railRunId: runId,
+          railNodeId: s.payTaskId,
+          postId: s.cashierPostId,
+          title: "Collect Payment",
+          position: 2,
+          completedAt: new Date(),
+          completedBy: s.cashierUser,
+        },
+        {
+          id: c3,
+          organizationId: s.orgId,
+          railRunId: runId,
+          railNodeId: driveOutTaskId,
+          postId: s.cashierPostId,
+          title: "Drive-out check",
+          position: 3,
+        },
+      ])
+
+      // Drive-out cycle holder loops back ALL THE WAY to step 1 (skip step 2).
+      const loopBackId = createId()
+      await db.insert(cycles).values({
+        id: loopBackId,
+        organizationId: s.orgId,
+        railRunId: runId,
+        railNodeId: s.washTaskId,
+        postId: s.washerPostId,
+        title: "Wash Car",
+        position: 1,
+        checklistItems: checked.map((i) => ({
+          ...i,
+          checked: false,
+          checkedAt: null,
+          checkedBy: null,
+        })),
+        loopBackOfCycleId: c1,
+        loopBackInitiatedFromCycleId: c3,
+        loopBackReason: "Mud on rocker panels — start over",
+        loopBackInitiatedBy: s.cashierUser,
+      })
+
+      // The re-do is at the washer's Post (step 1's post), not the cashier's.
+      const [reissued] = await db.select().from(cycles).where(eq(cycles.id, loopBackId))
+      expect(reissued?.postId).toBe(s.washerPostId)
+      expect(reissued?.position).toBe(1)
+      expect(reissued?.loopBackOfCycleId).toBe(c1)
+      expect(reissued?.loopBackInitiatedFromCycleId).toBe(c3)
+    })
+  })
+
   it("loop-back cycle copies the prior cycle's data and resets checklist to unchecked", async () => {
     await withTestDb(async (db) => {
       const s = await setupCarWashScenario(db)
@@ -495,7 +599,7 @@ describe("rail-runs module — the conveyor belt", () => {
       })
 
       // Cashier loops back: snapshot prior wash cycle into a new cycle flagged
-      // with loop_back_of_cycle_id + reason.
+      // with loop_back_of_cycle_id + reason + initiated_from.
       const loopBackId = createId()
       const reason = "Driver-side window streaks. Re-do soap + dry."
       await db.insert(cycles).values({
@@ -516,9 +620,26 @@ describe("rail-runs module — the conveyor belt", () => {
         toolsLinks: sourceTools,
         idealMinutes: 15,
         loopBackOfCycleId: washCycleId,
+        loopBackInitiatedFromCycleId: payCycleId,
         loopBackReason: reason,
         loopBackInitiatedBy: s.cashierUser,
       })
+
+      // The cashier's pay cycle is now in "Active Loop Back" state — there's
+      // an open cycle pointing back to it as the initiating cycle.
+      const [activeFromPay] = await db
+        .select({ id: cycles.id })
+        .from(cycles)
+        .where(
+          and(
+            eq(cycles.organizationId, s.orgId),
+            eq(cycles.loopBackInitiatedFromCycleId, payCycleId),
+            isNull(cycles.completedAt),
+            isNull(cycles.cancelledAt),
+            isNull(cycles.deletedAt),
+          ),
+        )
+      expect(activeFromPay?.id).toBe(loopBackId)
 
       // The loop-back is routed back to the washer's inbox, not the cashier's.
       const mikeOpen = await db

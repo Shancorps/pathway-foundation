@@ -1,7 +1,7 @@
 "use server"
 
 import { revalidatePath } from "next/cache"
-import { and, asc, desc, eq, gt, isNull, lt } from "drizzle-orm"
+import { and, asc, eq, gt, isNull, lt } from "drizzle-orm"
 import { createId } from "@paralleldrive/cuid2"
 import { ActionError, orgAction } from "@/lib/safe-action"
 import { audit } from "@/modules/audit/audit"
@@ -357,6 +357,31 @@ export const completeCycle = orgAction
       throw new ActionError("VALIDATION", `Required item "${missing.label}" is unchecked`)
     }
 
+    // Block while a loop-back originated from this cycle is still open. The
+    // originator must wait for the upstream re-do to close before they can
+    // advance — otherwise the rail moves on with an orphaned re-do request.
+    if (!cycle.loopBackOfCycleId) {
+      const [activeLoopBack] = await ctx.db
+        .select({ id: cycles.id })
+        .from(cycles)
+        .where(
+          and(
+            eq(cycles.organizationId, ctx.activeOrg.id),
+            eq(cycles.loopBackInitiatedFromCycleId, cycle.id),
+            isNull(cycles.completedAt),
+            isNull(cycles.cancelledAt),
+            isNull(cycles.deletedAt),
+          ),
+        )
+        .limit(1)
+      if (activeLoopBack) {
+        throw new ActionError(
+          "CONFLICT",
+          "An active loop-back is still open. Wait for it to close before completing.",
+        )
+      }
+    }
+
     // Stop the timer if running so accumulated time is correct.
     let timeSpentMinutes = cycle.timeSpentMinutes
     if (cycle.timerStartedAt) {
@@ -456,17 +481,19 @@ export const completeCycle = orgAction
   })
 
 /**
- * Loop Back: the holder of the current cycle returns work to the immediately
- * prior step's Post for re-do. We snapshot the prior cycle's title / description
- * / checklist (reset to unchecked) / tools / ideal minutes / post / position
- * onto a new cycle flagged with loop_back_of_cycle_id + reason + initiator.
+ * Loop Back: the holder of an open cycle picks an earlier step in the run
+ * (any prior non-loop-back cycle) and returns the Particle there with a
+ * written reason. We snapshot the target's title / description / checklist
+ * (reset to unchecked) / tools / ideal minutes / post / position into a new
+ * cycle flagged with loop_back_of_cycle_id (the snapshot source) and
+ * loop_back_initiated_from_cycle_id (the originator's cycle).
  *
- * The current cycle stays open in the looper-backer's inbox — they continue
- * waiting on the upstream re-do. Completing the loop-back cycle does NOT
- * advance the rail (see `completeCycle`).
+ * The originator's cycle stays open in their inbox tagged "Active Loop Back"
+ * and is blocked from completion until the re-do closes (see `completeCycle`).
+ * Completing the re-do cycle does NOT advance the rail.
  *
- * "Prior" excludes other loop-back cycles, so a chain of loop-backs always
- * routes to the original upstream step rather than re-doing a re-do.
+ * The target must be a non-loop-back cycle, so chains of loop-backs always
+ * route to the original step rather than re-doing a re-do.
  */
 export const loopBackCycle = orgAction
   .metadata({ actionName: "rail_runs.loop_back" })
@@ -476,15 +503,39 @@ export const loopBackCycle = orgAction
     if (cycle.loopBackOfCycleId) {
       throw new ActionError(
         "VALIDATION",
-        "Cannot loop back from a loop-back cycle. Complete this re-do first.",
+        "This cycle is itself a loop-back. Complete the re-do instead.",
       )
     }
 
-    const [prior] = await ctx.db
+    // Block stacking — one active loop-back per originator cycle. The
+    // originator must wait for the prior re-do to close before sending another.
+    const [outstanding] = await ctx.db
+      .select({ id: cycles.id })
+      .from(cycles)
+      .where(
+        and(
+          eq(cycles.organizationId, ctx.activeOrg.id),
+          eq(cycles.loopBackInitiatedFromCycleId, cycle.id),
+          isNull(cycles.completedAt),
+          isNull(cycles.cancelledAt),
+          isNull(cycles.deletedAt),
+        ),
+      )
+      .limit(1)
+    if (outstanding) {
+      throw new ActionError(
+        "CONFLICT",
+        "You already have an active loop-back from this cycle. Wait for it to close.",
+      )
+    }
+
+    // Validate the target: same run, earlier position, non-loop-back, alive.
+    const [target] = await ctx.db
       .select()
       .from(cycles)
       .where(
         and(
+          eq(cycles.id, parsedInput.targetCycleId),
           eq(cycles.organizationId, ctx.activeOrg.id),
           eq(cycles.railRunId, cycle.railRunId),
           lt(cycles.position, cycle.position),
@@ -492,29 +543,31 @@ export const loopBackCycle = orgAction
           isNull(cycles.deletedAt),
         ),
       )
-      .orderBy(desc(cycles.position))
       .limit(1)
-    if (!prior) {
-      throw new ActionError("VALIDATION", "No prior step in this run to loop back to")
+    if (!target) {
+      throw new ActionError(
+        "VALIDATION",
+        "Selected step isn't a valid loop-back target in this run.",
+      )
     }
 
-    // Ensure the prior step's Post still exists (not soft-deleted). If the
+    // Ensure the target step's Post still exists (not soft-deleted). If the
     // Terminal was retired we can't route the re-do anywhere.
-    const [priorPost] = await ctx.db
+    const [targetPost] = await ctx.db
       .select({ id: posts.id })
       .from(posts)
       .where(
         and(
-          eq(posts.id, prior.postId),
+          eq(posts.id, target.postId),
           eq(posts.organizationId, ctx.activeOrg.id),
           isNull(posts.deletedAt),
         ),
       )
       .limit(1)
-    if (!priorPost) {
+    if (!targetPost) {
       throw new ActionError(
         "VALIDATION",
-        "The Terminal for the prior step no longer exists. Cannot route the loop-back.",
+        "The Terminal for that step no longer exists. Cannot route the loop-back.",
       )
     }
 
@@ -522,23 +575,24 @@ export const loopBackCycle = orgAction
     await ctx.db.insert(cycles).values({
       id: newCycleId,
       organizationId: ctx.activeOrg.id,
-      railRunId: prior.railRunId,
-      railNodeId: prior.railNodeId,
-      postId: prior.postId,
-      title: prior.title,
-      description: prior.description,
-      checklistItems: prior.checklistItems.map((item) => ({
+      railRunId: target.railRunId,
+      railNodeId: target.railNodeId,
+      postId: target.postId,
+      title: target.title,
+      description: target.description,
+      checklistItems: target.checklistItems.map((item) => ({
         ...item,
         checked: false,
         checkedAt: null,
         checkedBy: null,
       })),
-      toolsLinks: prior.toolsLinks,
-      idealMinutes: prior.idealMinutes,
-      position: prior.position,
-      loopBackOfCycleId: prior.id,
+      toolsLinks: target.toolsLinks,
+      idealMinutes: target.idealMinutes,
+      position: target.position,
+      loopBackOfCycleId: target.id,
       loopBackReason: parsedInput.reason,
       loopBackInitiatedBy: ctx.session.user.id,
+      loopBackInitiatedFromCycleId: cycle.id,
     })
 
     await audit(
@@ -555,7 +609,8 @@ export const loopBackCycle = orgAction
         resourceId: newCycleId,
         metadata: {
           fromCycleId: cycle.id,
-          priorCycleId: prior.id,
+          targetCycleId: target.id,
+          targetPosition: target.position,
           runId: cycle.railRunId,
           reason: parsedInput.reason,
         },
@@ -563,7 +618,7 @@ export const loopBackCycle = orgAction
     )
     revalidatePath(MY_ACTIONS_PATH)
     revalidatePath(`${MY_ACTIONS_PATH}/${cycle.id}`)
-    return { id: newCycleId, priorCycleId: prior.id }
+    return { id: newCycleId, targetCycleId: target.id }
   })
 
 export const cancelRailRun = orgAction

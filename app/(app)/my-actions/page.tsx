@@ -71,6 +71,8 @@ export default async function MyActionsPage() {
             timeSpentMinutes: c.timeSpentMinutes,
             timerStartedAt: c.timerStartedAt ? c.timerStartedAt.toISOString() : null,
             checklistItems: c.checklistItems,
+            isLoopBackCycle: c.loopBackOfCycleId !== null,
+            hasActiveLoopBack: c.hasActiveLoopBack,
           }))}
           postsHeld={postsHeld.map((p) => ({ id: p.id, title: p.title }))}
           IdleEmptyState={<IdleRailIllustration width={480} />}

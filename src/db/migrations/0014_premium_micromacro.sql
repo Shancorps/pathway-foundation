@@ -1,0 +1,3 @@
+ALTER TABLE "cycles" ADD COLUMN "loop_back_initiated_from_cycle_id" text;--> statement-breakpoint
+ALTER TABLE "cycles" ADD CONSTRAINT "cycles_loop_back_initiated_from_cycle_id_cycles_id_fk" FOREIGN KEY ("loop_back_initiated_from_cycle_id") REFERENCES "public"."cycles"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
+CREATE INDEX "cycles_org_loopback_from_idx" ON "cycles" USING btree ("organization_id","loop_back_initiated_from_cycle_id");

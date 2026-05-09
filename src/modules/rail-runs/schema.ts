@@ -129,10 +129,18 @@ export const cycles = pgTable(
     cancelledAt: timestamp("cancelled_at", { withTimezone: true }),
     cancelledBy: text("cancelled_by").references(() => user.id, { onDelete: "set null" }),
     // Loop-back metadata. When non-null, this cycle is a re-do of an earlier
-    // completed cycle in the same run, sent back by the next-step holder with
-    // a written reason. Completing a loop-back cycle does NOT advance the rail
-    // (no successor issued) — the original cycle is still open in the
-    // looper-backer's inbox.
+    // cycle in the same run, sent back by a downstream holder who picked the
+    // target step + a written reason. Completing a loop-back cycle does NOT
+    // advance the rail — the originator's cycle stays open in their inbox
+    // with an "Active Loop Back" tag, blocked from completion until the re-do
+    // closes.
+    //
+    // - loop_back_of_cycle_id: the prior cycle being redone (snapshot source;
+    //   routes the re-do to that cycle's Post).
+    // - loop_back_initiated_from_cycle_id: the cycle the originator was
+    //   holding when they triggered the loop-back. Used to identify the
+    //   originator's "Active Loop Back" state — if any open cycle has this
+    //   field pointing to my cycle, I'm blocked waiting on a re-do.
     loopBackOfCycleId: text("loop_back_of_cycle_id").references((): AnyPgColumn => cycles.id, {
       onDelete: "set null",
     }),
@@ -140,6 +148,10 @@ export const cycles = pgTable(
     loopBackInitiatedBy: text("loop_back_initiated_by").references(() => user.id, {
       onDelete: "set null",
     }),
+    loopBackInitiatedFromCycleId: text("loop_back_initiated_from_cycle_id").references(
+      (): AnyPgColumn => cycles.id,
+      { onDelete: "set null" },
+    ),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
     deletedAt: timestamp("deleted_at", { withTimezone: true }),
@@ -160,6 +172,10 @@ export const cycles = pgTable(
     index("cycles_org_deleted_idx").on(t.organizationId, t.deletedAt),
     // For looking up loop-back chains (uncommon read path but cheap to add).
     index("cycles_org_loopback_idx").on(t.organizationId, t.loopBackOfCycleId),
+    // For the "Active Loop Back" check — given a cycle id, are there any open
+    // cycles that point back to it as their initiating cycle? Run on the
+    // /my-actions inbox load, so worth indexing.
+    index("cycles_org_loopback_from_idx").on(t.organizationId, t.loopBackInitiatedFromCycleId),
   ],
 )
 
