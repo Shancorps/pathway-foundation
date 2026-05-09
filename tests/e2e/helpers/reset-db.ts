@@ -11,6 +11,8 @@ const TABLES_TO_TRUNCATE = [
   "audit_log",
   "files",
   "items",
+  "data_points",
+  "statistics",
   "cycles",
   "rail_runs",
   "rail_nodes",

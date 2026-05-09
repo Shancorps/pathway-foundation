@@ -1,12 +1,13 @@
 import Link from "next/link"
 import { redirect } from "next/navigation"
 import { PageShell } from "@/components/ui/page-shell"
-import { RegCard } from "@/components/ui/reg-card"
 import { TitleBlock } from "@/components/ui/title-block"
 import { getSession } from "@/modules/auth/session"
 import { resolveStatsWindow, type StatsRange } from "@/modules/rail-stats/queries"
 import { RangePicker } from "@/modules/rail-stats/ui/range-picker"
 import { RailStatsTab } from "@/modules/rail-stats/ui/rail-stats-tab"
+import { AddGraphButton } from "@/modules/statistics/ui/dialogs"
+import { KpiStatsTab } from "@/modules/statistics/ui/kpi-stats-tab"
 
 type Tab = "kpi" | "rail"
 
@@ -27,17 +28,27 @@ export default async function StatsPage({
   const tab = readTab(sp.tab) ?? "kpi"
   const range = readRange(sp.range) ?? "30d"
   const lb = readSingle(sp.lb)
+  const stat = readSingle(sp.stat)
   const window = resolveStatsWindow(range)
 
-  function buildHref(next: { tab?: Tab; range?: StatsRange; lb?: string | null }): string {
+  function buildHref(next: {
+    tab?: Tab
+    range?: StatsRange
+    lb?: string | null
+    stat?: string | null
+  }): string {
     const t = next.tab ?? tab
     const r = next.range ?? range
     const l = next.lb === undefined ? lb : next.lb
+    const s = next.stat === undefined ? stat : next.stat
     const params = new URLSearchParams()
     params.set("tab", t)
     if (t === "rail") {
       params.set("range", r)
       if (l) params.set("lb", l)
+    }
+    if (t === "kpi" && s) {
+      params.set("stat", s)
     }
     return `/stats?${params.toString()}`
   }
@@ -56,6 +67,7 @@ export default async function StatsPage({
             />
           ) : null
         }
+        action={tab === "kpi" ? <AddGraphButton /> : null}
       />
 
       <TabStrip currentTab={tab} buildHref={buildHref} />
@@ -69,7 +81,11 @@ export default async function StatsPage({
             buildLoopBackHref={(id) => buildHref({ tab: "rail", lb: id })}
           />
         ) : (
-          <KpiStatsPlaceholder buildRailHref={() => buildHref({ tab: "rail", lb: null })} />
+          <KpiStatsTab
+            orgId={orgId}
+            selectedStatId={stat}
+            buildStatHref={(id) => buildHref({ tab: "kpi", stat: id })}
+          />
         )}
       </div>
     </PageShell>
@@ -111,52 +127,6 @@ function TabStrip({
         )
       })}
     </div>
-  )
-}
-
-function KpiStatsPlaceholder({ buildRailHref }: { buildRailHref: () => string }) {
-  return (
-    <RegCard state="new" className="px-12 py-16 text-center">
-      <p
-        style={{
-          fontFamily: "var(--font-mono)",
-          fontSize: 11,
-          fontWeight: 600,
-          letterSpacing: "0.18em",
-          color: "#888",
-          textTransform: "uppercase",
-        }}
-      >
-        KPI Stats · In design
-      </p>
-      <p
-        className="mx-auto mt-3 max-w-[48ch]"
-        style={{
-          fontFamily: "var(--font-sans)",
-          fontSize: 14,
-          color: "#444",
-          lineHeight: 1.55,
-        }}
-      >
-        Hand-maintained KPI graphs (Gross Sales, Inspections Passed, Leads Captured&hellip;) ship in
-        the next phase. Until then, the operational signals derived from the conveyor belt are live
-        on the Rail Stats tab.
-      </p>
-      <Link
-        href={buildRailHref()}
-        className="mt-7 inline-flex items-center gap-2 border border-[#0F0F0F] bg-white px-5 py-2.5 transition-colors hover:bg-[#FAFAFA]"
-        style={{
-          fontFamily: "var(--font-mono)",
-          fontSize: 10,
-          fontWeight: 600,
-          letterSpacing: "0.18em",
-          color: "#0F0F0F",
-          textTransform: "uppercase",
-        }}
-      >
-        Open Rail Stats →
-      </Link>
-    </RegCard>
   )
 }
 

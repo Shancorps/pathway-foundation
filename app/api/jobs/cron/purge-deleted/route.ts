@@ -7,6 +7,7 @@ import { orgContainers, posts } from "@/modules/org-structure/schema"
 import { particleTypes, particles } from "@/modules/particles/schema"
 import { railNodes, rails } from "@/modules/rails/schema"
 import { cycles, railRuns } from "@/modules/rail-runs/schema"
+import { dataPoints, statistics } from "@/modules/statistics/schema"
 import { audit } from "@/modules/audit/audit"
 import { blob } from "@/lib/blob"
 import { log } from "@/lib/log"
@@ -291,6 +292,58 @@ export async function GET(request: Request) {
     }
   }
 
+  // -------- Data Points --------
+  // Data points must be purged BEFORE statistics (FK ON DELETE RESTRICT).
+  const dataPointRows = await db
+    .select({ id: dataPoints.id, organizationId: dataPoints.organizationId })
+    .from(dataPoints)
+    .where(and(isNotNull(dataPoints.deletedAt), lt(dataPoints.deletedAt, cutoff)))
+    .limit(BATCH_LIMIT)
+
+  const dataPointOrgCounts = new Map<string, number>()
+  for (const r of dataPointRows) {
+    dataPointOrgCounts.set(r.organizationId, (dataPointOrgCounts.get(r.organizationId) ?? 0) + 1)
+  }
+  for (const [orgId, count] of dataPointOrgCounts) {
+    await audit({ db, organizationId: orgId, actorUserId: null }, "purge.data_points", {
+      metadata: { count, retentionDays: RETENTION_DAYS },
+    })
+  }
+  if (dataPointRows.length > 0) {
+    await db.delete(dataPoints).where(
+      inArray(
+        dataPoints.id,
+        dataPointRows.map((r) => r.id),
+      ),
+    )
+  }
+
+  // -------- Statistics --------
+  const statisticRows = await db
+    .select({ id: statistics.id, organizationId: statistics.organizationId })
+    .from(statistics)
+    .where(and(isNotNull(statistics.deletedAt), lt(statistics.deletedAt, cutoff)))
+    .limit(BATCH_LIMIT)
+
+  const statisticOrgCounts = new Map<string, number>()
+  for (const r of statisticRows) {
+    statisticOrgCounts.set(r.organizationId, (statisticOrgCounts.get(r.organizationId) ?? 0) + 1)
+  }
+  for (const [orgId, count] of statisticOrgCounts) {
+    await audit({ db, organizationId: orgId, actorUserId: null }, "purge.statistics", {
+      metadata: { count, retentionDays: RETENTION_DAYS },
+    })
+  }
+  let statisticsDeleted = 0
+  for (const r of statisticRows) {
+    try {
+      await db.delete(statistics).where(inArray(statistics.id, [r.id]))
+      statisticsDeleted += 1
+    } catch (e) {
+      log.warn({ err: e, id: r.id }, "[purge] statistics delete deferred (likely FK)")
+    }
+  }
+
   // -------- Org Containers --------
   // Self-referential FK with ON DELETE RESTRICT: a parent container can't be hard-deleted
   // until its children are gone. The cron drains nested levels over multiple runs.
@@ -334,6 +387,8 @@ export async function GET(request: Request) {
       rails: railsDeleted,
       cycles: cycleRows.length,
       railRuns: runsDeleted,
+      dataPoints: dataPointRows.length,
+      statistics: statisticsDeleted,
     },
     cutoff: cutoff.toISOString(),
     batchLimit: BATCH_LIMIT,
@@ -347,6 +402,8 @@ export async function GET(request: Request) {
       railNodeRows.length === BATCH_LIMIT ||
       railRows.length === BATCH_LIMIT ||
       cycleRows.length === BATCH_LIMIT ||
-      runRows.length === BATCH_LIMIT,
+      runRows.length === BATCH_LIMIT ||
+      dataPointRows.length === BATCH_LIMIT ||
+      statisticRows.length === BATCH_LIMIT,
   })
 }
