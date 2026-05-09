@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import Link from "next/link"
-import { CornerUpLeft } from "lucide-react"
+import { CheckCheck, CornerUpLeft } from "lucide-react"
 import { ParticleCube } from "@/components/ui/particle-cube"
 import { RegCard, type RegCardState } from "@/components/ui/reg-card"
 import { SectionDivider } from "@/components/ui/section-divider"
@@ -27,6 +27,8 @@ interface CycleRow {
   isLoopBackCycle: boolean
   /** True when I sent a loop-back from this cycle and it's still open. */
   hasActiveLoopBack: boolean
+  /** Source rail_node type (task, approval, …). Drives the type-specific badge. */
+  sourceNodeType: string
 }
 
 interface PostHeld {
@@ -238,8 +240,11 @@ function CycleRowItem({ cycle }: { cycle: CycleRow }) {
                 >
                   {cycle.title}
                 </p>
-                {(cycle.isLoopBackCycle || cycle.hasActiveLoopBack) && (
+                {(cycle.isLoopBackCycle ||
+                  cycle.hasActiveLoopBack ||
+                  cycle.sourceNodeType === "approval") && (
                   <div className="mt-2 flex flex-wrap gap-1.5">
+                    {cycle.sourceNodeType === "approval" && <ApprovalCycleTag />}
                     {cycle.isLoopBackCycle && <LoopBackCycleTag />}
                     {cycle.hasActiveLoopBack && <ActiveLoopBackTag />}
                   </div>
@@ -402,6 +407,27 @@ function ActiveLoopBackTag() {
     >
       <CornerUpLeft className="size-3" strokeWidth={2.25} aria-hidden />
       <span>Active Loop Back</span>
+    </span>
+  )
+}
+
+function ApprovalCycleTag() {
+  // Forest green — distinguishes Approval cycles from Tasks at a glance.
+  return (
+    <span
+      className="inline-flex items-center gap-1.5 px-2 py-1"
+      style={{
+        fontFamily: "var(--font-mono)",
+        fontSize: 9,
+        fontWeight: 600,
+        letterSpacing: "0.18em",
+        color: "#fff",
+        backgroundColor: "#1F4E36",
+        textTransform: "uppercase",
+      }}
+    >
+      <CheckCheck className="size-3" strokeWidth={2.25} aria-hidden />
+      <span>Approval Needed</span>
     </span>
   )
 }

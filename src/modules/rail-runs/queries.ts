@@ -16,6 +16,8 @@ export interface MyActionCycle extends Cycle {
   railName: string
   railId: string
   postTitle: string
+  /** Source rail_node type — drives type-specific badges on the inbox tile. */
+  sourceNodeType: string
   /**
    * True when this cycle has an outstanding loop-back the user initiated —
    * the originator is blocked from completing until that re-do closes.
@@ -65,6 +67,7 @@ export async function listMyActionCycles(orgId: string, userId: string): Promise
       railName: rails.name,
       railId: rails.id,
       postTitle: posts.title,
+      sourceNodeType: railNodes.type,
     })
     .from(cycles)
     .innerJoin(postAssignments, eq(postAssignments.postId, cycles.postId))
@@ -72,6 +75,7 @@ export async function listMyActionCycles(orgId: string, userId: string): Promise
     .innerJoin(railRuns, eq(railRuns.id, cycles.railRunId))
     .innerJoin(rails, eq(rails.id, railRuns.railId))
     .innerJoin(particles, eq(particles.id, railRuns.particleId))
+    .innerJoin(railNodes, eq(railNodes.id, cycles.railNodeId))
     .where(
       and(
         eq(cycles.organizationId, orgId),

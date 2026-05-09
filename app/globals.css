@@ -56,6 +56,41 @@
   --font-mono: var(--font-plex-mono), ui-monospace, SFMono-Regular, Menlo, monospace;
 }
 
+/*
+ * Dark mode (next-themes adds `class="dark"` on <html>).
+ *
+ * Engineering blueprint translates to dark via inversion: graphite ↔ near-white,
+ * paper white → graphite, steel ↑ for visibility, orange unchanged.
+ *
+ * Many of our blueprint screens use INLINE hardcoded hex values (e.g.
+ * style={{ color: "#0F0F0F" }}) — those won't flip with these overrides.
+ * They get a per-screen pass in a follow-up. Until then dark mode looks right
+ * in: app shell + sidebar background, root surfaces, shadcn primitives,
+ * settings pages, dialogs.
+ */
+.dark {
+  --color-background: #0a0a0a;
+  --color-foreground: #f5f5f5;
+  --color-muted: #161616;
+  --color-muted-foreground: #888888;
+  --color-card: #161616;
+  --color-card-foreground: #f5f5f5;
+  --color-popover: #161616;
+  --color-popover-foreground: #f5f5f5;
+  --color-primary: #e8711a;
+  --color-primary-foreground: #ffffff;
+  --color-secondary: #3a5068;
+  --color-secondary-foreground: #f5f5f5;
+  --color-accent: #1f1f1f;
+  --color-accent-foreground: #f5f5f5;
+  --color-destructive: #d04535;
+  --color-destructive-foreground: #ffffff;
+  --color-border: #232323;
+  --color-border-strong: #2e2e2e;
+  --color-input: #2e2e2e;
+  --color-ring: #e8711a;
+}
+
 @layer base {
   /* Default border color applied via Tailwind's reset, not a global * selector. */
   *,

@@ -3,6 +3,7 @@ import type { ReactNode } from "react"
 import { IBM_Plex_Mono, IBM_Plex_Sans } from "next/font/google"
 import { Analytics } from "@vercel/analytics/next"
 import { SpeedInsights } from "@vercel/speed-insights/next"
+import { ThemeProvider } from "@/modules/org/ui/theme-provider"
 import "./globals.css"
 
 // `display: "block"` holds render until fonts arrive. Without this, the page
@@ -33,9 +34,16 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html lang="en" className={`${plexSans.variable} ${plexMono.variable}`}>
+    <html
+      lang="en"
+      className={`${plexSans.variable} ${plexMono.variable}`}
+      // suppressHydrationWarning is required by next-themes — the provider
+      // sets `class="dark"` (or not) on <html> after mount based on the user's
+      // stored preference, which differs from server-rendered state.
+      suppressHydrationWarning
+    >
       <body className="bg-background text-foreground min-h-screen antialiased">
-        {children}
+        <ThemeProvider>{children}</ThemeProvider>
         <Analytics />
         <SpeedInsights />
       </body>
