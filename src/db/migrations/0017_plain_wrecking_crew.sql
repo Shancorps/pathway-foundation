@@ -1,0 +1,1 @@
+ALTER TABLE "rail_nodes" ADD COLUMN "config" jsonb DEFAULT '{"kind":"none"}'::jsonb NOT NULL;

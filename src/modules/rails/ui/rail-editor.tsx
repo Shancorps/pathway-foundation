@@ -17,6 +17,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import {
+  addStructuralNode,
   deleteNode,
   publishRail,
   pushRailUpdateToCycles,
@@ -171,7 +172,9 @@ export function RailEditor({
               // level, but a stray click on the node body could still fire
               // this callback. Guard against opening the dialog.
               if (editsDisabled) return
-              if (node.type === "trigger") return
+              // Trigger has no edit affordance today; End has none beyond
+              // its name (deferred). Both are no-ops on click.
+              if (node.type === "trigger" || node.type === "end") return
               setEditingNode(node)
             }}
             onDelete={(node) => {
@@ -180,8 +183,20 @@ export function RailEditor({
             onAddAfter={() => {
               setShowAddTask(true)
             }}
-            onPaletteDrop={() => {
-              setShowAddTask(true)
+            onPaletteDrop={(paletteId) => {
+              if (paletteId === "task") {
+                setShowAddTask(true)
+                return
+              }
+              if (paletteId === "end") {
+                void addStructuralNode({ railId: rail.id, type: "end" }).then((result) => {
+                  if (result.serverError) alert(result.serverError)
+                  else notifyEditSaved()
+                })
+                return
+              }
+              // Other palette types aren't wired yet — palette renders them
+              // as "Soon" so this branch shouldn't fire.
             }}
             onReorder={(newIdsInOrder) => {
               void reorderNodes({ railId: rail.id, nodeIdsInOrder: newIdsInOrder }).then(

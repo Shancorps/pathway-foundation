@@ -28,6 +28,7 @@ import {
   Link as LinkIcon,
   MapPin,
   Plus,
+  StopCircle,
   X,
   Zap,
 } from "lucide-react"
@@ -149,7 +150,7 @@ export function RailCanvas(props: {
   onDelete: (node: RailNode) => void
   onAddAfter: (afterPosition: number) => void
   onReorder: (newIdsInOrder: string[]) => void
-  onPaletteDrop: () => void
+  onPaletteDrop: (paletteId: string) => void
 }) {
   return (
     <ReactFlowProvider>
@@ -177,7 +178,7 @@ function RailCanvasInner({
   onDelete: (node: RailNode) => void
   onAddAfter: (afterPosition: number) => void
   onReorder: (newIdsInOrder: string[]) => void
-  onPaletteDrop: () => void
+  onPaletteDrop: (paletteId: string) => void
 }) {
   const [layout, setLayoutState] = useState<Layout>("horizontal")
   const [positions, setPositions] = useState<StoredPositions>({})
@@ -344,13 +345,13 @@ function RailCanvasInner({
       e.preventDefault()
       if (isPublished) return
       const payload = e.dataTransfer.getData(PALETTE_DRAG_TYPE)
-      if (payload !== "task") return
-      // We don't yet thread the drop coordinates through to the new node
-      // because the add-task dialog gates the action behind a name + post
-      // pick. The new node lands at the canonical end-of-rail position; the
-      // user can drag it to the drop spot afterward.
+      if (!payload) return
+      // The drop coordinates aren't yet threaded onto the new node — for
+      // task drops the dialog gates by name + post anyway, and structural
+      // drops (End) just append. The user can drag the new node to the
+      // drop spot afterward.
       void screenToFlowPosition({ x: e.clientX, y: e.clientY })
-      onPaletteDrop()
+      onPaletteDrop(payload)
     },
     [isPublished, onPaletteDrop, screenToFlowPosition],
   )
@@ -483,10 +484,15 @@ const EDGE_TYPES = { addEdge: AddEdge }
 function RailNodeView({ data, selected }: NodeProps<Node<CanvasNodeData>>) {
   const { node, postTitle, postVacant, isPublished, onEdit, onDelete } = data
   const isTrigger = node.type === "trigger"
-  const accentColor = isTrigger ? "#E8711A" : "#2A3D52"
+  const isEnd = node.type === "end"
+  const isTask = node.type === "task"
+  // Color & icon by type. Future types (sub_flow, statistic, approval) get
+  // their own accents when their runtime ships.
+  const accentColor = isTrigger ? "#E8711A" : isEnd ? "#B83229" : "#2A3D52"
   const checklistCount = Array.isArray(node.checklistItems) ? node.checklistItems.length : 0
   const toolsCount = Array.isArray(node.toolsLinks) ? node.toolsLinks.length : 0
   const hasIdeal = node.idealMinutes != null && node.idealMinutes > 0
+  // Trigger is structural and required; End is structural but removable.
   const canDelete = !isPublished && !isTrigger
 
   const handleClick = () => {
@@ -516,6 +522,13 @@ function RailNodeView({ data, selected }: NodeProps<Node<CanvasNodeData>>) {
               className="size-3.5 shrink-0"
               strokeWidth={2}
               style={{ color: "#E8711A" }}
+              aria-hidden
+            />
+          ) : isEnd ? (
+            <StopCircle
+              className="size-3.5 shrink-0"
+              strokeWidth={2}
+              style={{ color: "#B83229" }}
               aria-hidden
             />
           ) : (
@@ -553,7 +566,7 @@ function RailNodeView({ data, selected }: NodeProps<Node<CanvasNodeData>>) {
         </div>
 
         <div className="mt-1.5 flex items-center justify-between gap-3">
-          {!isTrigger ? (
+          {isTask ? (
             <div className="flex min-w-0 items-center gap-1">
               <MapPin
                 className="size-3 shrink-0"
@@ -583,15 +596,15 @@ function RailNodeView({ data, selected }: NodeProps<Node<CanvasNodeData>>) {
                 fontSize: 10,
                 fontWeight: 600,
                 letterSpacing: "0.16em",
-                color: "#888",
+                color: isEnd ? "#B83229" : "#888",
                 textTransform: "uppercase",
               }}
             >
-              Manual start
+              {isEnd ? "Terminator · run completes here" : "Manual start"}
             </p>
           )}
 
-          {!isTrigger && (checklistCount > 0 || toolsCount > 0 || hasIdeal) && (
+          {isTask && (checklistCount > 0 || toolsCount > 0 || hasIdeal) && (
             <div className="flex shrink-0 items-center gap-2.5">
               {checklistCount > 0 && (
                 <Stat icon={<CheckSquare className="size-3" strokeWidth={1.75} aria-hidden />}>

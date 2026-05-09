@@ -87,7 +87,13 @@ async function findFirstTaskNode(ctx: Ctx, railId: string) {
   return row ?? null
 }
 
-async function findNextTaskNode(ctx: Ctx, railId: string, afterPosition: number) {
+/**
+ * Find the next node in the rail after the given position, regardless of
+ * type. completeCycle inspects the node's type to decide whether to issue a
+ * cycle (task/approval/statistic-enter) or to auto-resolve (end / sub-flow /
+ * statistic-count / statistic-manifest).
+ */
+async function findNextNode(ctx: Ctx, railId: string, afterPosition: number) {
   const [row] = await ctx.db
     .select()
     .from(railNodes)
@@ -95,7 +101,6 @@ async function findNextTaskNode(ctx: Ctx, railId: string, afterPosition: number)
       and(
         eq(railNodes.railId, railId),
         eq(railNodes.organizationId, ctx.activeOrg.id),
-        eq(railNodes.type, "task"),
         gt(railNodes.position, afterPosition),
         isNull(railNodes.deletedAt),
       ),
@@ -437,13 +442,29 @@ export const completeCycle = orgAction
       // Shouldn't happen given FK + load check above, but guard anyway.
       throw new ActionError("NOT_FOUND", "Rail run not found")
     }
-    const nextNode = await findNextTaskNode(ctx, run.railId, cycle.position)
-
+    // Find the next node after this cycle and decide what to do based on its
+    // type. Future commits will turn this into a loop that auto-resolves
+    // chained structural nodes (e.g., Task → Statistic-count → Sub-Flow →
+    // Task), but with only End added today the single lookup is enough.
     let nextCycleId: string | null = null
-    if (nextNode) {
-      nextCycleId = await issueCycleForNode(ctx, run.id, nextNode)
+    let runFinished = false
+    let endReached = false
+    const next = await findNextNode(ctx, run.railId, cycle.position)
+    if (!next) {
+      runFinished = true
+    } else if (next.type === "end") {
+      runFinished = true
+      endReached = true
+    } else if (next.type === "task") {
+      nextCycleId = await issueCycleForNode(ctx, run.id, next)
     } else {
-      // Run is complete.
+      // sub_flow / statistic / approval — runtime not implemented yet, but
+      // the publish-time validation should keep these out of any published
+      // rail until their semantics ship.
+      throw new ActionError("VALIDATION", `Unsupported node type at runtime: ${next.type}`)
+    }
+
+    if (runFinished) {
       await ctx.db
         .update(railRuns)
         .set({
@@ -470,14 +491,15 @@ export const completeCycle = orgAction
         metadata: {
           runId: run.id,
           nextCycleId,
-          runFinished: !nextNode,
+          runFinished,
+          endReached,
           timeSpentMinutes,
         },
       },
     )
     revalidatePath(MY_ACTIONS_PATH)
     revalidatePath(`${MY_ACTIONS_PATH}/${cycle.id}`)
-    return { id: cycle.id, nextCycleId, runFinished: !nextNode }
+    return { id: cycle.id, nextCycleId, runFinished }
   })
 
 /**

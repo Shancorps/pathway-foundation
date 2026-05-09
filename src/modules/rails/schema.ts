@@ -12,13 +12,61 @@ export const railStatuses = ["draft", "published"] as const
 export type RailStatus = (typeof railStatuses)[number]
 
 /**
- * Node types the kernel supports. The alpha shows many more (Initialize,
- * Condition, Parallel, End, Approval, Statistic, Manifest, Sub-Flow, Agent,
- * Integration). The kernel proves the conveyor belt with the minimum two —
- * future phases extend this enum.
+ * Node types. The conveyor model classifies nodes by who/what advances them:
+ *
+ * - **trigger** — defines how a rail run begins. Auto. Always exactly one.
+ * - **task** — assigned step at a Terminal. Issues a cycle to a Post holder.
+ * - **end** — terminator. Auto-resolves: when reached, the rail run is
+ *   completed. A rail must have at least one End at publish time.
+ * - **approval** — Task variant that asks for an Approve/Reject decision.
+ *   Issues a cycle to a Post holder; UI surfaces approve/reject affordances.
+ * - **statistic** — records a stat value at a step. Auto when value comes
+ *   from a manifest field or a +1 count; cycle-issuing only when the
+ *   assignee must enter the value by hand.
+ * - **sub_flow** — auto. When reached, a child rail_run is initiated with
+ *   the same particle handoff; parent pauses until the child hits End if
+ *   `waitForCompletion` is set.
+ *
+ * Future (need additional infra): condition (branches via predicate +
+ * rail_edges), parallel (forks via rail_edges), initialize (gate at run
+ * start; needs the manifest module).
  */
-export const railNodeTypes = ["trigger", "task"] as const
+export const railNodeTypes = [
+  "trigger",
+  "task",
+  "end",
+  "approval",
+  "statistic",
+  "sub_flow",
+] as const
 export type RailNodeType = (typeof railNodeTypes)[number]
+
+/**
+ * Per-type configuration for nodes that need extra parameters beyond the
+ * shared columns (postId, checklistItems, toolsLinks, idealMinutes,
+ * description). Stored as jsonb so each new node type can extend its config
+ * shape without a schema migration.
+ *
+ * - sub_flow → { targetRailId, waitForCompletion }
+ * - statistic → { statisticId, valueMode: "count" | "enter" | "manifest", manifestField? }
+ * - approval → { mode: "approve_reject" | "with_reason", onRejection: "loop_back" | "end" | "branch", loopBackToNodeId? }
+ * - end / task / trigger → empty {}
+ */
+export type RailNodeConfig =
+  | { kind: "sub_flow"; targetRailId: string | null; waitForCompletion: boolean }
+  | {
+      kind: "statistic"
+      statisticId: string | null
+      valueMode: "count" | "enter" | "manifest"
+      manifestField: string | null
+    }
+  | {
+      kind: "approval"
+      mode: "approve_reject" | "with_reason"
+      onRejection: "loop_back" | "end" | "branch"
+      loopBackToNodeId: string | null
+    }
+  | { kind: "none" }
 
 /**
  * One sub-step a worker ticks off while running a Task. The Task is the Cycle;
@@ -99,6 +147,10 @@ export const railNodes = pgTable(
     // Target time to complete this Cycle, in minutes. Snapshotted onto each
     // Cycle when issued, then displayed alongside actual elapsed time.
     idealMinutes: integer("ideal_minutes"),
+    // Per-type configuration. Empty {} for trigger / task / end. See
+    // RailNodeConfig for the typed shapes per node type. Stored as jsonb so
+    // adding a new node type doesn't require a migration.
+    config: jsonb("config").$type<RailNodeConfig>().notNull().default({ kind: "none" }),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
     createdBy: text("created_by").references(() => user.id, { onDelete: "set null" }),

@@ -45,6 +45,17 @@ export const addTaskNodeInput = z.object({
   idealMinutes: z.number().int().positive().optional(),
 })
 
+/**
+ * Add a structural node (End for now; Sub-Flow / Statistic / Approval as
+ * those types ship). Doesn't take a Post — auto-resolving nodes don't issue
+ * cycles to people. Defaults the name from the type if none given.
+ */
+export const addStructuralNodeInput = z.object({
+  railId: z.string(),
+  type: z.enum(["end"]),
+  name: z.string().min(1).max(200).optional(),
+})
+
 export const updateNodeInput = z.object({
   id: z.string(),
   name: z.string().min(1).max(200).optional(),

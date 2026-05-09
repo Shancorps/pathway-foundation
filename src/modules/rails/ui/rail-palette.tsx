@@ -85,10 +85,10 @@ const RAIL_GROUP: PaletteNode[] = [
   {
     id: "end",
     label: "End",
-    hint: "End the flow",
+    hint: "Terminate the rail",
     icon: StopCircle,
-    iconColor: "#888",
-    enabled: false,
+    iconColor: "#B83229",
+    enabled: true,
   },
 ]
 

@@ -16,6 +16,7 @@ import {
 } from "./schema"
 import { cycles, type CycleChecklistItem } from "@/modules/rail-runs/schema"
 import {
+  addStructuralNodeInput,
   addTaskNodeInput,
   createRailInput,
   deleteNodeInput,
@@ -321,6 +322,49 @@ export const addTaskNode = orgAction
     return { id }
   })
 
+/**
+ * Add a structural node (currently End; future: Sub-Flow, Statistic, Approval).
+ * Goes at the end of the rail. Default name comes from the type — the user
+ * can rename via Edit on the canvas.
+ */
+export const addStructuralNode = orgAction
+  .metadata({ actionName: "rails.structural_added" })
+  .inputSchema(addStructuralNodeInput)
+  .action(async ({ parsedInput, ctx }) => {
+    const rail = await loadRail(ctx, parsedInput.railId)
+    void rail
+    const [maxRow] = await ctx.db
+      .select({ maxPosition: max(railNodes.position) })
+      .from(railNodes)
+      .where(and(eq(railNodes.railId, rail.id), isNull(railNodes.deletedAt)))
+    const nextPosition = (maxRow?.maxPosition ?? 0) + 1
+    const defaultNames: Record<string, string> = { end: "End" }
+    const id = createId()
+    await ctx.db.insert(railNodes).values({
+      id,
+      organizationId: ctx.activeOrg.id,
+      railId: rail.id,
+      type: parsedInput.type,
+      name: parsedInput.name ?? defaultNames[parsedInput.type] ?? "Node",
+      position: nextPosition,
+      createdBy: ctx.session.user.id,
+      updatedBy: ctx.session.user.id,
+    })
+    await audit(
+      {
+        db: ctx.db,
+        organizationId: ctx.activeOrg.id,
+        actorUserId: ctx.session.user.id,
+        ipAddress: ctx.ipAddress,
+        userAgent: ctx.userAgent,
+      },
+      `rails.${parsedInput.type}_added`,
+      { resourceType: "rail_node", resourceId: id, metadata: { railId: rail.id } },
+    )
+    revalidatePath(`${RAILS_PATH}/${rail.id}`)
+    return { id }
+  })
+
 async function loadNode(
   ctx: Parameters<Parameters<typeof orgAction.action>[0]>[0]["ctx"],
   nodeId: string,
@@ -491,6 +535,26 @@ export const publishRail = orgAction
     const tasks = nodes.filter((n) => n.type === "task")
     if (tasks.length === 0) {
       throw new ActionError("VALIDATION", "Rail must have at least one Task")
+    }
+    // Every rail must terminate at an End node. Runs without one fall off
+    // the conveyor belt (last task completes → run auto-completes by
+    // implicit terminator), but the spec requires an explicit End so the
+    // canvas reads as a complete graph.
+    if (!nodes.some((n) => n.type === "end")) {
+      throw new ActionError(
+        "VALIDATION",
+        "Rail needs an End node — drag one from the palette and place it after the last Task.",
+      )
+    }
+    // Block publishing rails that reference node types whose runtime hasn't
+    // shipped yet — would produce a "Unsupported node type at runtime" error
+    // mid-run otherwise.
+    const unsupported = nodes.find((n) => !["trigger", "task", "end"].includes(n.type))
+    if (unsupported) {
+      throw new ActionError(
+        "VALIDATION",
+        `Node "${unsupported.name}" uses type "${unsupported.type}" which doesn't have a runtime yet — remove it before publishing.`,
+      )
     }
     const missingPost = tasks.find((t) => !t.postId)
     if (missingPost) {
