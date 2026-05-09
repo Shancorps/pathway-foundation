@@ -331,7 +331,33 @@ export function RailEditor({
 
         {view === "canvas" && (
           <div className="space-y-3">
-            <RailCanvas nodes={nodes} posts={posts} />
+            <RailCanvas
+              nodes={nodes}
+              posts={posts}
+              isPublished={isPublished}
+              onEdit={(node) => {
+                if (node.type === "trigger") return
+                setEditingNode(node)
+              }}
+              onDelete={(node) => {
+                void handleDeleteNode(node)
+              }}
+              onAddAfter={() => {
+                // The add-task action puts the new node at the end of the
+                // rail; rolling "insert at position" into the action is a
+                // future ticket. For now any "+" opens the add dialog and
+                // the result lands as the next-to-last task.
+                setShowAddTask(true)
+              }}
+              onReorder={(newIdsInOrder) => {
+                void reorderNodes({ railId: rail.id, nodeIdsInOrder: newIdsInOrder }).then(
+                  (result) => {
+                    if (result.serverError) alert(result.serverError)
+                    else router.refresh()
+                  },
+                )
+              }}
+            />
             <p
               style={{
                 fontFamily: "var(--font-mono)",
@@ -342,7 +368,9 @@ export function RailEditor({
                 textTransform: "uppercase",
               }}
             >
-              Read-only · Switch to Steps to add, edit, or reorder
+              {isPublished
+                ? "Published · Unpublish to edit"
+                : "Click a node to edit · Drag to reorder · + to add · × to delete"}
             </p>
           </div>
         )}
