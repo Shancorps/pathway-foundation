@@ -653,15 +653,22 @@ function TrailingAddNode({ data }: NodeProps<Node<TrailingAddData>>) {
   return (
     <button
       type="button"
+      // `nodrag nopan` tells xyflow to ignore drag/pan starts on this element.
+      // Stopping pointerdown propagation prevents xyflow's selection handler
+      // from swallowing the click before it reaches onClick.
+      className="nodrag nopan grid size-11 place-items-center bg-white transition-colors hover:bg-[#FFF8F1]"
+      onPointerDown={(e) => {
+        e.stopPropagation()
+      }}
       onClick={(e) => {
         e.stopPropagation()
         onAdd()
       }}
-      className="grid size-11 place-items-center bg-white transition-colors hover:bg-[#FFF8F1]"
       style={{
         border: "1.5px dashed #E8711A",
         cursor: "pointer",
         color: "#E8711A",
+        pointerEvents: "all",
       }}
       aria-label="Add task at end"
       title="Add task at end"

@@ -1,7 +1,8 @@
 import "server-only"
-import { and, asc, eq, isNull } from "drizzle-orm"
+import { and, asc, eq, isNull, sql } from "drizzle-orm"
 import { db } from "@/lib/db"
 import { particleTypes } from "@/modules/particles/schema"
+import { railRuns } from "@/modules/rail-runs/schema"
 import { railNodes, rails } from "./schema"
 
 interface ListOptions {
@@ -64,6 +65,25 @@ export async function getRailWithNodes(orgId: string, id: string, opts: ListOpti
   if (!rail) return null
   const nodes = await listNodesForRail(orgId, rail.id, opts)
   return { rail, nodes }
+}
+
+/**
+ * Count of currently-running rail_runs for a rail. Drives the "Editing a
+ * published rail with N runs in progress" warning in the builder.
+ */
+export async function countRunningRunsForRail(orgId: string, railId: string): Promise<number> {
+  const [row] = await db
+    .select({ n: sql<number>`count(*)::int` })
+    .from(railRuns)
+    .where(
+      and(
+        eq(railRuns.organizationId, orgId),
+        eq(railRuns.railId, railId),
+        eq(railRuns.status, "running"),
+        isNull(railRuns.deletedAt),
+      ),
+    )
+  return row?.n ?? 0
 }
 
 export async function listRailsForParticleType(orgId: string, particleTypeId: string) {

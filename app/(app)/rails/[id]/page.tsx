@@ -2,7 +2,7 @@ import { notFound, redirect } from "next/navigation"
 import { getSession } from "@/modules/auth/session"
 import { listContainersForOrg, listPostsForOrg } from "@/modules/org-structure/queries"
 import { getParticleType } from "@/modules/particles/queries"
-import { getRailWithNodes } from "@/modules/rails/queries"
+import { countRunningRunsForRail, getRailWithNodes } from "@/modules/rails/queries"
 import { RailEditor } from "@/modules/rails/ui/rail-editor"
 
 export default async function RailEditPage({ params }: { params: Promise<{ id: string }> }) {
@@ -15,10 +15,11 @@ export default async function RailEditPage({ params }: { params: Promise<{ id: s
   const railWithNodes = await getRailWithNodes(orgId, id)
   if (!railWithNodes) notFound()
 
-  const [posts, containers, particleType] = await Promise.all([
+  const [posts, containers, particleType, runningRunCount] = await Promise.all([
     listPostsForOrg(orgId),
     listContainersForOrg(orgId),
     getParticleType(orgId, railWithNodes.rail.particleTypeId),
+    countRunningRunsForRail(orgId, railWithNodes.rail.id),
   ])
   const containerById = new Map(containers.map((c) => [c.id, c.name]))
 
@@ -29,6 +30,7 @@ export default async function RailEditPage({ params }: { params: Promise<{ id: s
       rail={railWithNodes.rail}
       nodes={railWithNodes.nodes}
       particleTypeName={particleType?.name ?? null}
+      runningRunCount={runningRunCount}
       posts={posts.map((p) => ({
         id: p.id,
         title: p.title,

@@ -278,9 +278,10 @@ export const addTaskNode = orgAction
   .inputSchema(addTaskNodeInput)
   .action(async ({ parsedInput, ctx }) => {
     const rail = await loadRail(ctx, parsedInput.railId)
-    if (rail.status === "published") {
-      throw new ActionError("CONFLICT", "Unpublish before editing nodes")
-    }
+    // Editing a published rail is allowed — cycles already issued keep their
+    // snapshot of the old data, so in-progress work isn't disturbed. New
+    // cycles will reference the updated rail nodes.
+    void rail
     await assertPostInOrg(ctx, parsedInput.postId)
     const [maxRow] = await ctx.db
       .select({ maxPosition: max(railNodes.position) })
@@ -343,9 +344,9 @@ export const updateNode = orgAction
   .action(async ({ parsedInput, ctx }) => {
     const node = await loadNode(ctx, parsedInput.id)
     const rail = await loadRail(ctx, node.railId)
-    if (rail.status === "published") {
-      throw new ActionError("CONFLICT", "Unpublish before editing nodes")
-    }
+    // Edits on published rails are permitted; the snapshot model on cycles
+    // protects in-progress work from being disturbed.
+    void rail
     if (
       node.type === "trigger" &&
       parsedInput.postId !== undefined &&
@@ -403,9 +404,7 @@ export const deleteNode = orgAction
   .action(async ({ parsedInput, ctx }) => {
     const node = await loadNode(ctx, parsedInput.id)
     const rail = await loadRail(ctx, node.railId)
-    if (rail.status === "published") {
-      throw new ActionError("CONFLICT", "Unpublish before editing nodes")
-    }
+    void rail // edits permitted on published rails — see snapshot semantics on cycles
     if (node.type === "trigger") {
       throw new ActionError("VALIDATION", "The Trigger node is required and cannot be deleted")
     }
@@ -442,9 +441,9 @@ export const reorderNodes = orgAction
   .inputSchema(reorderNodesInput)
   .action(async ({ parsedInput, ctx }) => {
     const rail = await loadRail(ctx, parsedInput.railId)
-    if (rail.status === "published") {
-      throw new ActionError("CONFLICT", "Unpublish before reordering nodes")
-    }
+    // Reordering a published rail is permitted; in-progress cycles snapshot
+    // their position at issue time so they aren't disturbed.
+    void rail
     const existing = await ctx.db
       .select({ id: railNodes.id, type: railNodes.type })
       .from(railNodes)

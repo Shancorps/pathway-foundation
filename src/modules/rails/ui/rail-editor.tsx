@@ -1,9 +1,9 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { ArrowLeft, Settings as SettingsIcon, X } from "lucide-react"
+import { AlertTriangle, ArrowLeft, Lock, Settings as SettingsIcon, Unlock, X } from "lucide-react"
 import { BlueprintButton } from "@/components/ui/blueprint-button"
 import {
   Dialog,
@@ -29,22 +29,49 @@ import { TaskNodeDialog, type PostOption } from "./task-node-dialog"
  * delete a Task — happens on the canvas; clicking a node opens
  * TaskNodeDialog.
  */
+const LOCK_STORAGE_PREFIX = "pathway.rail-canvas.locked"
+function lockKey(railId: string) {
+  return `${LOCK_STORAGE_PREFIX}.${railId}`
+}
+
 export function RailEditor({
   rail,
   nodes,
   posts,
   particleTypeName,
+  runningRunCount,
 }: {
   rail: Rail
   nodes: RailNode[]
   posts: PostOption[]
   particleTypeName: string | null
+  runningRunCount: number
 }) {
   const router = useRouter()
   const isPublished = rail.status === "published"
   const [showAddTask, setShowAddTask] = useState(false)
   const [editingNode, setEditingNode] = useState<RailNode | null>(null)
   const [showSettings, setShowSettings] = useState(false)
+
+  // Client-side UI lock — prevents accidental edits even on draft rails. Per
+  // browser per rail. Independent of publish state.
+  const [locked, setLockedState] = useState(false)
+  useEffect(() => {
+    if (typeof window === "undefined") return
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- localStorage hydrate
+    setLockedState(window.localStorage.getItem(lockKey(rail.id)) === "1")
+  }, [rail.id])
+  const setLocked = (next: boolean) => {
+    setLockedState(next)
+    if (typeof window !== "undefined") {
+      window.localStorage.setItem(lockKey(rail.id), next ? "1" : "0")
+    }
+  }
+
+  // The canvas treats a locked rail like a published one for editing
+  // purposes — no drag, no add, no delete. Edits flow through actions which
+  // are still permissive at the server, so unlocking + editing is enough.
+  const editsDisabled = locked
 
   async function handlePublish() {
     const result = await publishRail({ id: rail.id })
@@ -78,6 +105,10 @@ export function RailEditor({
         rail={rail}
         particleTypeName={particleTypeName}
         isPublished={isPublished}
+        locked={locked}
+        onToggleLock={() => {
+          setLocked(!locked)
+        }}
         onOpenSettings={() => {
           setShowSettings(true)
         }}
@@ -89,14 +120,16 @@ export function RailEditor({
         }}
       />
 
+      {isPublished && runningRunCount > 0 && <PublishedEditingBanner runCount={runningRunCount} />}
+
       <div className="flex min-h-0 flex-1">
-        <RailPalette disabled={isPublished} />
+        <RailPalette disabled={editsDisabled} />
         <main className="min-w-0 flex-1">
           <RailCanvas
             railId={rail.id}
             nodes={nodes}
             posts={posts}
-            isPublished={isPublished}
+            isPublished={editsDisabled}
             onEdit={(node) => {
               if (node.type === "trigger") return
               setEditingNode(node)
@@ -159,6 +192,8 @@ function TopBar({
   rail,
   particleTypeName,
   isPublished,
+  locked,
+  onToggleLock,
   onOpenSettings,
   onPublish,
   onUnpublish,
@@ -166,6 +201,8 @@ function TopBar({
   rail: Rail
   particleTypeName: string | null
   isPublished: boolean
+  locked: boolean
+  onToggleLock: () => void
   onOpenSettings: () => void
   onPublish: () => void
   onUnpublish: () => void
@@ -269,6 +306,27 @@ function TopBar({
       </div>
 
       <StatusPill isPublished={isPublished} />
+
+      <button
+        type="button"
+        onClick={onToggleLock}
+        aria-label={locked ? "Unlock canvas" : "Lock canvas"}
+        title={
+          locked ? "Locked — click to unlock" : "Click to lock canvas (prevents accidental edits)"
+        }
+        className="grid size-7 place-items-center transition-colors"
+        style={{
+          border: `1px solid ${locked ? "#E8711A" : "#D4D4D4"}`,
+          backgroundColor: locked ? "#FFF8F1" : "#fff",
+          color: locked ? "#E8711A" : "#0F0F0F",
+        }}
+      >
+        {locked ? (
+          <Lock className="size-3.5" strokeWidth={2} aria-hidden />
+        ) : (
+          <Unlock className="size-3.5" strokeWidth={2} aria-hidden />
+        )}
+      </button>
 
       <button
         type="button"
@@ -416,5 +474,50 @@ function RailSettingsDialog({
         </form>
       </DialogContent>
     </Dialog>
+  )
+}
+
+function PublishedEditingBanner({ runCount }: { runCount: number }) {
+  return (
+    <div
+      className="flex shrink-0 items-start gap-3 px-5 py-3"
+      style={{
+        backgroundColor: "#FFF8F1",
+        borderBottom: "1px solid #E8711A",
+      }}
+    >
+      <AlertTriangle
+        className="mt-0.5 size-4 shrink-0"
+        style={{ color: "#E8711A" }}
+        strokeWidth={2}
+        aria-hidden
+      />
+      <div className="min-w-0 flex-1">
+        <p
+          style={{
+            fontFamily: "var(--font-mono)",
+            fontSize: 10,
+            fontWeight: 600,
+            letterSpacing: "0.2em",
+            color: "#E8711A",
+            textTransform: "uppercase",
+          }}
+        >
+          Published · {String(runCount)} run{runCount === 1 ? "" : "s"} in progress
+        </p>
+        <p
+          className="mt-1"
+          style={{
+            fontFamily: "var(--font-sans)",
+            fontSize: 13,
+            color: "#0F0F0F",
+            lineHeight: 1.5,
+          }}
+        >
+          Edits apply to <strong>new cycles only</strong>. In-progress cycles keep the snapshot they
+          were issued with — your changes won&rsquo;t interrupt running work.
+        </p>
+      </div>
+    </div>
   )
 }
