@@ -84,12 +84,14 @@ export const createParticleInput = z.object({
   particleTypeId: z.string(),
   name: z.string().min(1).max(200),
   data: z.record(z.string(), z.unknown()).optional(),
+  parentParticleId: z.string().nullable().optional(),
 })
 
 export const updateParticleInput = z.object({
   id: z.string(),
   name: z.string().min(1).max(200).optional(),
   data: z.record(z.string(), z.unknown()).optional(),
+  parentParticleId: z.string().nullable().optional(),
 })
 
 export const deleteParticleInput = z.object({ id: z.string() })

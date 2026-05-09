@@ -178,6 +178,76 @@ describe("particles module — db-level invariants", () => {
     })
   })
 
+  it("supports parent → child particle relationships (Client → Car pattern)", async () => {
+    await withTestDb(async (db) => {
+      const userId = await createUser(db)
+      const orgId = await createOrganization(db, userId)
+
+      const clientTypeId = createId()
+      const carTypeId = createId()
+      await db.insert(particleTypes).values([
+        { id: clientTypeId, organizationId: orgId, name: "Client" },
+        { id: carTypeId, organizationId: orgId, name: "Car" },
+      ])
+
+      const janeId = createId()
+      const civicId = createId()
+      const accordId = createId()
+      await db.insert(particles).values([
+        { id: janeId, organizationId: orgId, particleTypeId: clientTypeId, name: "Jane" },
+        {
+          id: civicId,
+          organizationId: orgId,
+          particleTypeId: carTypeId,
+          name: "Honda Civic",
+          parentParticleId: janeId,
+        },
+        {
+          id: accordId,
+          organizationId: orgId,
+          particleTypeId: carTypeId,
+          name: "Honda Accord",
+          parentParticleId: janeId,
+        },
+      ])
+
+      // Children of Jane
+      const childrenOfJane = await db
+        .select({ id: particles.id, name: particles.name })
+        .from(particles)
+        .where(
+          and(
+            eq(particles.organizationId, orgId),
+            eq(particles.parentParticleId, janeId),
+            isNull(particles.deletedAt),
+          ),
+        )
+      expect(childrenOfJane.map((c) => c.name).sort()).toEqual(["Honda Accord", "Honda Civic"])
+    })
+  })
+
+  it("FK on particles.parent_particle_id is RESTRICT (parent can't be hard-deleted while children reference it)", async () => {
+    await withTestDb(async (db) => {
+      const userId = await createUser(db)
+      const orgId = await createOrganization(db, userId)
+      const typeId = createId()
+      await db.insert(particleTypes).values({ id: typeId, organizationId: orgId, name: "C" })
+      const parentId = createId()
+      const childId = createId()
+      await db.insert(particles).values([
+        { id: parentId, organizationId: orgId, particleTypeId: typeId, name: "Parent" },
+        {
+          id: childId,
+          organizationId: orgId,
+          particleTypeId: typeId,
+          name: "Child",
+          parentParticleId: parentId,
+        },
+      ])
+      await expect(db.delete(particles).where(eq(particles.id, parentId))).rejects.toThrow()
+    })
+  })
+
   it("FK on particles.particle_type_id is RESTRICT (hard delete blocked while instances exist)", async () => {
     await withTestDb(async (db) => {
       const userId = await createUser(db)

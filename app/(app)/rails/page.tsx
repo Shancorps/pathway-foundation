@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation"
 import { getSession } from "@/modules/auth/session"
-import { listParticleTypes } from "@/modules/particles/queries"
+import { listParticlesForOrg, listParticleTypes } from "@/modules/particles/queries"
 import { listRailsForOrg } from "@/modules/rails/queries"
 import { RailsList } from "@/modules/rails/ui/rails-list"
 
@@ -10,9 +10,10 @@ export default async function RailsPage() {
   const orgId = session.session.activeOrganizationId
   if (!orgId) redirect("/onboarding/create-organization")
 
-  const [rails, particleTypes] = await Promise.all([
+  const [rails, particleTypes, particles] = await Promise.all([
     listRailsForOrg(orgId),
     listParticleTypes(orgId),
+    listParticlesForOrg(orgId),
   ])
 
   return (
@@ -32,10 +33,16 @@ export default async function RailsPage() {
           id: r.id,
           name: r.name,
           description: r.description,
+          particleTypeId: r.particleTypeId,
           particleTypeName: r.particleTypeName,
           status: r.status,
         }))}
         particleTypes={particleTypes.map((pt) => ({ id: pt.id, name: pt.name }))}
+        particles={particles.map((p) => ({
+          id: p.id,
+          name: p.name,
+          particleTypeId: p.particleTypeId,
+        }))}
       />
     </div>
   )

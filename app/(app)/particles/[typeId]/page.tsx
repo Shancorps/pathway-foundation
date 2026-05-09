@@ -3,7 +3,11 @@ import { notFound, redirect } from "next/navigation"
 import { Plus, Settings } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { getSession } from "@/modules/auth/session"
-import { getParticleType, listParticlesForType } from "@/modules/particles/queries"
+import {
+  getParticleType,
+  listParticlesForType,
+  listParticlesWithTypeForOrg,
+} from "@/modules/particles/queries"
 import { InstanceList } from "@/modules/particles/ui/instance-list"
 
 export default async function ParticleInstanceListPage({
@@ -17,9 +21,13 @@ export default async function ParticleInstanceListPage({
   const orgId = session.session.activeOrganizationId
   if (!orgId) redirect("/onboarding/create-organization")
 
-  const type = await getParticleType(orgId, typeId)
+  const [type, instances, allOrgParticles] = await Promise.all([
+    getParticleType(orgId, typeId),
+    listParticlesForType(orgId, typeId),
+    listParticlesWithTypeForOrg(orgId),
+  ])
   if (!type) notFound()
-  const instances = await listParticlesForType(orgId, typeId)
+  const parentMap = new Map(allOrgParticles.map((p) => [p.id, p.name]))
 
   // Show up to the first 3 fields as preview columns.
   const previewKeys = type.fields
@@ -64,6 +72,7 @@ export default async function ParticleInstanceListPage({
           name: p.name,
           data: p.data,
           createdAt: p.createdAt.toISOString(),
+          parentName: p.parentParticleId ? (parentMap.get(p.parentParticleId) ?? null) : null,
         }))}
       />
     </div>

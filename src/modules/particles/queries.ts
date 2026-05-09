@@ -60,6 +60,26 @@ export async function getParticle(orgId: string, id: string, opts: ListOptions =
   return row ?? null
 }
 
+/**
+ * All particles in an org keyed for parent-picker dropdowns. Returned with the
+ * Particle Type name so the picker can group/label entries (e.g. "Jane —
+ * Client", "Honda Civic — Car").
+ */
+export async function listParticlesWithTypeForOrg(orgId: string) {
+  return db
+    .select({
+      id: particles.id,
+      name: particles.name,
+      particleTypeId: particles.particleTypeId,
+      typeName: particleTypes.name,
+      parentParticleId: particles.parentParticleId,
+    })
+    .from(particles)
+    .innerJoin(particleTypes, eq(particles.particleTypeId, particleTypes.id))
+    .where(and(eq(particles.organizationId, orgId), isNull(particles.deletedAt)))
+    .orderBy(asc(particleTypes.name), asc(particles.name))
+}
+
 /** Map of particle_type_id → count of live instances. Used to render badges on the Types index. */
 export async function particleCountByType(orgId: string) {
   const rows = await db

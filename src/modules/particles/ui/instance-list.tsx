@@ -11,6 +11,7 @@ interface ParticleRow {
   name: string
   data: Record<string, unknown>
   createdAt: string
+  parentName: string | null
 }
 
 function formatPreview(v: unknown): string {
@@ -49,12 +50,15 @@ export function InstanceList({
     )
   }
 
+  const showParentColumn = particles.some((p) => p.parentName !== null)
+
   return (
     <div className="overflow-hidden rounded-lg border border-[var(--color-border)]">
       <table className="w-full text-sm">
         <thead className="bg-[var(--color-muted)]/30">
           <tr className="text-left text-xs tracking-wide text-[var(--color-muted-foreground)] uppercase">
             <th className="px-3 py-2">Name</th>
+            {showParentColumn && <th className="px-3 py-2">Parent</th>}
             {previewKeys.map((p) => (
               <th key={p.key} className="px-3 py-2">
                 {p.label}
@@ -71,6 +75,11 @@ export function InstanceList({
                   {p.name}
                 </Link>
               </td>
+              {showParentColumn && (
+                <td className="px-3 py-2 text-[var(--color-muted-foreground)]">
+                  {p.parentName ?? "—"}
+                </td>
+              )}
               {previewKeys.map((pk) => {
                 const v = p.data[pk.key]
                 return (

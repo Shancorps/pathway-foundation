@@ -6,6 +6,7 @@ import { files } from "@/modules/files/schema"
 import { orgContainers, posts } from "@/modules/org-structure/schema"
 import { particleTypes, particles } from "@/modules/particles/schema"
 import { railNodes, rails } from "@/modules/rails/schema"
+import { cycles, railRuns } from "@/modules/rail-runs/schema"
 import { audit } from "@/modules/audit/audit"
 import { blob } from "@/lib/blob"
 import { log } from "@/lib/log"
@@ -126,6 +127,59 @@ export async function GET(request: Request) {
         postRows.map((r) => r.id),
       ),
     )
+  }
+
+  // -------- Cycles --------
+  // Cycles must be purged BEFORE rail_runs / rail_nodes / posts (all FK RESTRICT).
+  const cycleRows = await db
+    .select({ id: cycles.id, organizationId: cycles.organizationId })
+    .from(cycles)
+    .where(and(isNotNull(cycles.deletedAt), lt(cycles.deletedAt, cutoff)))
+    .limit(BATCH_LIMIT)
+
+  const cycleOrgCounts = new Map<string, number>()
+  for (const r of cycleRows) {
+    cycleOrgCounts.set(r.organizationId, (cycleOrgCounts.get(r.organizationId) ?? 0) + 1)
+  }
+  for (const [orgId, count] of cycleOrgCounts) {
+    await audit({ db, organizationId: orgId, actorUserId: null }, "purge.cycles", {
+      metadata: { count, retentionDays: RETENTION_DAYS },
+    })
+  }
+  if (cycleRows.length > 0) {
+    await db.delete(cycles).where(
+      inArray(
+        cycles.id,
+        cycleRows.map((r) => r.id),
+      ),
+    )
+  }
+
+  // -------- Rail Runs --------
+  // Must follow cycles (FK RESTRICT) and precede rails / particles (the FKs it holds).
+  const runRows = await db
+    .select({ id: railRuns.id, organizationId: railRuns.organizationId })
+    .from(railRuns)
+    .where(and(isNotNull(railRuns.deletedAt), lt(railRuns.deletedAt, cutoff)))
+    .limit(BATCH_LIMIT)
+
+  const runOrgCounts = new Map<string, number>()
+  for (const r of runRows) {
+    runOrgCounts.set(r.organizationId, (runOrgCounts.get(r.organizationId) ?? 0) + 1)
+  }
+  for (const [orgId, count] of runOrgCounts) {
+    await audit({ db, organizationId: orgId, actorUserId: null }, "purge.rail_runs", {
+      metadata: { count, retentionDays: RETENTION_DAYS },
+    })
+  }
+  let runsDeleted = 0
+  for (const r of runRows) {
+    try {
+      await db.delete(railRuns).where(inArray(railRuns.id, [r.id]))
+      runsDeleted += 1
+    } catch (e) {
+      log.warn({ err: e, id: r.id }, "[purge] rail_runs delete deferred (likely FK)")
+    }
   }
 
   // -------- Rail Nodes --------
@@ -278,6 +332,8 @@ export async function GET(request: Request) {
       particleTypes: particleTypesDeleted,
       railNodes: railNodeRows.length,
       rails: railsDeleted,
+      cycles: cycleRows.length,
+      railRuns: runsDeleted,
     },
     cutoff: cutoff.toISOString(),
     batchLimit: BATCH_LIMIT,
@@ -289,6 +345,8 @@ export async function GET(request: Request) {
       particleRows.length === BATCH_LIMIT ||
       particleTypeRows.length === BATCH_LIMIT ||
       railNodeRows.length === BATCH_LIMIT ||
-      railRows.length === BATCH_LIMIT,
+      railRows.length === BATCH_LIMIT ||
+      cycleRows.length === BATCH_LIMIT ||
+      runRows.length === BATCH_LIMIT,
   })
 }

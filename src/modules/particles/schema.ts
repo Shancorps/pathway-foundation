@@ -1,4 +1,13 @@
-import { boolean, index, integer, jsonb, pgTable, text, timestamp } from "drizzle-orm/pg-core"
+import {
+  type AnyPgColumn,
+  boolean,
+  index,
+  integer,
+  jsonb,
+  pgTable,
+  text,
+  timestamp,
+} from "drizzle-orm/pg-core"
 import { organization, user } from "@/modules/auth/schema"
 
 /**
@@ -69,6 +78,16 @@ export const particles = pgTable(
     particleTypeId: text("particle_type_id")
       .notNull()
       .references(() => particleTypes.id, { onDelete: "restrict" }),
+    /**
+     * Optional parent particle. The "Client → Car" pattern: a Client particle
+     * can have many child particles (their cars, properties, pets) that move
+     * through their own rails independently. RESTRICT prevents soft-deleting
+     * a parent silently while children still reference it; the action layer
+     * also rejects self-reference.
+     */
+    parentParticleId: text("parent_particle_id").references((): AnyPgColumn => particles.id, {
+      onDelete: "restrict",
+    }),
     name: text("name").notNull(),
     data: jsonb("data").$type<Record<string, unknown>>().notNull().default({}),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
@@ -80,6 +99,7 @@ export const particles = pgTable(
   },
   (t) => [
     index("particles_org_type_deleted_idx").on(t.organizationId, t.particleTypeId, t.deletedAt),
+    index("particles_org_parent_deleted_idx").on(t.organizationId, t.parentParticleId, t.deletedAt),
     index("particles_org_deleted_idx").on(t.organizationId, t.deletedAt),
   ],
 )

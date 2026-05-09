@@ -1,0 +1,3 @@
+ALTER TABLE "particles" ADD COLUMN "parent_particle_id" text;--> statement-breakpoint
+ALTER TABLE "particles" ADD CONSTRAINT "particles_parent_particle_id_particles_id_fk" FOREIGN KEY ("parent_particle_id") REFERENCES "public"."particles"("id") ON DELETE restrict ON UPDATE no action;--> statement-breakpoint
+CREATE INDEX "particles_org_parent_deleted_idx" ON "particles" USING btree ("organization_id","parent_particle_id","deleted_at");

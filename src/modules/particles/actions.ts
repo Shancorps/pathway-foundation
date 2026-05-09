@@ -106,6 +106,51 @@ async function loadParticleType(
   return row
 }
 
+/**
+ * Validates a proposed parent reference: must be in the same org, not be the
+ * particle itself, and not introduce a cycle (e.g. setting A's parent to B
+ * when B already descends from A).
+ */
+async function assertValidParent(
+  ctx: Parameters<Parameters<typeof orgAction.action>[0]>[0]["ctx"],
+  particleId: string | null,
+  proposedParentId: string | null,
+) {
+  if (!proposedParentId) return
+  if (particleId && proposedParentId === particleId) {
+    throw new ActionError("VALIDATION", "A particle cannot be its own parent")
+  }
+  const [parent] = await ctx.db
+    .select({ id: particles.id, parentId: particles.parentParticleId })
+    .from(particles)
+    .where(
+      and(
+        eq(particles.id, proposedParentId),
+        eq(particles.organizationId, ctx.activeOrg.id),
+        isNull(particles.deletedAt),
+      ),
+    )
+    .limit(1)
+  if (!parent) {
+    throw new ActionError("VALIDATION", "Parent particle not found in this organization")
+  }
+  if (!particleId) return // create flow: no descendants exist yet
+  // Walk upwards from the proposed parent — if we hit `particleId`, we'd form a cycle.
+  let cursor: string | null = parent.parentId
+  const guardSteps = 64 // generous cap; deeper trees become cycle-prone anyway
+  for (let i = 0; i < guardSteps && cursor; i++) {
+    if (cursor === particleId) {
+      throw new ActionError("VALIDATION", "That parent would create a cycle in the tree")
+    }
+    const [next] = await ctx.db
+      .select({ parentId: particles.parentParticleId })
+      .from(particles)
+      .where(eq(particles.id, cursor))
+      .limit(1)
+    cursor = next?.parentId ?? null
+  }
+}
+
 export const createParticleType = orgAction
   .metadata({ actionName: "particles.type.create" })
   .inputSchema(createParticleTypeInput)
@@ -388,11 +433,13 @@ export const createParticle = orgAction
   .action(async ({ parsedInput, ctx }) => {
     const type = await loadParticleType(ctx, parsedInput.particleTypeId)
     const data = validateAndCoerceData(type.fields, parsedInput.data ?? {})
+    await assertValidParent(ctx, null, parsedInput.parentParticleId ?? null)
     const id = createId()
     await ctx.db.insert(particles).values({
       id,
       organizationId: ctx.activeOrg.id,
       particleTypeId: type.id,
+      parentParticleId: parsedInput.parentParticleId ?? null,
       createdBy: ctx.session.user.id,
       updatedBy: ctx.session.user.id,
       name: parsedInput.name,
@@ -431,13 +478,21 @@ export const updateParticle = orgAction
     if (!existing) throw new ActionError("NOT_FOUND", "Particle not found")
     const type = await loadParticleType(ctx, existing.particleTypeId)
 
-    const patch: { name?: string; data?: Record<string, unknown> } = {}
+    const patch: {
+      name?: string
+      data?: Record<string, unknown>
+      parentParticleId?: string | null
+    } = {}
     if (parsedInput.name !== undefined) patch.name = parsedInput.name
     if (parsedInput.data !== undefined) {
       patch.data = validateAndCoerceData(type.fields, {
         ...existing.data,
         ...parsedInput.data,
       })
+    }
+    if (parsedInput.parentParticleId !== undefined) {
+      await assertValidParent(ctx, existing.id, parsedInput.parentParticleId)
+      patch.parentParticleId = parsedInput.parentParticleId
     }
 
     await ctx.db

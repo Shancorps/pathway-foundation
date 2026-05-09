@@ -3,7 +3,7 @@ import { notFound, redirect } from "next/navigation"
 import { ArrowLeft } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { getSession } from "@/modules/auth/session"
-import { getParticleType } from "@/modules/particles/queries"
+import { getParticleType, listParticlesWithTypeForOrg } from "@/modules/particles/queries"
 import { ParticleForm } from "@/modules/particles/ui/particle-form"
 
 export default async function NewParticlePage({ params }: { params: Promise<{ typeId: string }> }) {
@@ -13,7 +13,10 @@ export default async function NewParticlePage({ params }: { params: Promise<{ ty
   const orgId = session.session.activeOrganizationId
   if (!orgId) redirect("/onboarding/create-organization")
 
-  const type = await getParticleType(orgId, typeId)
+  const [type, parentCandidates] = await Promise.all([
+    getParticleType(orgId, typeId),
+    listParticlesWithTypeForOrg(orgId),
+  ])
   if (!type) notFound()
 
   return (
@@ -32,7 +35,14 @@ export default async function NewParticlePage({ params }: { params: Promise<{ ty
         </p>
         <h1 className="mt-1 text-2xl font-semibold">New {type.name}</h1>
       </div>
-      <ParticleForm type={type} />
+      <ParticleForm
+        type={type}
+        parentCandidates={parentCandidates.map((p) => ({
+          id: p.id,
+          name: p.name,
+          typeName: p.typeName,
+        }))}
+      />
     </div>
   )
 }

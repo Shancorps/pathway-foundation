@@ -3,7 +3,11 @@ import { notFound, redirect } from "next/navigation"
 import { ArrowLeft } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { getSession } from "@/modules/auth/session"
-import { getParticle, getParticleType } from "@/modules/particles/queries"
+import {
+  getParticle,
+  getParticleType,
+  listParticlesWithTypeForOrg,
+} from "@/modules/particles/queries"
 import { ParticleForm } from "@/modules/particles/ui/particle-form"
 
 export default async function EditParticlePage({
@@ -17,11 +21,16 @@ export default async function EditParticlePage({
   const orgId = session.session.activeOrganizationId
   if (!orgId) redirect("/onboarding/create-organization")
 
-  const [type, particle] = await Promise.all([
+  const [type, particle, allParticles] = await Promise.all([
     getParticleType(orgId, typeId),
     getParticle(orgId, id),
+    listParticlesWithTypeForOrg(orgId),
   ])
   if (!type || particle?.particleTypeId !== type.id) notFound()
+  // Exclude self from parent candidates so the dropdown can't form a trivial cycle.
+  const parentCandidates = allParticles
+    .filter((p) => p.id !== particle.id)
+    .map((p) => ({ id: p.id, name: p.name, typeName: p.typeName }))
 
   return (
     <div className="space-y-6">
@@ -41,7 +50,13 @@ export default async function EditParticlePage({
       </div>
       <ParticleForm
         type={type}
-        initial={{ id: particle.id, name: particle.name, data: particle.data }}
+        initial={{
+          id: particle.id,
+          name: particle.name,
+          data: particle.data,
+          parentParticleId: particle.parentParticleId,
+        }}
+        parentCandidates={parentCandidates}
       />
     </div>
   )

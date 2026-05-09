@@ -2,11 +2,20 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { Boxes, LayoutDashboard, ListChecks, Network, Route, Settings } from "lucide-react"
+import {
+  Boxes,
+  CheckSquare,
+  LayoutDashboard,
+  ListChecks,
+  Network,
+  Route,
+  Settings,
+} from "lucide-react"
 import { cn } from "@/lib/utils"
 
 const NAV = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/my-actions", label: "My Actions", icon: CheckSquare },
   { href: "/organization/structure", label: "Structure", icon: Network },
   { href: "/particles", label: "Particles", icon: Boxes },
   { href: "/rails", label: "Rails", icon: Route },
