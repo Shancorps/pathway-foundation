@@ -4,6 +4,7 @@ import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { ArrowDown, ArrowUp, CircleDot, GripVertical, Pencil, Plus, Trash2 } from "lucide-react"
 import { BlueprintButton } from "@/components/ui/blueprint-button"
+import { RailCanvas } from "./rail-canvas"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
@@ -109,6 +110,54 @@ function formatMinutes(minutes: number): string {
   return rest === 0 ? `${String(hours)}h` : `${String(hours)}h ${String(rest)}m`
 }
 
+function ViewToggle({
+  current,
+  onChange,
+}: {
+  current: "canvas" | "list"
+  onChange: (v: "canvas" | "list") => void
+}) {
+  const opts: { value: "canvas" | "list"; label: string }[] = [
+    { value: "canvas", label: "Canvas" },
+    { value: "list", label: "Steps" },
+  ]
+  return (
+    <div className="inline-flex" role="tablist" aria-label="Rail view">
+      {opts.map((o, i) => {
+        const active = o.value === current
+        return (
+          <button
+            key={o.value}
+            type="button"
+            role="tab"
+            aria-selected={active}
+            onClick={() => {
+              onChange(o.value)
+            }}
+            className={
+              active
+                ? "border border-[#E8711A] bg-[#E8711A] text-white"
+                : "border border-[#D4D4D4] bg-white text-[#0F0F0F] hover:border-[#0F0F0F]"
+            }
+            style={{
+              fontFamily: "var(--font-mono)",
+              fontSize: 10,
+              fontWeight: 600,
+              letterSpacing: "0.16em",
+              textTransform: "uppercase",
+              padding: "6px 14px",
+              marginLeft: i === 0 ? 0 : -1,
+              transition: "border-color 120ms, background-color 120ms",
+            }}
+          >
+            {o.label}
+          </button>
+        )
+      })}
+    </div>
+  )
+}
+
 export function RailEditor({
   rail,
   nodes,
@@ -127,6 +176,7 @@ export function RailEditor({
   const [savingMeta, setSavingMeta] = useState(false)
   const [showAddTask, setShowAddTask] = useState(false)
   const [editingNode, setEditingNode] = useState<RailNode | null>(null)
+  const [view, setView] = useState<"canvas" | "list">("canvas")
 
   async function handleSaveMeta() {
     setSavingMeta(true)
@@ -269,178 +319,206 @@ export function RailEditor({
         </RegCard>
       </section>
 
-      {/* Steps */}
+      {/* Steps + Canvas */}
       <section className="space-y-4">
-        <SectionDivider label="Fig · 02 / Steps" count={nodes.length} />
-
-        <div className="flex justify-end">
-          <BlueprintButton
-            variant="primary"
-            size="sm"
-            onClick={() => {
-              setShowAddTask(true)
-            }}
-            disabled={isPublished}
-            particle
-          >
-            Add Task
-          </BlueprintButton>
+        <div className="flex items-center justify-between gap-3">
+          <SectionDivider
+            label={view === "canvas" ? "Fig · 02 / Canvas" : "Fig · 02 / Steps"}
+            count={nodes.length}
+          />
+          <ViewToggle current={view} onChange={setView} />
         </div>
 
-        <ol className="space-y-2">
-          {nodes.map((node, idx) => {
-            const post = posts.find((p) => p.id === node.postId)
-            const nodeIsTrigger = node.type === "trigger"
-            return (
-              <li key={node.id}>
-                <RegCard state={nodeIsTrigger ? "active" : "queued"} className="px-4 py-3">
-                  <div className="flex items-start gap-3">
-                    {!nodeIsTrigger && (
-                      <div className="flex flex-col gap-0.5">
-                        <button
-                          type="button"
-                          onClick={() => void moveNode(idx, -1)}
-                          disabled={isPublished || idx <= 1}
-                          aria-label="Move up"
-                          className="grid place-items-center border border-transparent p-1 hover:border-[#E4E4E4] hover:bg-white disabled:opacity-30"
-                        >
-                          <ArrowUp className="size-3" strokeWidth={1.5} />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => void moveNode(idx, 1)}
-                          disabled={isPublished || idx === nodes.length - 1}
-                          aria-label="Move down"
-                          className="grid place-items-center border border-transparent p-1 hover:border-[#E4E4E4] hover:bg-white disabled:opacity-30"
-                        >
-                          <ArrowDown className="size-3" strokeWidth={1.5} />
-                        </button>
-                      </div>
-                    )}
-                    <div
-                      className="grid place-items-center"
-                      style={{
-                        width: 32,
-                        height: 32,
-                        backgroundColor: nodeIsTrigger ? "#E8711A" : "#2A3D52",
-                        flexShrink: 0,
-                      }}
-                    >
-                      <CircleDot className="size-4 text-white" strokeWidth={2} />
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <NodeTypePill type={node.type} />
-                        <p
-                          style={{
-                            fontFamily: "var(--font-sans)",
-                            fontSize: 14,
-                            fontWeight: 600,
-                            color: "#0F0F0F",
-                          }}
-                        >
-                          {node.name}
-                        </p>
-                        {node.type === "task" && node.checklistItems.length > 0 && (
-                          <SmallPill>
-                            {String(node.checklistItems.length)}{" "}
-                            {node.checklistItems.length === 1 ? "item" : "items"}
-                          </SmallPill>
-                        )}
-                        {node.type === "task" && node.toolsLinks.length > 0 && (
-                          <SmallPill>
-                            {String(node.toolsLinks.length)}{" "}
-                            {node.toolsLinks.length === 1 ? "link" : "links"}
-                          </SmallPill>
-                        )}
-                        {node.type === "task" && node.idealMinutes != null && (
-                          <SmallPill>{formatMinutes(node.idealMinutes)}</SmallPill>
-                        )}
-                      </div>
-                      {node.type === "task" && (
-                        <p
-                          className="mt-1.5"
-                          style={{
-                            fontFamily: "var(--font-mono)",
-                            fontSize: 10,
-                            fontWeight: 500,
-                            color: "#5A7A92",
-                            letterSpacing: "0.12em",
-                            textTransform: "uppercase",
-                          }}
-                        >
-                          Terminal ·{" "}
-                          {post ? (
-                            <span style={{ color: "#0F0F0F" }}>
-                              {post.title}
-                              {post.containerLabel ? ` / ${post.containerLabel}` : ""}
-                              {post.vacant ? " (Vacant)" : ""}
-                            </span>
-                          ) : (
-                            <span style={{ color: "#E8711A" }}>No Post assigned</span>
-                          )}
-                        </p>
-                      )}
-                      {node.description && (
-                        <p
-                          className="mt-2"
-                          style={{
-                            fontFamily: "var(--font-sans)",
-                            fontSize: 13,
-                            color: "#666",
-                            lineHeight: 1.4,
-                          }}
-                        >
-                          {node.description}
-                        </p>
-                      )}
-                    </div>
-                    {!nodeIsTrigger && (
-                      <div className="flex shrink-0 gap-1">
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setEditingNode(node)
-                          }}
-                          disabled={isPublished}
-                          className="grid place-items-center border border-transparent p-1.5 hover:border-[#E4E4E4] hover:bg-white disabled:opacity-30"
-                          aria-label="Edit"
-                        >
-                          <Pencil className="size-3.5" strokeWidth={1.5} />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => void handleDeleteNode(node)}
-                          disabled={isPublished}
-                          className="grid place-items-center border border-transparent p-1.5 hover:border-[#E4E4E4] hover:bg-white disabled:opacity-30"
-                          aria-label="Delete"
-                        >
-                          <Trash2 className="size-3.5" strokeWidth={1.5} />
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                </RegCard>
-              </li>
-            )
-          })}
-        </ol>
-
-        {nodes.filter((n) => n.type === "task").length === 0 && (
-          <RegCard state="new" className="px-10 py-10 text-center">
+        {view === "canvas" && (
+          <div className="space-y-3">
+            <RailCanvas nodes={nodes} posts={posts} />
             <p
               style={{
                 fontFamily: "var(--font-mono)",
                 fontSize: 10,
-                fontWeight: 600,
-                letterSpacing: "0.18em",
+                fontWeight: 500,
+                letterSpacing: "0.14em",
                 color: "#888",
                 textTransform: "uppercase",
               }}
             >
-              Add at least one Task to publish this rail
+              Read-only · Switch to Steps to add, edit, or reorder
             </p>
-          </RegCard>
+          </div>
+        )}
+
+        {view === "list" && (
+          <>
+            <div className="flex justify-end">
+              <BlueprintButton
+                variant="primary"
+                size="sm"
+                onClick={() => {
+                  setShowAddTask(true)
+                }}
+                disabled={isPublished}
+                particle
+              >
+                Add Task
+              </BlueprintButton>
+            </div>
+
+            <ol className="space-y-2">
+              {nodes.map((node, idx) => {
+                const post = posts.find((p) => p.id === node.postId)
+                const nodeIsTrigger = node.type === "trigger"
+                return (
+                  <li key={node.id}>
+                    <RegCard state={nodeIsTrigger ? "active" : "queued"} className="px-4 py-3">
+                      <div className="flex items-start gap-3">
+                        {!nodeIsTrigger && (
+                          <div className="flex flex-col gap-0.5">
+                            <button
+                              type="button"
+                              onClick={() => void moveNode(idx, -1)}
+                              disabled={isPublished || idx <= 1}
+                              aria-label="Move up"
+                              className="grid place-items-center border border-transparent p-1 hover:border-[#E4E4E4] hover:bg-white disabled:opacity-30"
+                            >
+                              <ArrowUp className="size-3" strokeWidth={1.5} />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => void moveNode(idx, 1)}
+                              disabled={isPublished || idx === nodes.length - 1}
+                              aria-label="Move down"
+                              className="grid place-items-center border border-transparent p-1 hover:border-[#E4E4E4] hover:bg-white disabled:opacity-30"
+                            >
+                              <ArrowDown className="size-3" strokeWidth={1.5} />
+                            </button>
+                          </div>
+                        )}
+                        <div
+                          className="grid place-items-center"
+                          style={{
+                            width: 32,
+                            height: 32,
+                            backgroundColor: nodeIsTrigger ? "#E8711A" : "#2A3D52",
+                            flexShrink: 0,
+                          }}
+                        >
+                          <CircleDot className="size-4 text-white" strokeWidth={2} />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <NodeTypePill type={node.type} />
+                            <p
+                              style={{
+                                fontFamily: "var(--font-sans)",
+                                fontSize: 14,
+                                fontWeight: 600,
+                                color: "#0F0F0F",
+                              }}
+                            >
+                              {node.name}
+                            </p>
+                            {node.type === "task" && node.checklistItems.length > 0 && (
+                              <SmallPill>
+                                {String(node.checklistItems.length)}{" "}
+                                {node.checklistItems.length === 1 ? "item" : "items"}
+                              </SmallPill>
+                            )}
+                            {node.type === "task" && node.toolsLinks.length > 0 && (
+                              <SmallPill>
+                                {String(node.toolsLinks.length)}{" "}
+                                {node.toolsLinks.length === 1 ? "link" : "links"}
+                              </SmallPill>
+                            )}
+                            {node.type === "task" && node.idealMinutes != null && (
+                              <SmallPill>{formatMinutes(node.idealMinutes)}</SmallPill>
+                            )}
+                          </div>
+                          {node.type === "task" && (
+                            <p
+                              className="mt-1.5"
+                              style={{
+                                fontFamily: "var(--font-mono)",
+                                fontSize: 10,
+                                fontWeight: 500,
+                                color: "#5A7A92",
+                                letterSpacing: "0.12em",
+                                textTransform: "uppercase",
+                              }}
+                            >
+                              Terminal ·{" "}
+                              {post ? (
+                                <span style={{ color: "#0F0F0F" }}>
+                                  {post.title}
+                                  {post.containerLabel ? ` / ${post.containerLabel}` : ""}
+                                  {post.vacant ? " (Vacant)" : ""}
+                                </span>
+                              ) : (
+                                <span style={{ color: "#E8711A" }}>No Post assigned</span>
+                              )}
+                            </p>
+                          )}
+                          {node.description && (
+                            <p
+                              className="mt-2"
+                              style={{
+                                fontFamily: "var(--font-sans)",
+                                fontSize: 13,
+                                color: "#666",
+                                lineHeight: 1.4,
+                              }}
+                            >
+                              {node.description}
+                            </p>
+                          )}
+                        </div>
+                        {!nodeIsTrigger && (
+                          <div className="flex shrink-0 gap-1">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setEditingNode(node)
+                              }}
+                              disabled={isPublished}
+                              className="grid place-items-center border border-transparent p-1.5 hover:border-[#E4E4E4] hover:bg-white disabled:opacity-30"
+                              aria-label="Edit"
+                            >
+                              <Pencil className="size-3.5" strokeWidth={1.5} />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => void handleDeleteNode(node)}
+                              disabled={isPublished}
+                              className="grid place-items-center border border-transparent p-1.5 hover:border-[#E4E4E4] hover:bg-white disabled:opacity-30"
+                              aria-label="Delete"
+                            >
+                              <Trash2 className="size-3.5" strokeWidth={1.5} />
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    </RegCard>
+                  </li>
+                )
+              })}
+            </ol>
+
+            {nodes.filter((n) => n.type === "task").length === 0 && (
+              <RegCard state="new" className="px-10 py-10 text-center">
+                <p
+                  style={{
+                    fontFamily: "var(--font-mono)",
+                    fontSize: 10,
+                    fontWeight: 600,
+                    letterSpacing: "0.18em",
+                    color: "#888",
+                    textTransform: "uppercase",
+                  }}
+                >
+                  Add at least one Task to publish this rail
+                </p>
+              </RegCard>
+            )}
+          </>
         )}
       </section>
 
@@ -605,7 +683,6 @@ function TaskNodeDialog({
         return
       }
       try {
-         
         new URL(url)
       } catch {
         alert(`"${url}" isn't a valid URL.`)
