@@ -43,7 +43,7 @@ export function UserMenu({ userName, userEmail }: { userName: string; userEmail:
           <Link href="/settings/organization">Organization</Link>
         </DropdownMenuItem>
         <DropdownMenuItem asChild>
-          <Link href="/settings/organization/members">Members</Link>
+          <Link href="/team">Team</Link>
         </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem
