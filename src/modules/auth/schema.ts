@@ -1,18 +1,28 @@
-import { relations } from "drizzle-orm"
+import { relations, sql } from "drizzle-orm"
 import { pgTable, text, timestamp, boolean, index, uniqueIndex } from "drizzle-orm/pg-core"
 
-export const user = pgTable("user", {
-  id: text("id").primaryKey(),
-  name: text("name").notNull(),
-  email: text("email").notNull().unique(),
-  emailVerified: boolean("email_verified").default(false).notNull(),
-  image: text("image"),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at")
-    .defaultNow()
-    .$onUpdate(() => /* @__PURE__ */ new Date())
-    .notNull(),
-})
+export const user = pgTable(
+  "user",
+  {
+    id: text("id").primaryKey(),
+    name: text("name").notNull(),
+    email: text("email").notNull().unique(),
+    emailVerified: boolean("email_verified").default(false).notNull(),
+    image: text("image"),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at")
+      .defaultNow()
+      .$onUpdate(() => /* @__PURE__ */ new Date())
+      .notNull(),
+  },
+  (table) => [
+    // Case-insensitive uniqueness on email — without this `Foo@x.com` and
+    // `foo@x.com` could both register as separate accounts and one would
+    // shadow the other on sign-in. Pure expression unique index lets us
+    // keep the column as plain text (no citext extension needed).
+    uniqueIndex("user_email_lower_uidx").on(sql`lower(${table.email})`),
+  ],
+)
 
 export const session = pgTable(
   "session",
@@ -71,7 +81,12 @@ export const verification = pgTable(
       .$onUpdate(() => /* @__PURE__ */ new Date())
       .notNull(),
   },
-  (table) => [index("verification_identifier_idx").on(table.identifier)],
+  (table) => [
+    index("verification_identifier_idx").on(table.identifier),
+    // Better Auth periodically prunes expired tokens — without this index the
+    // prune query seq-scans the table.
+    index("verification_expires_at_idx").on(table.expiresAt),
+  ],
 )
 
 export const organization = pgTable(
@@ -125,6 +140,8 @@ export const invitation = pgTable(
   (table) => [
     index("invitation_organizationId_idx").on(table.organizationId),
     index("invitation_email_idx").on(table.email),
+    // Better Auth's expiry sweep needs this; without it the prune seq-scans.
+    index("invitation_expires_at_idx").on(table.expiresAt),
   ],
 )
 

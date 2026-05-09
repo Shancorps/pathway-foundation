@@ -1,3 +1,4 @@
+import { sql } from "drizzle-orm"
 import { pgTable, text, integer, timestamp, index } from "drizzle-orm/pg-core"
 import { organization, user } from "@/modules/auth/schema"
 
@@ -18,7 +19,11 @@ export const files = pgTable(
     deletedBy: text("deleted_by").references(() => user.id, { onDelete: "set null" }),
   },
   (t) => [
-    index("files_org_deleted_created_idx").on(t.organizationId, t.deletedAt, t.createdAt.desc()),
+    // Partial index — list queries always filter `deleted_at IS NULL`, so
+    // pruning soft-deleted rows out of the index keeps it tight.
+    index("files_org_created_active_idx")
+      .on(t.organizationId, t.createdAt.desc())
+      .where(sql`${t.deletedAt} is null`),
   ],
 )
 

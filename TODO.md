@@ -38,18 +38,18 @@ Tags: `[sec]` security · `[db]` database/migrations · `[ci]` CI/verification �
 - [x] **H3** `[db]` `assertDatabaseIsLocal` parses the URL with `new URL()` and matches `hostname` against an exact allowlist (`localhost`, `127.0.0.1`, `::1`, `db`, `postgres`).
 - [x] **H4** `[db]` Pool now has `idleTimeoutMillis: 30s`, `connectionTimeoutMillis: 5s`, `statement_timeout=30s`, `lock_timeout=5s`.
 - [ ] **H5** `[prod]` `pg.Pool` not Vercel-aware on Neon. **Open.** Document that runtime needs the **Pooled** Neon connection string, migrations need the **Direct** one. Or switch runtime to `@neondatabase/serverless` (HTTP). `docs/deployment.md` covers the choice but defaults aren't enforced.
-- [ ] **H6** `[db]` Items/files indexes are not partial. **Open.** Add `.where(isNull(t.deletedAt))` on the index builder; regenerate migration.
-- [ ] **H7** `[db]` `verification.expires_at` and `invitation.expires_at` unindexed. **Open.** Add indexes; regenerate migration. (Better Auth's prune queries seq-scan today.)
-- [ ] **H8** `[db]` `user.email` unique is case-sensitive. **Open.** `citext` extension OR `lower(email)` unique index.
+- [x] **H6** `[db]` Items/files indexes are now partial — `WHERE deleted_at IS NULL` filter on the index builder, renamed `*_org_created_active_idx`. Migration 0016.
+- [x] **H7** `[db]` `verification.expires_at` and `invitation.expires_at` are indexed. Migration 0016.
+- [x] **H8** `[db]` `user.email` is case-insensitive — added `user_email_lower_uidx UNIQUE (lower(email))`. The original `.unique()` on the column stays (strictly weaker but harmless). Migration 0016. No citext extension required.
 
 ### Security
 
 - [x] **H9** `[sec]` Better Auth's built-in rate limiter is enabled in production with `customRules` for sign-in, sign-up, password reset, verify-email, invitation flows. Storage is in-memory by default — fine for single-region deploys; document switching to a shared store if scaling out. (Multi-region storage NOT yet wired — open.)
-- [ ] **H10** `[sec]` Auth events not in audit log. **Open.** Wire Better Auth `databaseHooks` / `hooks.after` to call `audit()` for sign-in, password-reset, invite-accepted, session-revoked.
+- [~] **H10** `[sec]` Sign-in / sign-out are now wired to `audit()` via Better Auth `databaseHooks.session.create.after` / `.delete.after`, gated on the session having an `activeOrganizationId` (the audit_log requires one). **Still open:** member add / role change / member remove (org plugin doesn't expose those in the typed `databaseHooks` shape — needs a path-aware `hooks.after` middleware), password-reset-completed, and email-verification-completed.
 - [x] **H11** `[sec]` Blob upload MIME whitelist is now explicit: `image/{png,jpeg,webp,gif,svg+xml}`, `application/pdf`, `text/{plain,csv}`. No glob.
 - [x] **H12** `[sec]` `/accept-invite` added to `PUBLIC_ROUTES`.
 - [ ] **H13** `[sec]` Password policy is just `min(12)`. **Open.** Better Auth `password.validatePassword` hook with HIBP k-anonymity check.
-- [ ] **H14** `[sec]` Better Auth `verification.value` stored plaintext. **Open.** Enable `advanced.hashToken`; add daily cron to delete expired tokens.
+- [x] **H14** `[sec]` Verification tokens are now hashed at rest — `verification.storeIdentifier: "hashed"` in `src/lib/auth.ts`. The plaintext token is what's emailed; the database keeps only its hash. (Daily cron to delete expired tokens still helpful but Better Auth already cleans up expired rows on lookup; revisit if `verification` row count grows.)
 - [x] **H15** `[sec]` `verifyCronAuth` now also requires `User-Agent: vercel-cron/...` in production.
 
 ### Observability
