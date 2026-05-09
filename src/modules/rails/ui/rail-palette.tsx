@@ -122,8 +122,8 @@ const ACTION_GROUP: PaletteNode[] = [
     label: "Sub-Flow",
     hint: "Run another rail",
     icon: Workflow,
-    iconColor: "#5A7A92",
-    enabled: false,
+    iconColor: "#5B527A",
+    enabled: true,
   },
 ]
 

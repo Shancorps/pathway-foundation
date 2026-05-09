@@ -46,14 +46,21 @@ export const addTaskNodeInput = z.object({
 })
 
 /**
- * Add a structural node (End for now; Sub-Flow / Statistic / Approval as
- * those types ship). Doesn't take a Post — auto-resolving nodes don't issue
- * cycles to people. Defaults the name from the type if none given.
+ * Add a structural node (End / Sub-Flow today; Approval as that type ships).
+ * Auto-resolving nodes don't take a Post. Defaults name from the type.
  */
 export const addStructuralNodeInput = z.object({
   railId: z.string(),
-  type: z.enum(["end"]),
+  type: z.enum(["end", "sub_flow"]),
   name: z.string().min(1).max(200).optional(),
+})
+
+/** Edit a Sub-Flow node's target rail + wait toggle. */
+export const updateSubFlowConfigInput = z.object({
+  id: z.string(),
+  name: z.string().min(1).max(200).optional(),
+  targetRailId: z.string().nullable(),
+  waitForCompletion: z.boolean(),
 })
 
 export const updateNodeInput = z.object({

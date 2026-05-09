@@ -26,8 +26,9 @@ import {
   updateRail,
 } from "../actions"
 import type { Rail, RailNode } from "../schema"
-import { RailCanvas } from "./rail-canvas"
+import { RailCanvas, type RailRef } from "./rail-canvas"
 import { RailPalette } from "./rail-palette"
+import { SubFlowDialog } from "./sub-flow-dialog"
 import { TaskNodeDialog, type PostOption } from "./task-node-dialog"
 
 /**
@@ -48,17 +49,20 @@ export function RailEditor({
   posts,
   particleTypeName,
   runningRunCount,
+  otherRails,
 }: {
   rail: Rail
   nodes: RailNode[]
   posts: PostOption[]
   particleTypeName: string | null
   runningRunCount: number
+  otherRails: RailRef[]
 }) {
   const router = useRouter()
   const isPublished = rail.status === "published"
   const [showAddTask, setShowAddTask] = useState(false)
   const [editingNode, setEditingNode] = useState<RailNode | null>(null)
+  const [editingSubFlow, setEditingSubFlow] = useState<RailNode | null>(null)
   const [showSettings, setShowSettings] = useState(false)
 
   // Client-side UI lock — DEFAULT LOCKED so a freshly opened rail is safe
@@ -166,16 +170,21 @@ export function RailEditor({
             railId={rail.id}
             nodes={nodes}
             posts={posts}
+            otherRails={otherRails}
             isPublished={editsDisabled}
             onEdit={(node) => {
-              // When locked, the canvas swallows clicks at the affordance
-              // level, but a stray click on the node body could still fire
-              // this callback. Guard against opening the dialog.
               if (editsDisabled) return
-              // Trigger has no edit affordance today; End has none beyond
-              // its name (deferred). Both are no-ops on click.
               if (node.type === "trigger" || node.type === "end") return
-              setEditingNode(node)
+              if (node.type === "sub_flow") {
+                setEditingSubFlow(node)
+                return
+              }
+              if (node.type === "task") {
+                setEditingNode(node)
+                return
+              }
+              // Future types: approval / statistic — open type-specific
+              // dialogs once those land.
             }}
             onDelete={(node) => {
               void handleDeleteNode(node)
@@ -188,8 +197,8 @@ export function RailEditor({
                 setShowAddTask(true)
                 return
               }
-              if (paletteId === "end") {
-                void addStructuralNode({ railId: rail.id, type: "end" }).then((result) => {
+              if (paletteId === "end" || paletteId === "sub_flow") {
+                void addStructuralNode({ railId: rail.id, type: paletteId }).then((result) => {
                   if (result.serverError) alert(result.serverError)
                   else notifyEditSaved()
                 })
@@ -238,6 +247,17 @@ export function RailEditor({
           railId={rail.id}
           posts={posts}
           initial={editingNode}
+          onSaved={notifyEditSaved}
+        />
+      )}
+      {editingSubFlow && (
+        <SubFlowDialog
+          open
+          onOpenChange={(open) => {
+            if (!open) setEditingSubFlow(null)
+          }}
+          node={editingSubFlow}
+          otherRails={otherRails}
           onSaved={notifyEditSaved}
         />
       )}

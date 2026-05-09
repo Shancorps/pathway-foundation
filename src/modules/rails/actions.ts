@@ -28,6 +28,7 @@ import {
   unpublishRailInput,
   updateNodeInput,
   updateRailInput,
+  updateSubFlowConfigInput,
 } from "./types"
 
 const RAILS_PATH = "/rails"
@@ -338,7 +339,12 @@ export const addStructuralNode = orgAction
       .from(railNodes)
       .where(and(eq(railNodes.railId, rail.id), isNull(railNodes.deletedAt)))
     const nextPosition = (maxRow?.maxPosition ?? 0) + 1
-    const defaultNames: Record<string, string> = { end: "End" }
+    const defaultNames: Record<string, string> = { end: "End", sub_flow: "Sub-Flow" }
+    // Per-type default config so the dialog has somewhere to read from.
+    const defaultConfig =
+      parsedInput.type === "sub_flow"
+        ? ({ kind: "sub_flow", targetRailId: null, waitForCompletion: true } as const)
+        : ({ kind: "none" } as const)
     const id = createId()
     await ctx.db.insert(railNodes).values({
       id,
@@ -347,6 +353,7 @@ export const addStructuralNode = orgAction
       type: parsedInput.type,
       name: parsedInput.name ?? defaultNames[parsedInput.type] ?? "Node",
       position: nextPosition,
+      config: defaultConfig,
       createdBy: ctx.session.user.id,
       updatedBy: ctx.session.user.id,
     })
@@ -363,6 +370,75 @@ export const addStructuralNode = orgAction
     )
     revalidatePath(`${RAILS_PATH}/${rail.id}`)
     return { id }
+  })
+
+/**
+ * Update a Sub-Flow node's config (target rail + wait toggle) and optional
+ * name. Separate action from updateNode because the input shape differs
+ * substantially from a Task (no post / checklist / tools / ideal).
+ */
+export const updateSubFlowConfig = orgAction
+  .metadata({ actionName: "rails.sub_flow_updated" })
+  .inputSchema(updateSubFlowConfigInput)
+  .action(async ({ parsedInput, ctx }) => {
+    const node = await loadNode(ctx, parsedInput.id)
+    if (node.type !== "sub_flow") {
+      throw new ActionError("VALIDATION", "Node is not a Sub-Flow")
+    }
+    // Validate target rail (when set): same org, published or draft, not
+    // soft-deleted, and not the rail this node belongs to (no immediate
+    // recursion).
+    if (parsedInput.targetRailId) {
+      if (parsedInput.targetRailId === node.railId) {
+        throw new ActionError("VALIDATION", "A Sub-Flow can't target the rail it lives in")
+      }
+      const [target] = await ctx.db
+        .select({ id: rails.id })
+        .from(rails)
+        .where(
+          and(
+            eq(rails.id, parsedInput.targetRailId),
+            eq(rails.organizationId, ctx.activeOrg.id),
+            isNull(rails.deletedAt),
+          ),
+        )
+        .limit(1)
+      if (!target) throw new ActionError("VALIDATION", "Target rail not found")
+    }
+    await ctx.db
+      .update(railNodes)
+      .set({
+        name: parsedInput.name ?? node.name,
+        config: {
+          kind: "sub_flow",
+          targetRailId: parsedInput.targetRailId,
+          waitForCompletion: parsedInput.waitForCompletion,
+        },
+        updatedAt: new Date(),
+        updatedBy: ctx.session.user.id,
+      })
+      .where(eq(railNodes.id, node.id))
+    await audit(
+      {
+        db: ctx.db,
+        organizationId: ctx.activeOrg.id,
+        actorUserId: ctx.session.user.id,
+        ipAddress: ctx.ipAddress,
+        userAgent: ctx.userAgent,
+      },
+      "rails.sub_flow_updated",
+      {
+        resourceType: "rail_node",
+        resourceId: node.id,
+        metadata: {
+          railId: node.railId,
+          targetRailId: parsedInput.targetRailId,
+          waitForCompletion: parsedInput.waitForCompletion,
+        },
+      },
+    )
+    revalidatePath(`${RAILS_PATH}/${node.railId}`)
+    return { id: node.id }
   })
 
 async function loadNode(
@@ -549,11 +625,22 @@ export const publishRail = orgAction
     // Block publishing rails that reference node types whose runtime hasn't
     // shipped yet — would produce a "Unsupported node type at runtime" error
     // mid-run otherwise.
-    const unsupported = nodes.find((n) => !["trigger", "task", "end"].includes(n.type))
+    const supportedTypes = ["trigger", "task", "end", "sub_flow"]
+    const unsupported = nodes.find((n) => !supportedTypes.includes(n.type))
     if (unsupported) {
       throw new ActionError(
         "VALIDATION",
         `Node "${unsupported.name}" uses type "${unsupported.type}" which doesn't have a runtime yet — remove it before publishing.`,
+      )
+    }
+    // Sub-Flow nodes need a target rail picked before publish.
+    const incompleteSubFlow = nodes.find(
+      (n) => n.type === "sub_flow" && (n.config.kind !== "sub_flow" || !n.config.targetRailId),
+    )
+    if (incompleteSubFlow) {
+      throw new ActionError(
+        "VALIDATION",
+        `Sub-Flow "${incompleteSubFlow.name}" has no target rail. Click it on the canvas to pick one.`,
       )
     }
     const missingPost = tasks.find((t) => !t.postId)

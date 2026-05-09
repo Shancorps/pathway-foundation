@@ -29,6 +29,7 @@ import {
   MapPin,
   Plus,
   StopCircle,
+  Workflow,
   X,
   Zap,
 } from "lucide-react"
@@ -43,12 +44,18 @@ interface PostOption {
   vacant: boolean
 }
 
+export interface RailRef {
+  id: string
+  name: string
+}
+
 type Layout = "horizontal" | "vertical"
 
 interface CanvasNodeData extends Record<string, unknown> {
   node: RailNode
   postTitle: string | null
   postVacant: boolean
+  subFlowTargetName: string | null
   isPublished: boolean
   layout: Layout
   onEdit: (node: RailNode) => void
@@ -145,6 +152,8 @@ export function RailCanvas(props: {
   railId: string
   nodes: RailNode[]
   posts: PostOption[]
+  /** Other published rails (for Sub-Flow target picker + label resolution). */
+  otherRails: RailRef[]
   isPublished: boolean
   onEdit: (node: RailNode) => void
   onDelete: (node: RailNode) => void
@@ -163,6 +172,7 @@ function RailCanvasInner({
   railId,
   nodes: railNodes,
   posts,
+  otherRails,
   isPublished,
   onEdit,
   onDelete,
@@ -173,6 +183,7 @@ function RailCanvasInner({
   railId: string
   nodes: RailNode[]
   posts: PostOption[]
+  otherRails: RailRef[]
   isPublished: boolean
   onEdit: (node: RailNode) => void
   onDelete: (node: RailNode) => void
@@ -209,6 +220,7 @@ function RailCanvasInner({
   )
 
   const postById = useMemo(() => new Map(posts.map((p) => [p.id, p])), [posts])
+  const railById = useMemo(() => new Map(otherRails.map((r) => [r.id, r])), [otherRails])
 
   const { lastPos, computedNodes } = useMemo(() => {
     const out: Node<CanvasNodeData>[] = []
@@ -217,6 +229,11 @@ function RailCanvasInner({
       const post = n.postId ? postById.get(n.postId) : undefined
       const pos = positions[n.id] ?? defaultPositionFor(idx, layout)
       last = pos
+      // Resolve sub_flow target name for the node subtitle.
+      let subFlowTargetName: string | null = null
+      if (n.type === "sub_flow" && n.config.kind === "sub_flow" && n.config.targetRailId) {
+        subFlowTargetName = railById.get(n.config.targetRailId)?.name ?? null
+      }
       out.push({
         id: n.id,
         type: "railNode",
@@ -227,6 +244,7 @@ function RailCanvasInner({
           node: n,
           postTitle: post?.title ?? null,
           postVacant: post?.vacant ?? false,
+          subFlowTargetName,
           isPublished,
           layout,
           onEdit,
@@ -237,7 +255,7 @@ function RailCanvasInner({
       })
     })
     return { lastPos: last, computedNodes: out }
-  }, [railNodes, postById, isPublished, layout, onEdit, onDelete, positions])
+  }, [railNodes, postById, railById, isPublished, layout, onEdit, onDelete, positions])
 
   const initialNodes = useMemo<Node<CanvasNodeData | TrailingAddData>[]>(() => {
     const list: Node<CanvasNodeData | TrailingAddData>[] = [...computedNodes]
@@ -486,9 +504,10 @@ function RailNodeView({ data, selected }: NodeProps<Node<CanvasNodeData>>) {
   const isTrigger = node.type === "trigger"
   const isEnd = node.type === "end"
   const isTask = node.type === "task"
-  // Color & icon by type. Future types (sub_flow, statistic, approval) get
-  // their own accents when their runtime ships.
-  const accentColor = isTrigger ? "#E8711A" : isEnd ? "#B83229" : "#2A3D52"
+  const isSubFlow = node.type === "sub_flow"
+  // Color & icon by type. Future types (statistic, approval) get their own
+  // accents when their runtime ships.
+  const accentColor = isTrigger ? "#E8711A" : isEnd ? "#B83229" : isSubFlow ? "#5B527A" : "#2A3D52"
   const checklistCount = Array.isArray(node.checklistItems) ? node.checklistItems.length : 0
   const toolsCount = Array.isArray(node.toolsLinks) ? node.toolsLinks.length : 0
   const hasIdeal = node.idealMinutes != null && node.idealMinutes > 0
@@ -529,6 +548,13 @@ function RailNodeView({ data, selected }: NodeProps<Node<CanvasNodeData>>) {
               className="size-3.5 shrink-0"
               strokeWidth={2}
               style={{ color: "#B83229" }}
+              aria-hidden
+            />
+          ) : isSubFlow ? (
+            <Workflow
+              className="size-3.5 shrink-0"
+              strokeWidth={2}
+              style={{ color: "#5B527A" }}
               aria-hidden
             />
           ) : (
@@ -589,6 +615,20 @@ function RailNodeView({ data, selected }: NodeProps<Node<CanvasNodeData>>) {
                 {postVacant && " · vacant"}
               </p>
             </div>
+          ) : isSubFlow ? (
+            <p
+              className="truncate"
+              style={{
+                fontFamily: "var(--font-mono)",
+                fontSize: 10,
+                fontWeight: 600,
+                letterSpacing: "0.12em",
+                color: data.subFlowTargetName ? "#5B527A" : "#B83229",
+                textTransform: "uppercase",
+              }}
+            >
+              {data.subFlowTargetName ? `→ ${data.subFlowTargetName}` : "No target rail"}
+            </p>
           ) : (
             <p
               style={{

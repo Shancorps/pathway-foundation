@@ -110,6 +110,154 @@ async function findNextNode(ctx: Ctx, railId: string, afterPosition: number) {
   return row ?? null
 }
 
+interface AdvanceResult {
+  nextCycleId: string | null
+  runFinished: boolean
+  endReached: boolean
+  childRunId: string | null
+}
+
+/**
+ * Mark a rail_run as completed and, if it was a child of a parent rail_run
+ * waiting on a Sub-Flow, advance the parent past its Sub-Flow node.
+ */
+async function completeRun(
+  ctx: Ctx,
+  run: typeof railRuns.$inferSelect,
+  endReached: boolean,
+): Promise<void> {
+  const now = new Date()
+  await ctx.db
+    .update(railRuns)
+    .set({
+      status: "completed",
+      completedAt: now,
+      completedBy: ctx.session.user.id,
+      updatedAt: now,
+    })
+    .where(eq(railRuns.id, run.id))
+  // If a parent run is waiting on this child via a Sub-Flow, advance it.
+  void endReached
+  if (run.parentRunId && run.parentAtNodeId) {
+    const [parentRun] = await ctx.db
+      .select()
+      .from(railRuns)
+      .where(
+        and(
+          eq(railRuns.id, run.parentRunId),
+          eq(railRuns.organizationId, ctx.activeOrg.id),
+          isNull(railRuns.deletedAt),
+        ),
+      )
+      .limit(1)
+    if (parentRun?.status === "running") {
+      const [parentNode] = await ctx.db
+        .select()
+        .from(railNodes)
+        .where(eq(railNodes.id, run.parentAtNodeId))
+        .limit(1)
+      if (parentNode) {
+        await advanceRun(ctx, parentRun, parentNode.position)
+      }
+    }
+  }
+}
+
+/**
+ * Advance a rail_run past the given position. Returns what happened: a new
+ * cycle issued, the run finished, or a child run started. Recurses through
+ * structural nodes (End, Sub-Flow with no-wait) until a cycle-issuing node
+ * is reached or the run terminates.
+ */
+async function advanceRun(
+  ctx: Ctx,
+  run: typeof railRuns.$inferSelect,
+  fromPosition: number,
+): Promise<AdvanceResult> {
+  const next = await findNextNode(ctx, run.railId, fromPosition)
+  if (!next) {
+    await completeRun(ctx, run, false)
+    return { nextCycleId: null, runFinished: true, endReached: false, childRunId: null }
+  }
+  if (next.type === "end") {
+    await completeRun(ctx, run, true)
+    return { nextCycleId: null, runFinished: true, endReached: true, childRunId: null }
+  }
+  if (next.type === "task") {
+    const cycleId = await issueCycleForNode(ctx, run.id, next)
+    return { nextCycleId: cycleId, runFinished: false, endReached: false, childRunId: null }
+  }
+  if (next.type === "sub_flow") {
+    return await fireSubFlow(ctx, run, next)
+  }
+  throw new ActionError("VALIDATION", `Unsupported node type at runtime: ${next.type}`)
+}
+
+/**
+ * Reach a Sub-Flow node: spin up a child run on the configured target rail,
+ * link parentRunId + parentAtNodeId, and either pause (waitForCompletion) or
+ * keep advancing the parent.
+ */
+async function fireSubFlow(
+  ctx: Ctx,
+  parentRun: typeof railRuns.$inferSelect,
+  subFlowNode: typeof railNodes.$inferSelect,
+): Promise<AdvanceResult> {
+  if (subFlowNode.config.kind !== "sub_flow" || !subFlowNode.config.targetRailId) {
+    throw new ActionError(
+      "VALIDATION",
+      `Sub-Flow "${subFlowNode.name}" has no target rail configured.`,
+    )
+  }
+  const targetRailId = subFlowNode.config.targetRailId
+  const [targetRail] = await ctx.db
+    .select()
+    .from(rails)
+    .where(
+      and(
+        eq(rails.id, targetRailId),
+        eq(rails.organizationId, ctx.activeOrg.id),
+        isNull(rails.deletedAt),
+      ),
+    )
+    .limit(1)
+  if (!targetRail) {
+    throw new ActionError("VALIDATION", `Sub-Flow target rail no longer exists.`)
+  }
+  if (targetRail.status !== "published") {
+    throw new ActionError(
+      "VALIDATION",
+      `Sub-Flow target rail "${targetRail.name}" is not published.`,
+    )
+  }
+  const childFirst = await findFirstTaskNode(ctx, targetRail.id)
+  if (!childFirst) {
+    throw new ActionError("VALIDATION", `Sub-Flow target rail has no Task node to start at.`)
+  }
+
+  const childRunId = createId()
+  await ctx.db.insert(railRuns).values({
+    id: childRunId,
+    organizationId: ctx.activeOrg.id,
+    railId: targetRail.id,
+    particleId: parentRun.particleId,
+    status: "running",
+    startedBy: ctx.session.user.id,
+    parentRunId: parentRun.id,
+    parentAtNodeId: subFlowNode.id,
+  })
+  await issueCycleForNode(ctx, childRunId, childFirst)
+
+  if (subFlowNode.config.waitForCompletion) {
+    // Parent pauses here. No cycle for parent until child reaches End and
+    // completeRun resumes us.
+    return { nextCycleId: null, runFinished: false, endReached: false, childRunId }
+  }
+  // Fire-and-forget: keep advancing parent past the sub-flow.
+  const downstream = await advanceRun(ctx, parentRun, subFlowNode.position)
+  return { ...downstream, childRunId }
+}
+
 async function issueCycleForNode(
   ctx: Ctx,
   runId: string,
@@ -442,39 +590,14 @@ export const completeCycle = orgAction
       // Shouldn't happen given FK + load check above, but guard anyway.
       throw new ActionError("NOT_FOUND", "Rail run not found")
     }
-    // Find the next node after this cycle and decide what to do based on its
-    // type. Future commits will turn this into a loop that auto-resolves
-    // chained structural nodes (e.g., Task → Statistic-count → Sub-Flow →
-    // Task), but with only End added today the single lookup is enough.
-    let nextCycleId: string | null = null
-    let runFinished = false
-    let endReached = false
-    const next = await findNextNode(ctx, run.railId, cycle.position)
-    if (!next) {
-      runFinished = true
-    } else if (next.type === "end") {
-      runFinished = true
-      endReached = true
-    } else if (next.type === "task") {
-      nextCycleId = await issueCycleForNode(ctx, run.id, next)
-    } else {
-      // sub_flow / statistic / approval — runtime not implemented yet, but
-      // the publish-time validation should keep these out of any published
-      // rail until their semantics ship.
-      throw new ActionError("VALIDATION", `Unsupported node type at runtime: ${next.type}`)
-    }
-
-    if (runFinished) {
-      await ctx.db
-        .update(railRuns)
-        .set({
-          status: "completed",
-          completedAt: new Date(),
-          completedBy: ctx.session.user.id,
-          updatedAt: new Date(),
-        })
-        .where(eq(railRuns.id, run.id))
-    }
+    // Hand off to the generalized advance logic — handles End, Sub-Flow
+    // (with parent-resume on child completion), and Task. Future types
+    // plug into advanceRun's switch.
+    const advance = await advanceRun(ctx, run, cycle.position)
+    const nextCycleId = advance.nextCycleId
+    const runFinished = advance.runFinished
+    const endReached = advance.endReached
+    const childRunId = advance.childRunId
 
     await audit(
       {
@@ -493,6 +616,7 @@ export const completeCycle = orgAction
           nextCycleId,
           runFinished,
           endReached,
+          childRunId,
           timeSpentMinutes,
         },
       },

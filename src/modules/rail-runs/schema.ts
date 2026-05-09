@@ -72,6 +72,13 @@ export const railRuns = pgTable(
     startedBy: text("started_by").references(() => user.id, { onDelete: "set null" }),
     completedBy: text("completed_by").references(() => user.id, { onDelete: "set null" }),
     cancelledBy: text("cancelled_by").references(() => user.id, { onDelete: "set null" }),
+    // When set, this run was started by a Sub-Flow node in another rail run.
+    // parent_at_node_id is the sub_flow rail_node — used to resume the parent
+    // by advancing past it once this child reaches End.
+    parentRunId: text("parent_run_id").references((): AnyPgColumn => railRuns.id, {
+      onDelete: "set null",
+    }),
+    parentAtNodeId: text("parent_at_node_id"),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
     deletedAt: timestamp("deleted_at", { withTimezone: true }),
@@ -81,6 +88,7 @@ export const railRuns = pgTable(
     index("rail_runs_org_status_idx").on(t.organizationId, t.status, t.deletedAt),
     index("rail_runs_org_rail_idx").on(t.organizationId, t.railId, t.deletedAt),
     index("rail_runs_org_particle_idx").on(t.organizationId, t.particleId, t.deletedAt),
+    index("rail_runs_parent_idx").on(t.parentRunId),
   ],
 )
 
