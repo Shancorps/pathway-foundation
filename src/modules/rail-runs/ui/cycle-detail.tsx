@@ -383,6 +383,22 @@ export function CycleDetail({
         </div>
       )}
 
+      <div className="border-t border-[#E4E4E4] pt-4">
+        <a
+          href={`/runs/${railRunId}`}
+          className="inline-flex items-center gap-2 text-[#888] transition-colors hover:text-[#0F0F0F]"
+          style={{
+            fontFamily: "var(--font-mono)",
+            fontSize: 10,
+            fontWeight: 600,
+            letterSpacing: "0.18em",
+            textTransform: "uppercase",
+          }}
+        >
+          View run audit →
+        </a>
+      </div>
+
       {loopBackOpen && (
         <LoopBackDialog
           targets={loopBackTargets}

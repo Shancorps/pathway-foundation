@@ -1,5 +1,5 @@
 import "server-only"
-import { and, asc, count, desc, eq, inArray, isNull, lt } from "drizzle-orm"
+import { aliasedTable, and, asc, count, desc, eq, inArray, isNull, lt } from "drizzle-orm"
 import { db } from "@/lib/db"
 import { user } from "@/modules/auth/schema"
 import { posts, postAssignments } from "@/modules/org-structure/schema"
@@ -248,6 +248,174 @@ export async function listRunsForOrg(orgId: string) {
     .innerJoin(particles, eq(particles.id, railRuns.particleId))
     .where(and(eq(railRuns.organizationId, orgId), isNull(railRuns.deletedAt)))
     .orderBy(desc(railRuns.startedAt))
+}
+
+/**
+ * Full timeline for one rail run — every cycle in position order, with
+ * resolved actor names (completer + loop-back initiator) and the run's own
+ * metadata. Powers the /runs/[runId] page.
+ */
+export interface RunTimelineCycle {
+  id: string
+  position: number
+  title: string
+  description: string | null
+  postTitle: string
+  idealMinutes: number | null
+  issuedAt: Date
+  completedAt: Date | null
+  cancelledAt: Date | null
+  timeSpentMinutes: number
+  /** Live timer running on this cycle — needed for "in flight, X min so far". */
+  timerStartedAt: Date | null
+  completerName: string | null
+  loopBackOfCycleId: string | null
+  loopBackReason: string | null
+  loopBackInitiatorName: string | null
+  /** True if THIS cycle had an outstanding loop-back from it (originator side). */
+  hadLoopBackFromThis: boolean
+}
+
+export interface RunTimeline {
+  run: {
+    id: string
+    railId: string
+    railName: string
+    particleId: string
+    particleName: string
+    status: "running" | "completed" | "cancelled"
+    startedAt: Date
+    completedAt: Date | null
+    cancelledAt: Date | null
+    cancellationReason: string | null
+    starterName: string | null
+    finisherName: string | null
+    cancellerName: string | null
+  }
+  cycles: RunTimelineCycle[]
+  /** Total minutes across all cycles' timeSpentMinutes. */
+  totalActiveMinutes: number
+  /** End-to-end clock time: now (or completed/cancelled) minus startedAt. */
+  totalElapsedMinutes: number
+}
+
+export async function getRunTimeline(orgId: string, runId: string): Promise<RunTimeline | null> {
+  // Run + the three actor names in one go using left joins with aliasing.
+  const userStarter = aliasedTable(user, "user_starter")
+  const userFinisher = aliasedTable(user, "user_finisher")
+  const userCanceller = aliasedTable(user, "user_canceller")
+  const [runRow] = await db
+    .select({
+      id: railRuns.id,
+      railId: railRuns.railId,
+      railName: rails.name,
+      particleId: railRuns.particleId,
+      particleName: particles.name,
+      status: railRuns.status,
+      startedAt: railRuns.startedAt,
+      completedAt: railRuns.completedAt,
+      cancelledAt: railRuns.cancelledAt,
+      cancellationReason: railRuns.cancellationReason,
+      starterName: userStarter.name,
+      finisherName: userFinisher.name,
+      cancellerName: userCanceller.name,
+    })
+    .from(railRuns)
+    .innerJoin(rails, eq(rails.id, railRuns.railId))
+    .innerJoin(particles, eq(particles.id, railRuns.particleId))
+    .leftJoin(userStarter, eq(userStarter.id, railRuns.startedBy))
+    .leftJoin(userFinisher, eq(userFinisher.id, railRuns.completedBy))
+    .leftJoin(userCanceller, eq(userCanceller.id, railRuns.cancelledBy))
+    .where(
+      and(eq(railRuns.id, runId), eq(railRuns.organizationId, orgId), isNull(railRuns.deletedAt)),
+    )
+    .limit(1)
+  if (!runRow) return null
+
+  const userCompleter = aliasedTable(user, "user_completer")
+  const userInitiator = aliasedTable(user, "user_initiator")
+  const cycleRows = await db
+    .select({
+      id: cycles.id,
+      position: cycles.position,
+      title: cycles.title,
+      description: cycles.description,
+      postTitle: posts.title,
+      idealMinutes: cycles.idealMinutes,
+      issuedAt: cycles.issuedAt,
+      completedAt: cycles.completedAt,
+      cancelledAt: cycles.cancelledAt,
+      timeSpentMinutes: cycles.timeSpentMinutes,
+      timerStartedAt: cycles.timerStartedAt,
+      completerName: userCompleter.name,
+      loopBackOfCycleId: cycles.loopBackOfCycleId,
+      loopBackReason: cycles.loopBackReason,
+      loopBackInitiatorName: userInitiator.name,
+      loopBackInitiatedFromCycleId: cycles.loopBackInitiatedFromCycleId,
+    })
+    .from(cycles)
+    .innerJoin(posts, eq(posts.id, cycles.postId))
+    .leftJoin(userCompleter, eq(userCompleter.id, cycles.completedBy))
+    .leftJoin(userInitiator, eq(userInitiator.id, cycles.loopBackInitiatedBy))
+    .where(
+      and(eq(cycles.organizationId, orgId), eq(cycles.railRunId, runId), isNull(cycles.deletedAt)),
+    )
+    .orderBy(asc(cycles.position), asc(cycles.issuedAt))
+
+  // Mark cycles that had a loop-back originated FROM them (originator side).
+  // A cycle X had a loop-back from it when some other cycle has
+  // loopBackInitiatedFromCycleId = X.id.
+  const initiatedFrom = new Set<string>()
+  for (const c of cycleRows) {
+    if (c.loopBackInitiatedFromCycleId) initiatedFrom.add(c.loopBackInitiatedFromCycleId)
+  }
+
+  const timelineCycles: RunTimelineCycle[] = cycleRows.map((c) => ({
+    id: c.id,
+    position: c.position,
+    title: c.title,
+    description: c.description,
+    postTitle: c.postTitle,
+    idealMinutes: c.idealMinutes,
+    issuedAt: c.issuedAt,
+    completedAt: c.completedAt,
+    cancelledAt: c.cancelledAt,
+    timeSpentMinutes: c.timeSpentMinutes,
+    timerStartedAt: c.timerStartedAt,
+    completerName: c.completerName,
+    loopBackOfCycleId: c.loopBackOfCycleId,
+    loopBackReason: c.loopBackReason,
+    loopBackInitiatorName: c.loopBackInitiatorName,
+    hadLoopBackFromThis: initiatedFrom.has(c.id),
+  }))
+
+  const totalActiveMinutes = timelineCycles.reduce((acc, c) => acc + c.timeSpentMinutes, 0)
+  const endStamp = runRow.completedAt ?? runRow.cancelledAt ?? new Date()
+  const totalElapsedMinutes = Math.max(
+    0,
+    Math.round((endStamp.getTime() - runRow.startedAt.getTime()) / 60000),
+  )
+
+  return {
+    run: {
+      id: runRow.id,
+      railId: runRow.railId,
+      railName: runRow.railName,
+      particleId: runRow.particleId,
+      particleName: runRow.particleName,
+      status: runRow.status,
+      startedAt: runRow.startedAt,
+      completedAt: runRow.completedAt,
+      cancelledAt: runRow.cancelledAt,
+      cancellationReason: runRow.cancellationReason,
+      starterName: runRow.starterName,
+      finisherName: runRow.finisherName,
+      cancellerName: runRow.cancellerName,
+    },
+    cycles: timelineCycles,
+    totalActiveMinutes,
+    totalElapsedMinutes,
+  }
 }
 
 /** Count of open (not completed, not cancelled) cycles in the user's inbox. */

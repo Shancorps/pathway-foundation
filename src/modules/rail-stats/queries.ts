@@ -290,6 +290,7 @@ export interface LoopBackLogRow {
   id: string
   railId: string
   railName: string
+  railRunId: string
   particleName: string
   cycleTitle: string
   reason: string | null
@@ -313,6 +314,7 @@ export async function getLoopBackLog(orgId: string, w: StatsWindow): Promise<Loo
       id: cycles.id,
       railId: railRuns.railId,
       railName: rails.name,
+      railRunId: railRuns.id,
       particleName: particles.name,
       cycleTitle: cycles.title,
       reason: cycles.loopBackReason,
@@ -372,6 +374,7 @@ export async function getLoopBackLog(orgId: string, w: StatsWindow): Promise<Loo
       id: r.id,
       railId: r.railId,
       railName: r.railName,
+      railRunId: r.railRunId,
       particleName: r.particleName,
       cycleTitle: r.cycleTitle,
       reason: r.reason,

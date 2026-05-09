@@ -144,7 +144,7 @@ export function LoopBackDetailPanel({
         </div>
       )}
 
-      <div className="mt-6 border-t border-[#E4E4E4] pt-4">
+      <div className="mt-6 flex flex-wrap items-center gap-x-6 gap-y-2 border-t border-[#E4E4E4] pt-4">
         <Link
           href={`/my-actions/${row.id}`}
           className="inline-flex items-center gap-2"
@@ -158,6 +158,20 @@ export function LoopBackDetailPanel({
           }}
         >
           Open the loop-back cycle →
+        </Link>
+        <Link
+          href={`/runs/${row.railRunId}`}
+          className="inline-flex items-center gap-2 transition-colors hover:text-[#0F0F0F]"
+          style={{
+            fontFamily: "var(--font-mono)",
+            fontSize: 10,
+            fontWeight: 600,
+            letterSpacing: "0.18em",
+            color: "#888",
+            textTransform: "uppercase",
+          }}
+        >
+          View full run audit →
         </Link>
       </div>
     </RegCard>
