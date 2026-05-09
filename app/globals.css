@@ -54,41 +54,122 @@
   /* IBM Plex via next/font, exposed as variables. */
   --font-sans: var(--font-plex-sans), ui-sans-serif, system-ui, sans-serif;
   --font-mono: var(--font-plex-mono), ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  /*
+   * Blueprint design tokens. The engineering-blueprint screens (rail builder,
+   * my-actions, stats, calendar, audit, run timeline) reference these
+   * directly via `var(--bp-*)` so the same component flips between light and
+   * dark cleanly. NEVER inline a hex value for a color that the dark mode
+   * needs to flip — always go through these tokens.
+   *
+   * LIGHT defaults below. The `.dark` block beneath overrides each.
+   */
+
+  /* Surfaces (depth) */
+  --bp-surface-page: #ffffff; /* the drawing paper */
+  --bp-surface-card: #ffffff; /* card body, default */
+  --bp-surface-card-active: #fff8f1; /* active card warm tint */
+  --bp-surface-card-queued: #fafafa; /* queued card cool tint */
+  --bp-surface-inset: #fafafa; /* recessed wells, code blocks */
+  --bp-surface-raised: #ffffff; /* dialog / popover */
+  --bp-surface-grid: #f0f0f0; /* faint grid background */
+
+  /* Typography (priority hierarchy) */
+  --bp-text-primary: #0f0f0f; /* default body */
+  --bp-text-secondary: #444444; /* dimmer body */
+  --bp-text-muted: #888888; /* labels, helper */
+  --bp-text-disabled: #aaaaaa; /* hints, placeholders */
+  --bp-text-on-accent: #ffffff; /* text on solid orange/steel/red */
+
+  /* Borders */
+  --bp-border-default: #e4e4e4; /* hairline default */
+  --bp-border-strong: #d4d4d4; /* visible separation */
+  --bp-border-graphite: #0f0f0f; /* high-contrast frame, top bar */
+
+  /* Accents (Particle Orange unchanged; everything else slightly different
+     in dark for contrast) */
+  --bp-accent-orange: #e8711a;
+  --bp-accent-orange-tint: #fff8f1; /* faint orange wash */
+  --bp-accent-orange-hover: #ffe6d5;
+  --bp-accent-steel: #2a3d52;
+  --bp-accent-steel-soft: #5a7a92; /* lighter steel for labels */
+  --bp-accent-end: #b83229; /* terminator red */
+  --bp-accent-success: #1f4e36;
+  --bp-accent-purple: #5b527a; /* sub-flow accent */
+  --bp-accent-warm: #7a5c1f; /* condition accent */
 }
 
 /*
  * Dark mode (next-themes adds `class="dark"` on <html>).
  *
- * Engineering blueprint translates to dark via inversion: graphite ↔ near-white,
- * paper white → graphite, steel ↑ for visibility, orange unchanged.
- *
- * Many of our blueprint screens use INLINE hardcoded hex values (e.g.
- * style={{ color: "#0F0F0F" }}) — those won't flip with these overrides.
- * They get a per-screen pass in a follow-up. Until then dark mode looks right
- * in: app shell + sidebar background, root surfaces, shadcn primitives,
- * settings pages, dialogs.
+ * Engineering blueprint translates to dark by:
+ * - Layered dark navy-charcoal surfaces (not pure black) so cards lift
+ *   off the page with depth instead of disappearing into the void.
+ * - Off-white typography (#e5e7eb), softer than #fff to reduce strain.
+ * - Borders go from hairline-grey to dim-graphite — present but quiet.
+ * - Particle Orange stays unchanged (recognizable across themes).
+ * - Steel and accents shift lighter for legibility on dark surfaces.
  */
 .dark {
-  --color-background: #0a0a0a;
-  --color-foreground: #f5f5f5;
-  --color-muted: #161616;
-  --color-muted-foreground: #888888;
-  --color-card: #161616;
-  --color-card-foreground: #f5f5f5;
-  --color-popover: #161616;
-  --color-popover-foreground: #f5f5f5;
+  /* Shadcn token bridge (used by Tailwind utility classes + shadcn) */
+  --color-background: #0e1014;
+  --color-foreground: #e5e7eb;
+  --color-muted: #14171c;
+  --color-muted-foreground: #9ca3af;
+  --color-card: #14171c;
+  --color-card-foreground: #e5e7eb;
+  --color-popover: #14171c;
+  --color-popover-foreground: #e5e7eb;
   --color-primary: #e8711a;
   --color-primary-foreground: #ffffff;
-  --color-secondary: #3a5068;
-  --color-secondary-foreground: #f5f5f5;
-  --color-accent: #1f1f1f;
-  --color-accent-foreground: #f5f5f5;
+  --color-secondary: #5a7a92;
+  --color-secondary-foreground: #e5e7eb;
+  --color-accent: #1a1e24;
+  --color-accent-foreground: #e5e7eb;
   --color-destructive: #d04535;
   --color-destructive-foreground: #ffffff;
-  --color-border: #232323;
-  --color-border-strong: #2e2e2e;
-  --color-input: #2e2e2e;
+  --color-border: #232830;
+  --color-border-strong: #353a44;
+  --color-input: #353a44;
   --color-ring: #e8711a;
+
+  /* Blueprint tokens (used directly by inline-styled screens) */
+  --bp-surface-page: #0e1014;
+  --bp-surface-card: #14171c;
+  --bp-surface-card-active: #1f1814; /* warm-tinted dark for active */
+  --bp-surface-card-queued: #14171c;
+  --bp-surface-inset: #0a0c10; /* recessed: darker than page */
+  --bp-surface-raised: #1a1e24;
+  --bp-surface-grid: #1a1e24; /* faint grid lines on dark */
+
+  --bp-text-primary: #e5e7eb;
+  --bp-text-secondary: #b8bcc4;
+  --bp-text-muted: #9ca3af;
+  --bp-text-disabled: #6b7280;
+  --bp-text-on-accent: #ffffff;
+
+  --bp-border-default: #232830;
+  --bp-border-strong: #353a44;
+  --bp-border-graphite: #b8bcc4; /* flips: in dark, the "graphite frame" is the light line */
+
+  --bp-accent-orange: #e8711a;
+  --bp-accent-orange-tint: #2a1d12; /* warm dark tint instead of cream */
+  --bp-accent-orange-hover: #3a2716;
+  --bp-accent-steel: #6b8aa3; /* lighter for legibility */
+  --bp-accent-steel-soft: #8aa3b9;
+  --bp-accent-end: #e36054; /* warmer red on dark */
+  --bp-accent-success: #4a9d72; /* lighter green */
+  --bp-accent-purple: #8b80a8;
+  --bp-accent-warm: #b8945a;
+}
+
+/*
+ * SVG <stop> elements can't read CSS variables via stop-color attribute on
+ * Safari, so we attach a class and use the `stop-color` CSS property which
+ * IS variable-friendly. Used by the grid background's radial-fade mask.
+ */
+.grid-fade-stop {
+  stop-color: var(--bp-surface-page);
 }
 
 @layer base {

@@ -114,7 +114,7 @@ export function SubFlowDialog({
                   fontFamily: "var(--font-mono)",
                   fontSize: 10,
                   letterSpacing: "0.06em",
-                  color: "#888",
+                  color: "var(--bp-text-muted)",
                 }}
               >
                 No other rails in this org. Build another rail first.
@@ -135,7 +135,7 @@ export function SubFlowDialog({
                   fontFamily: "var(--font-sans)",
                   fontSize: 14,
                   fontWeight: 500,
-                  color: "#0F0F0F",
+                  color: "var(--bp-text-primary)",
                 }}
               >
                 Wait for completion
@@ -145,7 +145,7 @@ export function SubFlowDialog({
                   fontFamily: "var(--font-mono)",
                   fontSize: 10,
                   letterSpacing: "0.06em",
-                  color: "#888",
+                  color: "var(--bp-text-muted)",
                 }}
               >
                 Parent rail pauses here until the sub-rail reaches its End node.

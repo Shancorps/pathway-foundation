@@ -386,7 +386,7 @@ function RailCanvasInner({
     <div
       ref={wrapperRef}
       className="relative h-full w-full"
-      style={{ backgroundColor: "#fff" }}
+      style={{ backgroundColor: "var(--bp-surface-card)" }}
       onDrop={handleDrop}
       onDragOver={handleDragOver}
     >
@@ -424,7 +424,7 @@ function RailCanvasInner({
         <Controls
           showInteractive={false}
           position="bottom-left"
-          style={{ border: "1px solid #0F0F0F", backgroundColor: "#fff" }}
+          style={{ border: "1px solid #0F0F0F", backgroundColor: "var(--bp-surface-card)" }}
         />
       </ReactFlow>
     </div>
@@ -483,8 +483,8 @@ function LayoutBtn({
       onClick={onClick}
       className={
         active
-          ? "border border-[#E8711A] bg-[#E8711A] text-white"
-          : "border border-[#D4D4D4] bg-white text-[#0F0F0F] hover:border-[#0F0F0F]"
+          ? "border border-[var(--bp-accent-orange)] bg-[var(--bp-accent-orange)] text-white"
+          : "border border-[var(--bp-border-strong)] bg-white text-[var(--bp-text-primary)] hover:border-[var(--bp-border-graphite)]"
       }
       style={{
         padding: "6px 8px",
@@ -510,14 +510,14 @@ function RailNodeView({ data, selected }: NodeProps<Node<CanvasNodeData>>) {
   // Color & icon by type. Future types (statistic, approval) get their own
   // accents when their runtime ships.
   const accentColor = isTrigger
-    ? "#E8711A"
+    ? "var(--bp-accent-orange)"
     : isEnd
-      ? "#B83229"
+      ? "var(--bp-accent-end)"
       : isSubFlow
-        ? "#5B527A"
+        ? "var(--bp-accent-purple)"
         : isApproval
-          ? "#1F4E36"
-          : "#2A3D52"
+          ? "var(--bp-accent-success)"
+          : "var(--bp-accent-steel)"
   const checklistCount = Array.isArray(node.checklistItems) ? node.checklistItems.length : 0
   const toolsCount = Array.isArray(node.toolsLinks) ? node.toolsLinks.length : 0
   const hasIdeal = node.idealMinutes != null && node.idealMinutes > 0
@@ -533,8 +533,8 @@ function RailNodeView({ data, selected }: NodeProps<Node<CanvasNodeData>>) {
       style={{
         width: NODE_WIDTH,
         height: NODE_HEIGHT,
-        backgroundColor: "#fff",
-        border: `1.5px solid ${selected ? "#E8711A" : "#0F0F0F"}`,
+        backgroundColor: "var(--bp-surface-card)",
+        border: `1.5px solid ${selected ? "var(--bp-accent-orange)" : "var(--bp-text-primary)"}`,
         position: "relative",
         cursor: "pointer",
         display: "flex",
@@ -550,35 +550,35 @@ function RailNodeView({ data, selected }: NodeProps<Node<CanvasNodeData>>) {
             <Zap
               className="size-3.5 shrink-0"
               strokeWidth={2}
-              style={{ color: "#E8711A" }}
+              style={{ color: "var(--bp-accent-orange)" }}
               aria-hidden
             />
           ) : isEnd ? (
             <StopCircle
               className="size-3.5 shrink-0"
               strokeWidth={2}
-              style={{ color: "#B83229" }}
+              style={{ color: "var(--bp-accent-end)" }}
               aria-hidden
             />
           ) : isSubFlow ? (
             <Workflow
               className="size-3.5 shrink-0"
               strokeWidth={2}
-              style={{ color: "#5B527A" }}
+              style={{ color: "var(--bp-accent-purple)" }}
               aria-hidden
             />
           ) : isApproval ? (
             <CheckCheck
               className="size-3.5 shrink-0"
               strokeWidth={2}
-              style={{ color: "#1F4E36" }}
+              style={{ color: "var(--bp-accent-success)" }}
               aria-hidden
             />
           ) : (
             <span
               aria-hidden
               className="inline-block shrink-0"
-              style={{ width: 10, height: 10, backgroundColor: "#2A3D52" }}
+              style={{ width: 10, height: 10, backgroundColor: "var(--bp-accent-steel)" }}
             />
           )}
           <p
@@ -587,7 +587,7 @@ function RailNodeView({ data, selected }: NodeProps<Node<CanvasNodeData>>) {
               fontFamily: "var(--font-sans)",
               fontSize: 14,
               fontWeight: 600,
-              color: "#0F0F0F",
+              color: "var(--bp-text-primary)",
               letterSpacing: "-0.005em",
             }}
           >
@@ -600,7 +600,7 @@ function RailNodeView({ data, selected }: NodeProps<Node<CanvasNodeData>>) {
               fontSize: 9,
               fontWeight: 600,
               letterSpacing: "0.16em",
-              color: "#888",
+              color: "var(--bp-text-muted)",
               textTransform: "uppercase",
             }}
           >
@@ -614,7 +614,9 @@ function RailNodeView({ data, selected }: NodeProps<Node<CanvasNodeData>>) {
               <MapPin
                 className="size-3 shrink-0"
                 strokeWidth={1.75}
-                style={{ color: postVacant ? "#B83229" : "#5A7A92" }}
+                style={{
+                  color: postVacant ? "var(--bp-accent-end)" : "var(--bp-accent-steel-soft)",
+                }}
                 aria-hidden
               />
               <p
@@ -624,7 +626,7 @@ function RailNodeView({ data, selected }: NodeProps<Node<CanvasNodeData>>) {
                   fontSize: 10,
                   fontWeight: 600,
                   letterSpacing: "0.1em",
-                  color: postVacant ? "#B83229" : "#5A7A92",
+                  color: postVacant ? "var(--bp-accent-end)" : "var(--bp-accent-steel-soft)",
                   textTransform: "uppercase",
                 }}
               >
@@ -640,7 +642,7 @@ function RailNodeView({ data, selected }: NodeProps<Node<CanvasNodeData>>) {
                 fontSize: 10,
                 fontWeight: 600,
                 letterSpacing: "0.12em",
-                color: data.subFlowTargetName ? "#5B527A" : "#B83229",
+                color: data.subFlowTargetName ? "var(--bp-accent-purple)" : "var(--bp-accent-end)",
                 textTransform: "uppercase",
               }}
             >
@@ -653,7 +655,7 @@ function RailNodeView({ data, selected }: NodeProps<Node<CanvasNodeData>>) {
                 fontSize: 10,
                 fontWeight: 600,
                 letterSpacing: "0.16em",
-                color: isEnd ? "#B83229" : "#888",
+                color: isEnd ? "var(--bp-accent-end)" : "var(--bp-text-muted)",
                 textTransform: "uppercase",
               }}
             >
@@ -691,7 +693,7 @@ function RailNodeView({ data, selected }: NodeProps<Node<CanvasNodeData>>) {
             onDelete(node)
           }}
           aria-label={`Delete ${node.name}`}
-          className="nodrag absolute -top-2 -right-2 grid size-5 place-items-center bg-white transition-colors hover:bg-[#FFE6D5]"
+          className="nodrag absolute -top-2 -right-2 grid size-5 place-items-center bg-white transition-colors hover:bg-[var(--bp-accent-orange-hover)]"
           style={{ border: "1px solid #0F0F0F" }}
         >
           <X className="size-3" strokeWidth={2.25} aria-hidden />
@@ -735,7 +737,7 @@ function TrailingAddNode({ data }: NodeProps<Node<TrailingAddData>>) {
       // `nodrag nopan` tells xyflow to ignore drag/pan starts on this element.
       // Stopping pointerdown propagation prevents xyflow's selection handler
       // from swallowing the click before it reaches onClick.
-      className="nodrag nopan grid size-11 place-items-center bg-white transition-colors hover:bg-[#FFF8F1]"
+      className="nodrag nopan grid size-11 place-items-center bg-white transition-colors hover:bg-[var(--bp-surface-card-active)]"
       onPointerDown={(e) => {
         e.stopPropagation()
       }}
@@ -746,7 +748,7 @@ function TrailingAddNode({ data }: NodeProps<Node<TrailingAddData>>) {
       style={{
         border: "1.5px dashed #E8711A",
         cursor: "pointer",
-        color: "#E8711A",
+        color: "var(--bp-accent-orange)",
         pointerEvents: "all",
       }}
       aria-label="Add task at end"
@@ -782,7 +784,7 @@ function AddEdge({
       <BaseEdge
         path={edgePath}
         markerEnd={markerEnd}
-        style={{ stroke: "#E8711A", strokeWidth: 1.5, strokeDasharray: "4 3" }}
+        style={{ stroke: "var(--bp-accent-orange)", strokeWidth: 1.5, strokeDasharray: "4 3" }}
       />
       {!isPublished && data && (
         <EdgeLabelRenderer>
@@ -802,14 +804,14 @@ function AddEdge({
               height: 22,
               display: "grid",
               placeItems: "center",
-              backgroundColor: "#fff",
+              backgroundColor: "var(--bp-surface-card)",
               border: "1.5px solid #E8711A",
-              color: "#E8711A",
+              color: "var(--bp-accent-orange)",
               cursor: "pointer",
               transition: "background-color 120ms",
             }}
             onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = "#FFF8F1"
+              e.currentTarget.style.backgroundColor = "var(--bp-surface-card-active)"
             }}
             onMouseLeave={(e) => {
               e.currentTarget.style.backgroundColor = "#fff"
@@ -832,10 +834,10 @@ function Stat({ icon, children }: { icon: React.ReactNode; children: React.React
         fontSize: 9,
         fontWeight: 600,
         letterSpacing: "0.1em",
-        color: "#666",
+        color: "var(--bp-text-secondary)",
       }}
     >
-      <span className="text-[#888]">{icon}</span>
+      <span className="text-[var(--bp-text-muted)]">{icon}</span>
       {children}
     </span>
   )

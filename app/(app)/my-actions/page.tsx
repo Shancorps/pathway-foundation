@@ -37,16 +37,18 @@ export default async function MyActionsPage() {
               fontSize: 11,
               fontWeight: 500,
               letterSpacing: "0.16em",
-              color: "#666",
+              color: "var(--bp-text-secondary)",
               textTransform: "uppercase",
             }}
           >
             <div>
-              <span style={{ color: "#AAA" }}>Posts Held</span>{" "}
-              <span style={{ color: "#0F0F0F" }}>·</span>{" "}
-              <span style={{ color: "#0F0F0F", fontWeight: 600 }}>{String(postsHeld.length)}</span>
+              <span style={{ color: "var(--bp-text-disabled)" }}>Posts Held</span>{" "}
+              <span style={{ color: "var(--bp-text-primary)" }}>·</span>{" "}
+              <span style={{ color: "var(--bp-text-primary)", fontWeight: 600 }}>
+                {String(postsHeld.length)}
+              </span>
             </div>
-            <div style={{ color: "#AAA" }}>Rev · {revStamp}</div>
+            <div style={{ color: "var(--bp-text-disabled)" }}>Rev · {revStamp}</div>
           </div>
         }
         action={

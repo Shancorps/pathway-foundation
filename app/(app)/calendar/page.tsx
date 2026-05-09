@@ -63,21 +63,29 @@ export default async function CalendarPage({
               fontSize: 11,
               fontWeight: 500,
               letterSpacing: "0.16em",
-              color: "#666",
+              color: "var(--bp-text-secondary)",
               textTransform: "uppercase",
             }}
           >
             <div>
-              <span style={{ color: "#AAA" }}>Open</span>{" "}
-              <span style={{ color: "#0F0F0F" }}>·</span>{" "}
-              <span style={{ color: "#0F0F0F", fontWeight: 600 }}>{String(openCount)}</span>
+              <span style={{ color: "var(--bp-text-disabled)" }}>Open</span>{" "}
+              <span style={{ color: "var(--bp-text-primary)" }}>·</span>{" "}
+              <span style={{ color: "var(--bp-text-primary)", fontWeight: 600 }}>
+                {String(openCount)}
+              </span>
             </div>
             <div>
-              <span style={{ color: "#AAA" }}>Overdue</span>{" "}
-              <span style={{ color: overdueCount > 0 ? "#B83229" : "#0F0F0F" }}>·</span>{" "}
+              <span style={{ color: "var(--bp-text-disabled)" }}>Overdue</span>{" "}
               <span
                 style={{
-                  color: overdueCount > 0 ? "#B83229" : "#0F0F0F",
+                  color: overdueCount > 0 ? "var(--bp-accent-end)" : "var(--bp-text-primary)",
+                }}
+              >
+                ·
+              </span>{" "}
+              <span
+                style={{
+                  color: overdueCount > 0 ? "var(--bp-accent-end)" : "var(--bp-text-primary)",
                   fontWeight: 600,
                 }}
               >
@@ -91,19 +99,19 @@ export default async function CalendarPage({
             <Link
               href={prevHref}
               aria-label="Previous month"
-              className="inline-flex items-center justify-center border border-[#0F0F0F] bg-white p-2 transition-colors hover:bg-[#FAFAFA]"
+              className="inline-flex items-center justify-center border border-[var(--bp-border-graphite)] bg-white p-2 transition-colors hover:bg-[var(--bp-surface-card-queued)]"
             >
               <ChevronLeft className="size-3.5" strokeWidth={2} />
             </Link>
             <Link
               href={todayHref}
-              className="inline-flex items-center justify-center border border-[#0F0F0F] bg-white px-4 py-2 transition-colors hover:bg-[#FAFAFA]"
+              className="inline-flex items-center justify-center border border-[var(--bp-border-graphite)] bg-white px-4 py-2 transition-colors hover:bg-[var(--bp-surface-card-queued)]"
               style={{
                 fontFamily: "var(--font-mono)",
                 fontSize: 10,
                 fontWeight: 600,
                 letterSpacing: "0.18em",
-                color: "#0F0F0F",
+                color: "var(--bp-text-primary)",
                 textTransform: "uppercase",
               }}
             >
@@ -112,7 +120,7 @@ export default async function CalendarPage({
             <Link
               href={nextHref}
               aria-label="Next month"
-              className="inline-flex items-center justify-center border border-[#0F0F0F] bg-white p-2 transition-colors hover:bg-[#FAFAFA]"
+              className="inline-flex items-center justify-center border border-[var(--bp-border-graphite)] bg-white p-2 transition-colors hover:bg-[var(--bp-surface-card-queued)]"
             >
               <ChevronRight className="size-3.5" strokeWidth={2} />
             </Link>
@@ -140,13 +148,13 @@ function Legend() {
         fontSize: 9,
         fontWeight: 600,
         letterSpacing: "0.18em",
-        color: "#888",
+        color: "var(--bp-text-muted)",
         textTransform: "uppercase",
       }}
     >
-      <LegendItem color="#E8711A" label="Open cycle" />
-      <LegendItem color="#B83229" label="Overdue" />
-      <LegendItem color="#2A3D52" label="Completed" />
+      <LegendItem color="var(--bp-accent-orange)" label="Open cycle" />
+      <LegendItem color="var(--bp-accent-end)" label="Overdue" />
+      <LegendItem color="var(--bp-accent-steel)" label="Completed" />
     </div>
   )
 }

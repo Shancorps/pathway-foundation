@@ -25,7 +25,12 @@ export const RegCard = forwardRef<HTMLDivElement, RegCardProps>(function RegCard
   { state = "active", filled = true, className, children, ...props },
   ref,
 ) {
-  const cornerColor = state === "active" ? "#0F0F0F" : state === "queued" ? "#2A3D52" : "#BBBBBB"
+  const cornerColor =
+    state === "active"
+      ? "var(--bp-border-graphite)"
+      : state === "queued"
+        ? "var(--bp-accent-steel)"
+        : "var(--bp-border-strong)"
   const cornerOpacity = state === "queued" ? 0.6 : 1
   // Slightly larger corner marks (12px stubs at 2px) so cards read clearly.
   const stub = 12
@@ -46,9 +51,13 @@ export const RegCard = forwardRef<HTMLDivElement, RegCardProps>(function RegCard
   })
 
   // Off-white fill so cards visually separate from the page. Active gets a
-  // very faint warm tint (#FFF8F0) to telegraph "live work"; queued / new
-  // get neutral cool grey.
-  const fillBg = filled ? (state === "active" ? "#FFF8F1" : "#FAFAFA") : "#FFFFFF"
+  // warm tint to telegraph "live work"; queued / new get the neutral card
+  // surface. In dark mode these tokens flip to layered dark variants.
+  const fillBg = filled
+    ? state === "active"
+      ? "var(--bp-surface-card-active)"
+      : "var(--bp-surface-card-queued)"
+    : "var(--bp-surface-card)"
 
   return (
     <div
@@ -77,7 +86,7 @@ export const RegCard = forwardRef<HTMLDivElement, RegCardProps>(function RegCard
             top: "12px",
             bottom: "12px",
             width: "3px",
-            backgroundColor: "#E8711A",
+            backgroundColor: "var(--bp-accent-orange)",
             pointerEvents: "none",
           }}
         />

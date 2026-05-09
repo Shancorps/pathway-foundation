@@ -115,7 +115,7 @@ export function ApprovalDialog({
                   fontFamily: "var(--font-mono)",
                   fontSize: 10,
                   letterSpacing: "0.06em",
-                  color: "#888",
+                  color: "var(--bp-text-muted)",
                 }}
               >
                 No posts in your org yet.
@@ -159,9 +159,9 @@ export function ApprovalDialog({
                 fontFamily: "var(--font-mono)",
                 fontSize: 11,
                 letterSpacing: "0.06em",
-                color: "#444",
+                color: "var(--bp-text-secondary)",
                 border: "1px solid #E4E4E4",
-                backgroundColor: "#FAFAFA",
+                backgroundColor: "var(--bp-surface-card-queued)",
               }}
             >
               End the rail · the run terminates when rejected
@@ -172,7 +172,7 @@ export function ApprovalDialog({
                 fontFamily: "var(--font-mono)",
                 fontSize: 9,
                 letterSpacing: "0.06em",
-                color: "#888",
+                color: "var(--bp-text-muted)",
               }}
             >
               Loop-back and branch-on-rejection options ship in a follow-up.

@@ -58,7 +58,7 @@ export function TeamMembersList({
                     fontFamily: "var(--font-sans)",
                     fontSize: 15,
                     fontWeight: 500,
-                    color: "#0F0F0F",
+                    color: "var(--bp-text-primary)",
                   }}
                 >
                   {m.user.name}
@@ -70,7 +70,7 @@ export function TeamMembersList({
                         fontSize: 9,
                         fontWeight: 600,
                         letterSpacing: "0.18em",
-                        color: "#888",
+                        color: "var(--bp-text-muted)",
                         textTransform: "uppercase",
                       }}
                     >
@@ -84,7 +84,7 @@ export function TeamMembersList({
                     fontFamily: "var(--font-mono)",
                     fontSize: 11,
                     letterSpacing: "0.06em",
-                    color: "#888",
+                    color: "var(--bp-text-muted)",
                   }}
                 >
                   {m.user.email}
@@ -105,7 +105,7 @@ export function TeamMembersList({
                         fontSize: 10,
                         fontWeight: 600,
                         letterSpacing: "0.14em",
-                        color: "#0F0F0F",
+                        color: "var(--bp-text-primary)",
                         border: "1px solid #D4D4D4",
                         backgroundColor: "#fff",
                         textTransform: "uppercase",
@@ -121,13 +121,13 @@ export function TeamMembersList({
                         void remove(m.id)
                       }}
                       disabled={busyId === m.id}
-                      className="px-2 py-1 transition-colors hover:text-[#E8711A] disabled:opacity-50"
+                      className="px-2 py-1 transition-colors hover:text-[var(--bp-accent-orange)] disabled:opacity-50"
                       style={{
                         fontFamily: "var(--font-mono)",
                         fontSize: 9,
                         fontWeight: 600,
                         letterSpacing: "0.18em",
-                        color: "#888",
+                        color: "var(--bp-text-muted)",
                         textTransform: "uppercase",
                       }}
                     >
@@ -145,7 +145,12 @@ export function TeamMembersList({
 }
 
 function RoleTag({ role }: { role: string }) {
-  const color = role === "owner" ? "#E8711A" : role === "admin" ? "#2A3D52" : "#888"
+  const color =
+    role === "owner"
+      ? "var(--bp-accent-orange)"
+      : role === "admin"
+        ? "var(--bp-accent-steel)"
+        : "var(--bp-text-muted)"
   const filled = role === "owner"
   return (
     <span

@@ -24,7 +24,7 @@ export function LoopBackDetailPanel({
               fontSize: 10,
               fontWeight: 600,
               letterSpacing: "0.2em",
-              color: "#E8711A",
+              color: "var(--bp-accent-orange)",
               textTransform: "uppercase",
             }}
           >
@@ -37,7 +37,7 @@ export function LoopBackDetailPanel({
               fontFamily: "var(--font-sans)",
               fontSize: 18,
               fontWeight: 600,
-              color: "#0F0F0F",
+              color: "var(--bp-text-primary)",
               letterSpacing: "-0.005em",
             }}
           >
@@ -46,7 +46,7 @@ export function LoopBackDetailPanel({
         </div>
         <Link
           href={closeHref}
-          className="text-[#888] transition-colors hover:text-[#0F0F0F]"
+          className="text-[var(--bp-text-muted)] transition-colors hover:text-[var(--bp-text-primary)]"
           aria-label="Close"
         >
           <X className="size-4" strokeWidth={2} />
@@ -64,7 +64,7 @@ export function LoopBackDetailPanel({
                 style={{
                   fontFamily: "var(--font-mono)",
                   fontSize: 10,
-                  color: "#888",
+                  color: "var(--bp-text-muted)",
                   letterSpacing: "0.12em",
                   textTransform: "uppercase",
                 }}
@@ -81,7 +81,7 @@ export function LoopBackDetailPanel({
               style={{
                 fontFamily: "var(--font-mono)",
                 fontSize: 11,
-                color: "#0F0F0F",
+                color: "var(--bp-text-primary)",
                 letterSpacing: "0.12em",
                 textTransform: "uppercase",
               }}
@@ -97,7 +97,7 @@ export function LoopBackDetailPanel({
               style={{
                 fontFamily: "var(--font-mono)",
                 fontSize: 12,
-                color: "#0F0F0F",
+                color: "var(--bp-text-primary)",
                 letterSpacing: "0.08em",
               }}
             >
@@ -124,7 +124,7 @@ export function LoopBackDetailPanel({
               fontSize: 10,
               fontWeight: 600,
               letterSpacing: "0.18em",
-              color: "#888",
+              color: "var(--bp-text-muted)",
               textTransform: "uppercase",
             }}
           >
@@ -135,7 +135,7 @@ export function LoopBackDetailPanel({
             style={{
               fontFamily: "var(--font-sans)",
               fontSize: 14,
-              color: "#0F0F0F",
+              color: "var(--bp-text-primary)",
               lineHeight: 1.5,
             }}
           >
@@ -144,7 +144,7 @@ export function LoopBackDetailPanel({
         </div>
       )}
 
-      <div className="mt-6 flex flex-wrap items-center gap-x-6 gap-y-2 border-t border-[#E4E4E4] pt-4">
+      <div className="mt-6 flex flex-wrap items-center gap-x-6 gap-y-2 border-t border-[var(--bp-border-default)] pt-4">
         <Link
           href={`/my-actions/${row.id}`}
           className="inline-flex items-center gap-2"
@@ -153,7 +153,7 @@ export function LoopBackDetailPanel({
             fontSize: 10,
             fontWeight: 600,
             letterSpacing: "0.18em",
-            color: "#0F0F0F",
+            color: "var(--bp-text-primary)",
             textTransform: "uppercase",
           }}
         >
@@ -161,13 +161,13 @@ export function LoopBackDetailPanel({
         </Link>
         <Link
           href={`/runs/${row.railRunId}`}
-          className="inline-flex items-center gap-2 transition-colors hover:text-[#0F0F0F]"
+          className="inline-flex items-center gap-2 transition-colors hover:text-[var(--bp-text-primary)]"
           style={{
             fontFamily: "var(--font-mono)",
             fontSize: 10,
             fontWeight: 600,
             letterSpacing: "0.18em",
-            color: "#888",
+            color: "var(--bp-text-muted)",
             textTransform: "uppercase",
           }}
         >
@@ -187,7 +187,7 @@ function Field({ label, value }: { label: string; value: React.ReactNode }) {
           fontSize: 10,
           fontWeight: 600,
           letterSpacing: "0.18em",
-          color: "#888",
+          color: "var(--bp-text-muted)",
           textTransform: "uppercase",
         }}
       >
@@ -195,7 +195,7 @@ function Field({ label, value }: { label: string; value: React.ReactNode }) {
       </dt>
       <dd
         className="mt-1.5"
-        style={{ fontFamily: "var(--font-sans)", fontSize: 14, color: "#0F0F0F" }}
+        style={{ fontFamily: "var(--font-sans)", fontSize: 14, color: "var(--bp-text-primary)" }}
       >
         {value}
       </dd>
@@ -210,7 +210,12 @@ function ResolutionLine({
   resolution: "open" | "completed" | "cancelled"
   resolvedAt: Date | null
 }) {
-  const color = resolution === "open" ? "#E8711A" : resolution === "completed" ? "#2A3D52" : "#888"
+  const color =
+    resolution === "open"
+      ? "var(--bp-accent-orange)"
+      : resolution === "completed"
+        ? "var(--bp-accent-steel)"
+        : "var(--bp-text-muted)"
   const label =
     resolution === "open"
       ? "Open · still in destination's inbox"
@@ -238,7 +243,7 @@ function ResolutionLine({
           style={{
             fontFamily: "var(--font-mono)",
             fontSize: 11,
-            color: "#888",
+            color: "var(--bp-text-muted)",
             letterSpacing: "0.08em",
           }}
         >

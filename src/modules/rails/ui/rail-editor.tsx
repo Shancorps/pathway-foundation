@@ -141,7 +141,7 @@ export function RailEditor({
       className="-mx-8 -my-6 flex w-[calc(100%+4rem)] flex-col"
       style={{
         height: "100vh",
-        backgroundColor: "#fff",
+        backgroundColor: "var(--bp-surface-card)",
       }}
     >
       <TopBar
@@ -338,13 +338,13 @@ function TopBar({
       className="flex h-12 shrink-0 items-center gap-3 px-4"
       style={{
         borderBottom: "1px solid #0F0F0F",
-        backgroundColor: "#fff",
+        backgroundColor: "var(--bp-surface-card)",
       }}
     >
       <Link
         href="/rails"
         aria-label="Back to Rails"
-        className="grid size-7 place-items-center transition-colors hover:bg-[#FAFAFA]"
+        className="grid size-7 place-items-center transition-colors hover:bg-[var(--bp-surface-card-queued)]"
         style={{ border: "1px solid #D4D4D4" }}
       >
         <ArrowLeft className="size-3.5" strokeWidth={2} />
@@ -374,17 +374,17 @@ function TopBar({
             fontFamily: "var(--font-sans)",
             fontSize: 16,
             fontWeight: 600,
-            color: "#0F0F0F",
+            color: "var(--bp-text-primary)",
             letterSpacing: "-0.005em",
             padding: "4px 6px",
             border: "1px solid transparent",
           }}
           onFocus={(e) => {
-            if (!isPublished) e.currentTarget.style.borderColor = "#0F0F0F"
+            if (!isPublished) e.currentTarget.style.borderColor = "var(--bp-text-primary)"
           }}
           onMouseEnter={(e) => {
             if (!isPublished && document.activeElement !== e.currentTarget) {
-              e.currentTarget.style.borderColor = "#E4E4E4"
+              e.currentTarget.style.borderColor = "var(--bp-border-default)"
             }
           }}
           onMouseLeave={(e) => {
@@ -401,7 +401,7 @@ function TopBar({
               fontSize: 10,
               fontWeight: 600,
               letterSpacing: "0.16em",
-              color: "#5A7A92",
+              color: "var(--bp-accent-steel-soft)",
               textTransform: "uppercase",
             }}
           >
@@ -421,9 +421,9 @@ function TopBar({
         }
         className="grid size-7 place-items-center transition-colors"
         style={{
-          border: `1px solid ${locked ? "#E8711A" : "#D4D4D4"}`,
-          backgroundColor: locked ? "#FFF8F1" : "#fff",
-          color: locked ? "#E8711A" : "#0F0F0F",
+          border: `1px solid ${locked ? "var(--bp-accent-orange)" : "var(--bp-border-strong)"}`,
+          backgroundColor: locked ? "var(--bp-surface-card-active)" : "#fff",
+          color: locked ? "var(--bp-accent-orange)" : "var(--bp-text-primary)",
         }}
       >
         {locked ? (
@@ -437,7 +437,7 @@ function TopBar({
         type="button"
         onClick={onOpenSettings}
         aria-label="Rail settings"
-        className="grid size-7 place-items-center transition-colors hover:bg-[#FAFAFA]"
+        className="grid size-7 place-items-center transition-colors hover:bg-[var(--bp-surface-card-queued)]"
         style={{ border: "1px solid #D4D4D4" }}
       >
         <SettingsIcon className="size-3.5" strokeWidth={2} aria-hidden />
@@ -457,7 +457,7 @@ function TopBar({
 }
 
 function StatusPill({ isPublished }: { isPublished: boolean }) {
-  const color = isPublished ? "#1F4E36" : "#888"
+  const color = isPublished ? "var(--bp-accent-success)" : "var(--bp-text-muted)"
   const label = isPublished ? "Published" : "Draft"
   return (
     <span
@@ -548,7 +548,7 @@ function RailSettingsDialog({
                   fontFamily: "var(--font-mono)",
                   fontSize: 10,
                   letterSpacing: "0.06em",
-                  color: "#888",
+                  color: "var(--bp-text-muted)",
                 }}
               >
                 Bound at creation; not editable.
@@ -587,13 +587,13 @@ function PublishedEditingBanner({ runCount }: { runCount: number }) {
     <div
       className="flex shrink-0 items-start gap-3 px-5 py-3"
       style={{
-        backgroundColor: "#FFF8F1",
+        backgroundColor: "var(--bp-surface-card-active)",
         borderBottom: "1px solid #E8711A",
       }}
     >
       <AlertTriangle
         className="mt-0.5 size-4 shrink-0"
-        style={{ color: "#E8711A" }}
+        style={{ color: "var(--bp-accent-orange)" }}
         strokeWidth={2}
         aria-hidden
       />
@@ -604,7 +604,7 @@ function PublishedEditingBanner({ runCount }: { runCount: number }) {
             fontSize: 10,
             fontWeight: 600,
             letterSpacing: "0.2em",
-            color: "#E8711A",
+            color: "var(--bp-accent-orange)",
             textTransform: "uppercase",
           }}
         >
@@ -615,7 +615,7 @@ function PublishedEditingBanner({ runCount }: { runCount: number }) {
           style={{
             fontFamily: "var(--font-sans)",
             fontSize: 13,
-            color: "#0F0F0F",
+            color: "var(--bp-text-primary)",
             lineHeight: 1.5,
           }}
         >
@@ -662,12 +662,12 @@ function PushUpdateConfirm({
           </DialogDescription>
         </DialogHeader>
         <p
-          className="rounded-md bg-[#FAFAFA] px-3 py-2"
+          className="rounded-md bg-[var(--bp-surface-card-queued)] px-3 py-2"
           style={{
             fontFamily: "var(--font-mono)",
             fontSize: 11,
             letterSpacing: "0.06em",
-            color: "#444",
+            color: "var(--bp-text-secondary)",
             lineHeight: 1.55,
           }}
         >

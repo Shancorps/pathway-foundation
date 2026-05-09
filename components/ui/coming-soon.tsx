@@ -29,7 +29,7 @@ export function ComingSoon({
               fontSize: 10,
               fontWeight: 600,
               letterSpacing: "0.2em",
-              color: "#E8711A",
+              color: "var(--bp-accent-orange)",
               textTransform: "uppercase",
             }}
           >
@@ -46,7 +46,7 @@ export function ComingSoon({
               fontSize: 11,
               fontWeight: 600,
               letterSpacing: "0.18em",
-              color: "#888",
+              color: "var(--bp-text-muted)",
               textTransform: "uppercase",
             }}
           >
@@ -57,7 +57,7 @@ export function ComingSoon({
             style={{
               fontFamily: "var(--font-sans)",
               fontSize: 14,
-              color: "#444",
+              color: "var(--bp-text-secondary)",
               lineHeight: 1.55,
             }}
           >

@@ -6,9 +6,9 @@ import type { CalendarEvent } from "../queries"
  * tint overdue cycles to red and completed ones to steel.
  */
 export function eventTileColor(e: CalendarEvent): string {
-  if (e.isCompleted) return "#2A3D52"
-  if (e.isOverdue) return "#B83229"
-  return "#E8711A"
+  if (e.isCompleted) return "var(--bp-accent-steel)"
+  if (e.isOverdue) return "var(--bp-accent-end)"
+  return "var(--bp-accent-orange)"
 }
 
 /**
@@ -28,8 +28,8 @@ export function EventTileWrapper({
     <div
       className="flex items-stretch"
       style={{
-        backgroundColor: faded ? "#FAFAFA" : "#fff",
-        border: `1px solid ${faded ? "#E4E4E4" : color}`,
+        backgroundColor: faded ? "var(--bp-surface-card-queued)" : "#fff",
+        border: `1px solid ${faded ? "var(--bp-border-default)" : color}`,
         opacity: faded ? 0.85 : 1,
       }}
     >
@@ -48,12 +48,16 @@ export function EventTileBody({ event }: { event: CalendarEvent }) {
           fontFamily: "var(--font-sans)",
           fontSize: 11,
           fontWeight: 500,
-          color: event.isCompleted ? "#666" : "#0F0F0F",
+          color: event.isCompleted ? "var(--bp-text-secondary)" : "var(--bp-text-primary)",
           textDecoration: event.isCompleted ? "line-through" : "none",
         }}
       >
         {event.isCompleted ? (
-          <Check className="size-3 shrink-0 text-[#2A3D52]" strokeWidth={2.5} aria-hidden />
+          <Check
+            className="size-3 shrink-0 text-[var(--bp-accent-steel)]"
+            strokeWidth={2.5}
+            aria-hidden
+          />
         ) : (
           <span
             aria-hidden
@@ -61,7 +65,7 @@ export function EventTileBody({ event }: { event: CalendarEvent }) {
             style={{
               width: 6,
               height: 6,
-              border: `1px solid ${event.isOverdue ? "#B83229" : "#E8711A"}`,
+              border: `1px solid ${event.isOverdue ? "var(--bp-accent-end)" : "var(--bp-accent-orange)"}`,
               backgroundColor: "transparent",
             }}
           />
@@ -75,7 +79,7 @@ export function EventTileBody({ event }: { event: CalendarEvent }) {
           fontSize: 9,
           fontWeight: 500,
           letterSpacing: "0.1em",
-          color: "#888",
+          color: "var(--bp-text-muted)",
           textTransform: "uppercase",
         }}
       >

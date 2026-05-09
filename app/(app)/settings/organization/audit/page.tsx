@@ -87,16 +87,18 @@ export default async function AuditLogPage({
               fontSize: 11,
               fontWeight: 500,
               letterSpacing: "0.16em",
-              color: "#666",
+              color: "var(--bp-text-secondary)",
               textTransform: "uppercase",
             }}
           >
             <div>
-              <span style={{ color: "#AAA" }}>Total in window</span>{" "}
-              <span style={{ color: "#0F0F0F" }}>·</span>{" "}
-              <span style={{ color: "#0F0F0F", fontWeight: 600 }}>{String(pageResult.total)}</span>
+              <span style={{ color: "var(--bp-text-disabled)" }}>Total in window</span>{" "}
+              <span style={{ color: "var(--bp-text-primary)" }}>·</span>{" "}
+              <span style={{ color: "var(--bp-text-primary)", fontWeight: 600 }}>
+                {String(pageResult.total)}
+              </span>
             </div>
-            <div style={{ color: "#AAA" }}>{RANGE_LABELS[range]}</div>
+            <div style={{ color: "var(--bp-text-disabled)" }}>{RANGE_LABELS[range]}</div>
           </div>
         }
       />
@@ -115,8 +117,8 @@ export default async function AuditLogPage({
                   href={buildHref({ range: r })}
                   className={
                     active
-                      ? "border border-[#E8711A] bg-[#E8711A] text-white"
-                      : "border border-[#D4D4D4] bg-white text-[#0F0F0F] hover:border-[#0F0F0F]"
+                      ? "border border-[var(--bp-accent-orange)] bg-[var(--bp-accent-orange)] text-white"
+                      : "border border-[var(--bp-border-strong)] bg-white text-[var(--bp-text-primary)] hover:border-[var(--bp-border-graphite)]"
                   }
                   style={{
                     fontFamily: "var(--font-mono)",
@@ -163,7 +165,7 @@ export default async function AuditLogPage({
             <div className="flex gap-2">
               <button
                 type="submit"
-                className="border border-[#0F0F0F] bg-[#E8711A] px-4 py-2 text-white transition-colors hover:bg-[#D6610F]"
+                className="border border-[var(--bp-border-graphite)] bg-[var(--bp-accent-orange)] px-4 py-2 text-white transition-colors hover:bg-[#D6610F]"
                 style={{
                   fontFamily: "var(--font-mono)",
                   fontSize: 10,
@@ -177,13 +179,13 @@ export default async function AuditLogPage({
               {hasFilter && (
                 <Link
                   href="/settings/organization/audit"
-                  className="border border-[#D4D4D4] bg-white px-4 py-2 transition-colors hover:border-[#0F0F0F]"
+                  className="border border-[var(--bp-border-strong)] bg-white px-4 py-2 transition-colors hover:border-[var(--bp-border-graphite)]"
                   style={{
                     fontFamily: "var(--font-mono)",
                     fontSize: 10,
                     fontWeight: 600,
                     letterSpacing: "0.18em",
-                    color: "#0F0F0F",
+                    color: "var(--bp-text-primary)",
                     textTransform: "uppercase",
                   }}
                 >
@@ -210,7 +212,7 @@ export default async function AuditLogPage({
                 fontFamily: "var(--font-mono)",
                 fontSize: 11,
                 letterSpacing: "0.18em",
-                color: "#888",
+                color: "var(--bp-text-muted)",
                 textTransform: "uppercase",
               }}
             >
@@ -236,7 +238,7 @@ export default async function AuditLogPage({
                 fontSize: 10,
                 fontWeight: 500,
                 letterSpacing: "0.14em",
-                color: "#888",
+                color: "var(--bp-text-muted)",
                 textTransform: "uppercase",
               }}
             >
@@ -274,7 +276,7 @@ function FilterField({ label, children }: { label: string; children: React.React
           fontSize: 10,
           fontWeight: 600,
           letterSpacing: "0.18em",
-          color: "#0F0F0F",
+          color: "var(--bp-text-primary)",
           textTransform: "uppercase",
         }}
       >
@@ -300,7 +302,7 @@ function PaginatorLink({
     return (
       <span
         aria-disabled
-        className="inline-flex cursor-not-allowed items-center justify-center border border-[#D4D4D4] bg-white p-2 opacity-40"
+        className="inline-flex cursor-not-allowed items-center justify-center border border-[var(--bp-border-strong)] bg-white p-2 opacity-40"
         aria-label={ariaLabel}
       >
         {children}
@@ -311,7 +313,7 @@ function PaginatorLink({
     <Link
       href={href}
       aria-label={ariaLabel}
-      className="inline-flex items-center justify-center border border-[#0F0F0F] bg-white p-2 transition-colors hover:bg-[#FAFAFA]"
+      className="inline-flex items-center justify-center border border-[var(--bp-border-graphite)] bg-white p-2 transition-colors hover:bg-[var(--bp-surface-card-queued)]"
     >
       {children}
     </Link>
@@ -321,9 +323,9 @@ function PaginatorLink({
 const INPUT_STYLE: React.CSSProperties = {
   fontFamily: "var(--font-sans)",
   fontSize: 14,
-  color: "#0F0F0F",
+  color: "var(--bp-text-primary)",
   border: "1px solid #D4D4D4",
-  backgroundColor: "#fff",
+  backgroundColor: "var(--bp-surface-card)",
   padding: "8px 12px",
   width: "100%",
 }

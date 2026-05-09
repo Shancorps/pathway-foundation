@@ -19,7 +19,7 @@ type Values = z.infer<typeof schema>
 const INPUT_STYLE: React.CSSProperties = {
   fontFamily: "var(--font-sans)",
   fontSize: 14,
-  color: "#0F0F0F",
+  color: "var(--bp-text-primary)",
   border: "1px solid #D4D4D4",
   backgroundColor: "#fff",
   padding: "8px 12px",
@@ -108,7 +108,7 @@ function Label({ htmlFor, children }: { htmlFor: string; children: React.ReactNo
         fontSize: 10,
         fontWeight: 600,
         letterSpacing: "0.18em",
-        color: "#0F0F0F",
+        color: "var(--bp-text-primary)",
         textTransform: "uppercase",
       }}
     >
@@ -125,7 +125,7 @@ function FieldError({ children }: { children: React.ReactNode }) {
         fontFamily: "var(--font-mono)",
         fontSize: 10,
         letterSpacing: "0.12em",
-        color: "#E8711A",
+        color: "var(--bp-accent-orange)",
         textTransform: "uppercase",
       }}
     >
@@ -135,7 +135,7 @@ function FieldError({ children }: { children: React.ReactNode }) {
 }
 
 function Alert({ tone, children }: { tone: "error" | "success"; children: React.ReactNode }) {
-  const color = tone === "error" ? "#E8711A" : "#1F4E36"
+  const color = tone === "error" ? "var(--bp-accent-orange)" : "var(--bp-accent-success)"
   return (
     <div
       className="px-3 py-2"

@@ -67,7 +67,7 @@ export function MyActionsList({
               fontSize: 11,
               fontWeight: 600,
               letterSpacing: "0.18em",
-              color: "#888",
+              color: "var(--bp-text-muted)",
               textTransform: "uppercase",
             }}
           >
@@ -78,7 +78,7 @@ export function MyActionsList({
             style={{
               fontFamily: "var(--font-sans)",
               fontSize: 14,
-              color: "#444",
+              color: "var(--bp-text-secondary)",
               lineHeight: 1.55,
             }}
           >
@@ -87,13 +87,13 @@ export function MyActionsList({
           </p>
           <Link
             href="/organization/structure"
-            className="mt-7 inline-flex items-center gap-2 border border-[#0F0F0F] bg-white px-5 py-2.5 transition-colors hover:bg-[#FAFAFA]"
+            className="mt-7 inline-flex items-center gap-2 border border-[var(--bp-border-graphite)] bg-white px-5 py-2.5 transition-colors hover:bg-[var(--bp-surface-card-queued)]"
             style={{
               fontFamily: "var(--font-mono)",
               fontSize: 10,
               fontWeight: 600,
               letterSpacing: "0.18em",
-              color: "#0F0F0F",
+              color: "var(--bp-text-primary)",
               textTransform: "uppercase",
             }}
           >
@@ -175,8 +175,8 @@ function FilterChip({
       className={cn(
         "inline-flex items-center gap-2.5 px-3.5 py-2 transition-colors",
         active
-          ? "border border-[#E8711A] bg-[#E8711A] text-white"
-          : "border border-[#D4D4D4] bg-white text-[#0F0F0F] hover:border-[#0F0F0F]",
+          ? "border border-[var(--bp-accent-orange)] bg-[var(--bp-accent-orange)] text-white"
+          : "border border-[var(--bp-border-strong)] bg-white text-[var(--bp-text-primary)] hover:border-[var(--bp-border-graphite)]",
       )}
       style={{
         fontFamily: "var(--font-mono)",
@@ -189,7 +189,7 @@ function FilterChip({
       <span>{label}</span>
       <span
         style={{
-          color: active ? "rgba(255,255,255,0.8)" : "#888",
+          color: active ? "rgba(255,255,255,0.8)" : "var(--bp-text-muted)",
           fontWeight: 400,
         }}
       >
@@ -222,7 +222,8 @@ function CycleRowItem({ cycle }: { cycle: CycleRow }) {
                     fontFamily: "var(--font-sans)",
                     fontSize: 16,
                     fontWeight: 600,
-                    color: state === "active" ? "#0F0F0F" : "#444",
+                    color:
+                      state === "active" ? "var(--bp-text-primary)" : "var(--bp-text-secondary)",
                     lineHeight: 1.25,
                     letterSpacing: "-0.005em",
                   }}
@@ -234,7 +235,7 @@ function CycleRowItem({ cycle }: { cycle: CycleRow }) {
                   style={{
                     fontFamily: "var(--font-sans)",
                     fontSize: 14,
-                    color: state === "active" ? "#555" : "#777",
+                    color: state === "active" ? "var(--bp-text-secondary)" : "#777",
                     lineHeight: 1.35,
                   }}
                 >
@@ -259,17 +260,17 @@ function CycleRowItem({ cycle }: { cycle: CycleRow }) {
                 fontFamily: "var(--font-mono)",
                 fontSize: 10,
                 fontWeight: 500,
-                color: state === "active" ? "#5A7A92" : "#888",
+                color: state === "active" ? "var(--bp-accent-steel-soft)" : "var(--bp-text-muted)",
                 letterSpacing: "0.12em",
                 textTransform: "uppercase",
               }}
             >
               <span>{cycle.postTitle}</span>
-              <span style={{ color: "#CCC" }}>·</span>
+              <span style={{ color: "var(--bp-text-disabled)" }}>·</span>
               <span>{cycle.railName}</span>
               {totalItems > 0 && (
                 <>
-                  <span style={{ color: "#CCC" }}>·</span>
+                  <span style={{ color: "var(--bp-text-disabled)" }}>·</span>
                   <span>
                     {String(checkedItems)} / {String(totalItems)} steps
                   </span>
@@ -288,10 +289,10 @@ function CycleRowItem({ cycle }: { cycle: CycleRow }) {
                       height: "3px",
                       backgroundColor:
                         i < checkedItems
-                          ? "#E8711A"
+                          ? "var(--bp-accent-orange)"
                           : state === "queued"
                             ? "rgba(42,61,82,0.25)"
-                            : "#E4E4E4",
+                            : "var(--bp-border-default)",
                     }}
                   />
                 ))}
@@ -314,7 +315,12 @@ function CycleStatusBadge({ cycle, state }: { cycle: CycleRow; state: RegCardSta
   const totalActive = cycle.timeSpentMinutes + liveTimerMinutes
   const overIdeal = cycle.idealMinutes != null && totalActive > cycle.idealMinutes
 
-  const badgeColor = state === "active" ? "#E8711A" : state === "queued" ? "#2A3D52" : "#888"
+  const badgeColor =
+    state === "active"
+      ? "var(--bp-accent-orange)"
+      : state === "queued"
+        ? "var(--bp-accent-steel)"
+        : "var(--bp-text-muted)"
   const label = state === "active" ? "Active" : state === "queued" ? "Queued" : "New"
 
   return (
@@ -328,7 +334,7 @@ function CycleStatusBadge({ cycle, state }: { cycle: CycleRow; state: RegCardSta
           letterSpacing: "0.2em",
           textTransform: "uppercase",
           color: state === "active" ? "#fff" : badgeColor,
-          backgroundColor: state === "active" ? "#E8711A" : "transparent",
+          backgroundColor: state === "active" ? "var(--bp-accent-orange)" : "transparent",
           border: `1px solid ${badgeColor}`,
         }}
       >
@@ -339,7 +345,7 @@ function CycleStatusBadge({ cycle, state }: { cycle: CycleRow; state: RegCardSta
           fontFamily: "var(--font-mono)",
           fontSize: 10,
           letterSpacing: "0.1em",
-          color: "#888",
+          color: "var(--bp-text-muted)",
         }}
       >
         {formatMinutes(issuedMinutes)} in inbox
@@ -351,7 +357,7 @@ function CycleStatusBadge({ cycle, state }: { cycle: CycleRow; state: RegCardSta
             fontSize: 10,
             fontWeight: overIdeal ? 600 : 500,
             letterSpacing: "0.1em",
-            color: overIdeal ? "#E8711A" : "#888",
+            color: overIdeal ? "var(--bp-accent-orange)" : "var(--bp-text-muted)",
           }}
         >
           {formatMinutes(totalActive)} / {formatMinutes(cycle.idealMinutes)}
@@ -379,7 +385,7 @@ function LoopBackCycleTag() {
         fontWeight: 600,
         letterSpacing: "0.18em",
         color: "#fff",
-        backgroundColor: "#E8711A",
+        backgroundColor: "var(--bp-accent-orange)",
         textTransform: "uppercase",
       }}
     >
@@ -399,7 +405,7 @@ function ActiveLoopBackTag() {
         fontSize: 9,
         fontWeight: 600,
         letterSpacing: "0.18em",
-        color: "#2A3D52",
+        color: "var(--bp-accent-steel)",
         backgroundColor: "transparent",
         border: "1px solid #2A3D52",
         textTransform: "uppercase",
@@ -422,7 +428,7 @@ function ApprovalCycleTag() {
         fontWeight: 600,
         letterSpacing: "0.18em",
         color: "#fff",
-        backgroundColor: "#1F4E36",
+        backgroundColor: "var(--bp-accent-success)",
         textTransform: "uppercase",
       }}
     >

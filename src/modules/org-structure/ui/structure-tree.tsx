@@ -129,7 +129,7 @@ export function StructureTree({
                 fontSize: 11,
                 fontWeight: 600,
                 letterSpacing: "0.18em",
-                color: "#888",
+                color: "var(--bp-text-muted)",
                 textTransform: "uppercase",
               }}
             >
@@ -140,7 +140,7 @@ export function StructureTree({
               style={{
                 fontFamily: "var(--font-sans)",
                 fontSize: 14,
-                color: "#444",
+                color: "var(--bp-text-secondary)",
                 lineHeight: 1.55,
               }}
             >
@@ -176,7 +176,7 @@ export function StructureTree({
                     fontSize: 9,
                     fontWeight: 600,
                     letterSpacing: "0.2em",
-                    color: "#888",
+                    color: "var(--bp-text-muted)",
                     textTransform: "uppercase",
                   }}
                 >
@@ -245,8 +245,8 @@ function ContainerNode({
                 fontSize: 9,
                 fontWeight: 600,
                 letterSpacing: "0.2em",
-                color: depth === 0 ? "#E8711A" : "#5A7A92",
-                border: `1px solid ${depth === 0 ? "#E8711A" : "#5A7A92"}`,
+                color: depth === 0 ? "var(--bp-accent-orange)" : "var(--bp-accent-steel-soft)",
+                border: `1px solid ${depth === 0 ? "var(--bp-accent-orange)" : "var(--bp-accent-steel-soft)"}`,
                 textTransform: "uppercase",
               }}
             >
@@ -257,7 +257,7 @@ function ContainerNode({
                 fontFamily: "var(--font-sans)",
                 fontSize: 16,
                 fontWeight: 600,
-                color: "#0F0F0F",
+                color: "var(--bp-text-primary)",
                 lineHeight: 1.25,
               }}
             >
@@ -270,7 +270,7 @@ function ContainerNode({
               style={{
                 fontFamily: "var(--font-sans)",
                 fontSize: 14,
-                color: "#666",
+                color: "var(--bp-text-secondary)",
                 lineHeight: 1.4,
               }}
             >
@@ -283,7 +283,7 @@ function ContainerNode({
               style={{
                 fontFamily: "var(--font-mono)",
                 fontSize: 10,
-                color: "#5A7A92",
+                color: "var(--bp-accent-steel-soft)",
                 letterSpacing: "0.12em",
                 textTransform: "uppercase",
               }}
@@ -395,7 +395,7 @@ function PostNode({ post, members }: { post: SerializablePost; members: Member[]
                 fontSize: 8,
                 fontWeight: 600,
                 letterSpacing: "0.2em",
-                color: "#5A7A92",
+                color: "var(--bp-accent-steel-soft)",
                 border: "1px solid #5A7A92",
                 textTransform: "uppercase",
               }}
@@ -407,7 +407,7 @@ function PostNode({ post, members }: { post: SerializablePost; members: Member[]
                 fontFamily: "var(--font-sans)",
                 fontSize: 14,
                 fontWeight: 600,
-                color: "#0F0F0F",
+                color: "var(--bp-text-primary)",
               }}
             >
               {post.title}
@@ -421,7 +421,7 @@ function PostNode({ post, members }: { post: SerializablePost; members: Member[]
                   fontSize: 9,
                   fontWeight: 500,
                   letterSpacing: "0.18em",
-                  color: "#AAA",
+                  color: "var(--bp-text-disabled)",
                   textTransform: "uppercase",
                 }}
               >
@@ -437,8 +437,8 @@ function PostNode({ post, members }: { post: SerializablePost; members: Member[]
                     fontSize: 9,
                     fontWeight: 500,
                     letterSpacing: "0.1em",
-                    color: "#0F0F0F",
-                    backgroundColor: "#FAFAFA",
+                    color: "var(--bp-text-primary)",
+                    backgroundColor: "var(--bp-surface-card-queued)",
                     border: "1px solid #E4E4E4",
                   }}
                 >

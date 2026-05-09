@@ -104,7 +104,7 @@ function TabStrip({
     { value: "rail", label: "Rail Stats" },
   ]
   return (
-    <div className="mt-6 flex items-center gap-2 border-b border-[#E4E4E4]">
+    <div className="mt-6 flex items-center gap-2 border-b border-[var(--bp-border-default)]">
       {tabs.map((t) => {
         const active = t.value === currentTab
         return (
@@ -117,7 +117,7 @@ function TabStrip({
               fontSize: 11,
               fontWeight: 600,
               letterSpacing: "0.2em",
-              color: active ? "#0F0F0F" : "#888",
+              color: active ? "var(--bp-text-primary)" : "var(--bp-text-muted)",
               textTransform: "uppercase",
               borderBottom: active ? "2px solid #E8711A" : "2px solid transparent",
             }}

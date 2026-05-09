@@ -15,9 +15,9 @@ interface ParticleCubeProps {
 }
 
 const PALETTES = {
-  active: { top: "#F4945A", front: "#E8711A", side: "#C05A10", stroke: "#B85510" },
-  queued: { top: "#3A5068", front: "#2A3D52", side: "#1A2D3E", stroke: "#1A2D3E" },
-  new: { top: "#3A5068", front: "#2A3D52", side: "#1A2D3E", stroke: "#1A2D3E" },
+  active: { top: "#F4945A", front: "var(--bp-accent-orange)", side: "#C05A10", stroke: "#B85510" },
+  queued: { top: "#3A5068", front: "var(--bp-accent-steel)", side: "#1A2D3E", stroke: "#1A2D3E" },
+  new: { top: "#3A5068", front: "var(--bp-accent-steel)", side: "#1A2D3E", stroke: "#1A2D3E" },
 } as const
 
 export function ParticleCube({ state = "active", size = 28, className }: ParticleCubeProps) {

@@ -97,7 +97,7 @@ export function AppSidebar({
   return (
     <aside
       className={cn(
-        "flex h-screen w-[200px] shrink-0 flex-col border-r border-[var(--color-border)] bg-white",
+        "flex h-screen w-[200px] shrink-0 flex-col border-r border-[var(--bp-border-default)] bg-[var(--bp-surface-card)]",
         className,
       )}
     >
@@ -113,7 +113,7 @@ function LogoArea() {
   // Placeholder mark — a small axonometric "particle on rail" mock.
   // Illustrator will replace with the final SVG.
   return (
-    <div className="flex h-[64px] items-center gap-2.5 border-b border-[#F0F0F0] px-4">
+    <div className="flex h-[64px] items-center gap-2.5 border-b border-[var(--bp-border-default)] px-4">
       <svg viewBox="0 0 24 24" width={22} height={22} aria-hidden>
         {/* Rail (steel) */}
         <polygon
@@ -141,7 +141,7 @@ function LogoArea() {
           fontSize: 11,
           fontWeight: 600,
           letterSpacing: "0.14em",
-          color: "#0F0F0F",
+          color: "var(--bp-text-primary)",
         }}
       >
         PATHWAY
@@ -171,14 +171,14 @@ function OrgSwitcher({
   }
 
   return (
-    <div className="border-b border-[#F0F0F0] px-3 py-3">
+    <div className="border-b border-[var(--bp-border-default)] px-3 py-3">
       <p
         className="mb-1.5 px-1"
         style={{
           fontFamily: "var(--font-mono)",
           fontSize: 8,
           letterSpacing: "0.18em",
-          color: "#CCC",
+          color: "var(--bp-text-disabled)",
           textTransform: "uppercase",
         }}
       >
@@ -187,16 +187,16 @@ function OrgSwitcher({
       <DropdownMenu>
         <DropdownMenuTrigger
           disabled={busy}
-          className="flex w-full items-center justify-between gap-2 border border-[#E4E4E4] bg-white px-3 py-2 text-left transition-colors hover:bg-[#FAFAFA]"
+          className="flex w-full items-center justify-between gap-2 border border-[var(--bp-border-strong)] bg-[var(--bp-surface-card)] px-3 py-2 text-left transition-colors hover:bg-[var(--bp-surface-card-queued)]"
           style={{
             fontFamily: "var(--font-sans)",
             fontSize: 12,
             fontWeight: 500,
-            color: "#0F0F0F",
+            color: "var(--bp-text-primary)",
           }}
         >
           <span className="truncate">{active?.name ?? "Select org"}</span>
-          <ChevronDown className="size-3 text-[#888]" />
+          <ChevronDown className="size-3" style={{ color: "var(--bp-text-muted)" }} />
         </DropdownMenuTrigger>
         <DropdownMenuContent align="start" className="min-w-[14rem]">
           <DropdownMenuLabel>Organizations</DropdownMenuLabel>
@@ -236,13 +236,17 @@ function NavSections() {
                 fontSize: 8,
                 letterSpacing: "0.18em",
                 fontWeight: 600,
-                color: "#AAAAAA",
+                color: "var(--bp-text-disabled)",
                 textTransform: "uppercase",
               }}
             >
               {group.label}
             </span>
-            <span className="block h-px flex-1 bg-[#F0F0F0]" aria-hidden />
+            <span
+              className="block h-px flex-1"
+              style={{ backgroundColor: "var(--bp-border-default)" }}
+              aria-hidden
+            />
           </div>
           <ul>
             {group.items.map((item) => {
@@ -269,22 +273,22 @@ function NavLink({ item, active }: { item: NavItem; active: boolean }) {
       href={item.href}
       className={cn(
         "relative flex items-center gap-3 px-4 transition-colors",
-        active ? "bg-[#FFF5EE]" : "hover:bg-[#FAFAFA]",
+        active ? "bg-[var(--bp-accent-orange-tint)]" : "hover:bg-[var(--bp-surface-card-queued)]",
       )}
       style={{
         height: 36,
         fontFamily: "var(--font-sans)",
         fontSize: 12,
         fontWeight: active ? 600 : 400,
-        color: active ? "#0F0F0F" : "#666666",
+        color: active ? "var(--bp-text-primary)" : "var(--bp-text-secondary)",
       }}
     >
       {/* 3px Particle Orange left line for active — bold enough to read clearly */}
       {active && (
         <span
           aria-hidden
-          className="absolute top-0 bottom-0 left-0 bg-[#E8711A]"
-          style={{ width: 3 }}
+          className="absolute top-0 bottom-0 left-0"
+          style={{ width: 3, backgroundColor: "var(--bp-accent-orange)" }}
         />
       )}
       <Icon
@@ -292,7 +296,7 @@ function NavLink({ item, active }: { item: NavItem; active: boolean }) {
         size={15}
         strokeWidth={active ? 2 : 1.5}
         style={{
-          color: active ? "#E8711A" : "#888",
+          color: active ? "var(--bp-accent-orange)" : "var(--bp-text-muted)",
           opacity: active ? 1 : 0.6,
         }}
       />
@@ -312,9 +316,9 @@ function UserBlock({ user }: { user: SidebarUser }) {
   }
 
   return (
-    <div className="border-t border-[#F4F4F4] p-3">
+    <div className="border-t border-[var(--bp-border-default)] p-3">
       <DropdownMenu>
-        <DropdownMenuTrigger className="flex w-full items-center gap-2 p-1 text-left hover:bg-[#FAFAFA]">
+        <DropdownMenuTrigger className="flex w-full items-center gap-2 p-1 text-left hover:bg-[var(--bp-surface-card-queued)]">
           {/* Square steel-blue avatar with two-letter mono initials, per spec */}
           <div
             className="relative flex size-[26px] shrink-0 items-center justify-center bg-[var(--color-structure-steel)]"

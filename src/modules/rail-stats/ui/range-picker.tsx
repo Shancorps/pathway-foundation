@@ -32,8 +32,8 @@ export function RangePicker({
             aria-selected={active}
             className={
               active
-                ? "border border-[#E8711A] bg-[#E8711A] text-white"
-                : "border border-[#D4D4D4] bg-white text-[#0F0F0F] hover:border-[#0F0F0F]"
+                ? "border border-[var(--bp-accent-orange)] bg-[var(--bp-accent-orange)] text-white"
+                : "border border-[var(--bp-border-strong)] bg-white text-[var(--bp-text-primary)] hover:border-[var(--bp-border-graphite)]"
             }
             style={{
               fontFamily: "var(--font-mono)",

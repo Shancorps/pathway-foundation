@@ -26,7 +26,7 @@ export default async function CycleDetailPage({
       <div className="mb-6">
         <Link
           href="/my-actions"
-          className="inline-flex items-center gap-2 text-[#888] transition-colors hover:text-[#0F0F0F]"
+          className="inline-flex items-center gap-2 text-[var(--bp-text-muted)] transition-colors hover:text-[var(--bp-text-primary)]"
           style={{
             fontFamily: "var(--font-mono)",
             fontSize: 10,

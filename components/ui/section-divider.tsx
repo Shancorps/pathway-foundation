@@ -13,8 +13,8 @@ export function SectionDivider({
   count?: string | number
   variant?: "default" | "accent"
 }) {
-  const labelColor = variant === "accent" ? "#E8711A" : "#0F0F0F"
-  const ruleColor = variant === "accent" ? "#E8711A" : "#E4E4E4"
+  const labelColor = variant === "accent" ? "var(--bp-accent-orange)" : "var(--bp-text-primary)"
+  const ruleColor = variant === "accent" ? "var(--bp-accent-orange)" : "var(--bp-border-default)"
   return (
     <div className="flex items-center gap-3">
       <span
@@ -33,7 +33,11 @@ export function SectionDivider({
       >
         {label.toUpperCase()}
       </span>
-      <span className="flex-1" style={{ height: 1, backgroundColor: "#E4E4E4" }} aria-hidden />
+      <span
+        className="flex-1"
+        style={{ height: 1, backgroundColor: "var(--bp-border-default)" }}
+        aria-hidden
+      />
       {count !== undefined && (
         <span
           style={{
@@ -41,7 +45,7 @@ export function SectionDivider({
             fontSize: 11,
             fontWeight: 500,
             letterSpacing: "0.16em",
-            color: "#888",
+            color: "var(--bp-text-muted)",
           }}
         >
           [{String(count)}]

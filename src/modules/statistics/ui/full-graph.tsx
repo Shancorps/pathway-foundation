@@ -34,7 +34,7 @@ export function FullGraph({
             fontFamily: "var(--font-mono)",
             fontSize: 11,
             letterSpacing: "0.18em",
-            fill: "#888",
+            fill: "var(--bp-text-muted)",
             textTransform: "uppercase",
           }}
         >
@@ -86,7 +86,7 @@ export function FullGraph({
               x2={width - padRight}
               y1={yp}
               y2={yp}
-              stroke="#EFEFEF"
+              stroke="var(--bp-border-default)"
               strokeWidth={1}
             />
             <text
@@ -97,7 +97,7 @@ export function FullGraph({
                 fontFamily: "var(--font-mono)",
                 fontSize: 10,
                 letterSpacing: "0.06em",
-                fill: "#888",
+                fill: "var(--bp-text-muted)",
               }}
             >
               {formatNumber(t)}
@@ -113,7 +113,7 @@ export function FullGraph({
         x2={width - padRight}
         y1={height - padBottom}
         y2={height - padBottom}
-        stroke="#0F0F0F"
+        stroke="var(--bp-text-primary)"
         strokeWidth={1}
       />
 
@@ -128,7 +128,7 @@ export function FullGraph({
             fontFamily: "var(--font-mono)",
             fontSize: 10,
             letterSpacing: "0.12em",
-            fill: "#888",
+            fill: "var(--bp-text-muted)",
             textTransform: "uppercase",
           }}
         >

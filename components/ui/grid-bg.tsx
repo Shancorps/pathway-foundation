@@ -17,20 +17,28 @@ export function GridBg() {
         height: "100%",
         pointerEvents: "none",
         zIndex: 0,
+        // The grid line color rides on `color` so the inner SVG strokes can
+        // pick it up via `stroke="currentColor"` — that lets a single CSS var
+        // flip light/dark without rewriting every stroke attribute. Steel in
+        // light, lighter steel in dark for visibility on a dark page.
+        color: "var(--bp-accent-steel)",
       }}
       xmlns="http://www.w3.org/2000/svg"
     >
       <defs>
         <pattern id="pw-grid" width="24" height="24" patternUnits="userSpaceOnUse">
-          <path d="M 24 0 L 0 0 0 24" fill="none" stroke="#2A3D52" strokeWidth="0.4" />
+          <path d="M 24 0 L 0 0 0 24" fill="none" stroke="currentColor" strokeWidth="0.4" />
         </pattern>
         <pattern id="pw-grid-fine" width="6" height="6" patternUnits="userSpaceOnUse">
-          <path d="M 6 0 L 0 0 0 6" fill="none" stroke="#2A3D52" strokeWidth="0.25" />
+          <path d="M 6 0 L 0 0 0 6" fill="none" stroke="currentColor" strokeWidth="0.25" />
         </pattern>
+        {/* Radial fade out — uses the page surface as the fade-to color so
+            the grid disappears at the edges. var() in stopColor isn't
+            universally supported, so we set this on a wrapping CSS class. */}
         <radialGradient id="pw-grid-fade" cx="50%" cy="40%" r="65%">
-          <stop offset="0%" stopColor="#fff" stopOpacity="0" />
-          <stop offset="60%" stopColor="#fff" stopOpacity="0.3" />
-          <stop offset="100%" stopColor="#fff" stopOpacity="1" />
+          <stop offset="0%" className="grid-fade-stop" stopOpacity="0" />
+          <stop offset="60%" className="grid-fade-stop" stopOpacity="0.3" />
+          <stop offset="100%" className="grid-fade-stop" stopOpacity="1" />
         </radialGradient>
         <mask id="pw-grid-mask">
           <rect width="100%" height="100%" fill="white" />

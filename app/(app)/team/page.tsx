@@ -48,16 +48,18 @@ export default async function TeamPage() {
               fontSize: 11,
               fontWeight: 500,
               letterSpacing: "0.16em",
-              color: "#666",
+              color: "var(--bp-text-secondary)",
               textTransform: "uppercase",
             }}
           >
             <div>
-              <span style={{ color: "#AAA" }}>Active</span>{" "}
-              <span style={{ color: "#0F0F0F" }}>·</span>{" "}
-              <span style={{ color: "#0F0F0F", fontWeight: 600 }}>{String(members.length)}</span>
+              <span style={{ color: "var(--bp-text-disabled)" }}>Active</span>{" "}
+              <span style={{ color: "var(--bp-text-primary)" }}>·</span>{" "}
+              <span style={{ color: "var(--bp-text-primary)", fontWeight: 600 }}>
+                {String(members.length)}
+              </span>
             </div>
-            <div style={{ color: "#AAA" }}>Rev · {revStamp}</div>
+            <div style={{ color: "var(--bp-text-disabled)" }}>Rev · {revStamp}</div>
           </div>
         }
       />
@@ -67,7 +69,7 @@ export default async function TeamPage() {
         <RegCard state="new" className="!px-5 !py-4">
           <div className="flex items-start gap-4">
             <Network
-              className="mt-1 size-4 shrink-0 text-[#5A7A92]"
+              className="mt-1 size-4 shrink-0 text-[var(--bp-accent-steel-soft)]"
               strokeWidth={1.5}
               aria-hidden
             />
@@ -78,7 +80,7 @@ export default async function TeamPage() {
                   fontSize: 10,
                   fontWeight: 600,
                   letterSpacing: "0.2em",
-                  color: "#5A7A92",
+                  color: "var(--bp-accent-steel-soft)",
                   textTransform: "uppercase",
                 }}
               >
@@ -89,7 +91,7 @@ export default async function TeamPage() {
                 style={{
                   fontFamily: "var(--font-sans)",
                   fontSize: 13,
-                  color: "#444",
+                  color: "var(--bp-text-secondary)",
                   lineHeight: 1.55,
                 }}
               >
@@ -98,8 +100,8 @@ export default async function TeamPage() {
                 two link via a Post assignment. Manage the seats here; manage who holds what Post in{" "}
                 <Link
                   href="/organization/structure"
-                  className="underline transition-colors hover:text-[#0F0F0F]"
-                  style={{ color: "#0F0F0F" }}
+                  className="underline transition-colors hover:text-[var(--bp-text-primary)]"
+                  style={{ color: "var(--bp-text-primary)" }}
                 >
                   Structure
                 </Link>
@@ -130,7 +132,7 @@ export default async function TeamPage() {
                 fontFamily: "var(--font-mono)",
                 fontSize: 11,
                 letterSpacing: "0.18em",
-                color: "#888",
+                color: "var(--bp-text-muted)",
                 textTransform: "uppercase",
               }}
             >

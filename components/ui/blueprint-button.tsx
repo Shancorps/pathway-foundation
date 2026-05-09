@@ -31,7 +31,11 @@ export const BlueprintButton = forwardRef<
       {...props}
     >
       {particle && (
-        <span aria-hidden className="inline-block size-2" style={{ backgroundColor: "#E8711A" }} />
+        <span
+          aria-hidden
+          className="inline-block size-2"
+          style={{ backgroundColor: "var(--bp-accent-orange)" }}
+        />
       )}
       {children}
     </button>
@@ -54,7 +58,11 @@ export function BlueprintLink({
       style={buttonStyle(size)}
     >
       {particle && (
-        <span aria-hidden className="inline-block size-2" style={{ backgroundColor: "#E8711A" }} />
+        <span
+          aria-hidden
+          className="inline-block size-2"
+          style={{ backgroundColor: "var(--bp-accent-orange)" }}
+        />
       )}
       {children}
     </Link>
@@ -62,15 +70,18 @@ export function BlueprintLink({
 }
 
 function buttonClasses(variant: Variant, size: Size): string {
+  // We use Tailwind arbitrary values so the buttons live happily in both
+  // themes — every color is a CSS variable so dark mode flips with the rest
+  // of the blueprint.
   const base =
     "inline-flex items-center gap-2.5 transition-colors disabled:opacity-50 disabled:pointer-events-none"
   const sizing = size === "sm" ? "px-3.5 py-2" : "px-5 py-2.5"
   const v =
     variant === "primary"
-      ? "border border-[#E8711A] bg-[#E8711A] text-white hover:bg-[#D9651A] hover:border-[#D9651A]"
+      ? "border border-[var(--bp-accent-orange)] bg-[var(--bp-accent-orange)] text-[var(--bp-text-on-accent)] hover:opacity-90"
       : variant === "outline"
-        ? "border border-[#0F0F0F] bg-white text-[#0F0F0F] hover:bg-[#FAFAFA]"
-        : "border border-transparent bg-transparent text-[#666] hover:text-[#0F0F0F] hover:bg-[#FAFAFA]"
+        ? "border border-[var(--bp-border-graphite)] bg-[var(--bp-surface-card)] text-[var(--bp-text-primary)] hover:bg-[var(--bp-surface-card-queued)]"
+        : "border border-transparent bg-transparent text-[var(--bp-text-secondary)] hover:text-[var(--bp-text-primary)] hover:bg-[var(--bp-surface-card-queued)]"
   return `${base} ${sizing} ${v}`
 }
 

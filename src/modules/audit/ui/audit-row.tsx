@@ -13,7 +13,7 @@ export function AuditLogRow({ row }: { row: AuditRow }) {
   const hasDetail = row.metadata !== null || row.ipAddress !== null || row.userAgent !== null
   return (
     <li
-      className="px-5 py-3 transition-colors hover:bg-[#FAFAFA]"
+      className="px-5 py-3 transition-colors hover:bg-[var(--bp-surface-card-queued)]"
       style={{ borderBottom: "1px solid #E4E4E4" }}
     >
       <button
@@ -29,7 +29,7 @@ export function AuditLogRow({ row }: { row: AuditRow }) {
           strokeWidth={2}
           style={{
             transform: open ? "rotate(90deg)" : "rotate(0deg)",
-            color: hasDetail ? "#888" : "transparent",
+            color: hasDetail ? "var(--bp-text-muted)" : "transparent",
           }}
           aria-hidden
         />
@@ -41,14 +41,14 @@ export function AuditLogRow({ row }: { row: AuditRow }) {
               fontSize: 11,
               fontWeight: 600,
               letterSpacing: "0.06em",
-              color: "#0F0F0F",
+              color: "var(--bp-text-primary)",
             }}
           >
-            <span style={{ color: "#E8711A" }}>{row.action}</span>
+            <span style={{ color: "var(--bp-accent-orange)" }}>{row.action}</span>
             {row.resourceType && (
               <>
-                <span style={{ color: "#CCC" }}>·</span>
-                <span style={{ color: "#5A7A92" }}>
+                <span style={{ color: "var(--bp-text-disabled)" }}>·</span>
+                <span style={{ color: "var(--bp-accent-steel-soft)" }}>
                   {row.resourceType}
                   {row.resourceId ? `:${row.resourceId.slice(0, 10)}` : ""}
                 </span>
@@ -60,17 +60,21 @@ export function AuditLogRow({ row }: { row: AuditRow }) {
             style={{
               fontFamily: "var(--font-sans)",
               fontSize: 13,
-              color: "#444",
+              color: "var(--bp-text-secondary)",
               lineHeight: 1.4,
             }}
           >
             {row.actorName ? (
               <>
-                <span style={{ color: "#0F0F0F", fontWeight: 500 }}>{row.actorName}</span>
-                {row.actorEmail && <span style={{ color: "#888" }}> · {row.actorEmail}</span>}
+                <span style={{ color: "var(--bp-text-primary)", fontWeight: 500 }}>
+                  {row.actorName}
+                </span>
+                {row.actorEmail && (
+                  <span style={{ color: "var(--bp-text-muted)" }}> · {row.actorEmail}</span>
+                )}
               </>
             ) : (
-              <span style={{ color: "#888" }}>System</span>
+              <span style={{ color: "var(--bp-text-muted)" }}>System</span>
             )}
           </p>
         </div>
@@ -80,7 +84,7 @@ export function AuditLogRow({ row }: { row: AuditRow }) {
             fontFamily: "var(--font-mono)",
             fontSize: 10,
             letterSpacing: "0.08em",
-            color: "#888",
+            color: "var(--bp-text-muted)",
           }}
         >
           {formatTimestamp(row.createdAt)}
@@ -99,8 +103,8 @@ export function AuditLogRow({ row }: { row: AuditRow }) {
                 style={{
                   fontFamily: "var(--font-mono)",
                   fontSize: 11,
-                  color: "#0F0F0F",
-                  backgroundColor: "#FAFAFA",
+                  color: "var(--bp-text-primary)",
+                  backgroundColor: "var(--bp-surface-card-queued)",
                   padding: "8px 10px",
                   border: "1px solid #E4E4E4",
                   whiteSpace: "pre-wrap",
@@ -117,21 +121,21 @@ export function AuditLogRow({ row }: { row: AuditRow }) {
                 style={{
                   fontFamily: "var(--font-mono)",
                   fontSize: 11,
-                  color: "#444",
+                  color: "var(--bp-text-secondary)",
                   lineHeight: 1.5,
                   wordBreak: "break-all",
                 }}
               >
                 {row.ipAddress && (
                   <>
-                    <span style={{ color: "#888" }}>ip </span>
+                    <span style={{ color: "var(--bp-text-muted)" }}>ip </span>
                     {row.ipAddress}
                   </>
                 )}
                 {row.ipAddress && row.userAgent && <br />}
                 {row.userAgent && (
                   <>
-                    <span style={{ color: "#888" }}>ua </span>
+                    <span style={{ color: "var(--bp-text-muted)" }}>ua </span>
                     {row.userAgent}
                   </>
                 )}
@@ -153,7 +157,7 @@ function Detail({ label, children }: { label: string; children: React.ReactNode 
           fontSize: 9,
           fontWeight: 600,
           letterSpacing: "0.18em",
-          color: "#888",
+          color: "var(--bp-text-muted)",
           textTransform: "uppercase",
         }}
       >

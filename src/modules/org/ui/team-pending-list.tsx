@@ -37,7 +37,7 @@ export function TeamPendingList({
                   fontFamily: "var(--font-sans)",
                   fontSize: 14,
                   fontWeight: 500,
-                  color: "#0F0F0F",
+                  color: "var(--bp-text-primary)",
                 }}
               >
                 {inv.email}
@@ -49,7 +49,7 @@ export function TeamPendingList({
                   fontSize: 10,
                   fontWeight: 600,
                   letterSpacing: "0.18em",
-                  color: "#888",
+                  color: "var(--bp-text-muted)",
                   textTransform: "uppercase",
                 }}
               >
@@ -62,13 +62,13 @@ export function TeamPendingList({
                 void cancel(inv.id)
               }}
               disabled={busyId === inv.id}
-              className="shrink-0 px-2 py-1 transition-colors hover:text-[#E8711A] disabled:opacity-50"
+              className="shrink-0 px-2 py-1 transition-colors hover:text-[var(--bp-accent-orange)] disabled:opacity-50"
               style={{
                 fontFamily: "var(--font-mono)",
                 fontSize: 9,
                 fontWeight: 600,
                 letterSpacing: "0.18em",
-                color: "#888",
+                color: "var(--bp-text-muted)",
                 textTransform: "uppercase",
               }}
             >

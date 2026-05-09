@@ -88,7 +88,7 @@ export async function RailStatsTab({
                 fontFamily: "var(--font-mono)",
                 fontSize: 11,
                 letterSpacing: "0.18em",
-                color: "#888",
+                color: "var(--bp-text-muted)",
                 textTransform: "uppercase",
               }}
             >
@@ -105,7 +105,7 @@ export async function RailStatsTab({
                     fontSize: 9,
                     fontWeight: 600,
                     letterSpacing: "0.18em",
-                    color: "#888",
+                    color: "var(--bp-text-muted)",
                     textTransform: "uppercase",
                   }}
                 >
@@ -134,7 +134,7 @@ export async function RailStatsTab({
                             fontFamily: "var(--font-sans)",
                             fontSize: 14,
                             fontWeight: 500,
-                            color: "#0F0F0F",
+                            color: "var(--bp-text-primary)",
                           }}
                         >
                           {r.railName}
@@ -175,7 +175,7 @@ export async function RailStatsTab({
                 fontFamily: "var(--font-mono)",
                 fontSize: 11,
                 letterSpacing: "0.18em",
-                color: "#888",
+                color: "var(--bp-text-muted)",
                 textTransform: "uppercase",
               }}
             >
@@ -188,7 +188,7 @@ export async function RailStatsTab({
               <li key={c.id}>
                 <Link
                   href={`/my-actions/${c.id}`}
-                  className="block transition-colors hover:bg-[#FFF8F1]"
+                  className="block transition-colors hover:bg-[var(--bp-surface-card-active)]"
                 >
                   <RegCard state="active" className="!px-4 !py-3">
                     <div className="flex items-center justify-between gap-4">
@@ -199,7 +199,7 @@ export async function RailStatsTab({
                             fontFamily: "var(--font-sans)",
                             fontSize: 14,
                             fontWeight: 600,
-                            color: "#0F0F0F",
+                            color: "var(--bp-text-primary)",
                           }}
                         >
                           {c.particleName} — {c.cycleTitle}
@@ -210,7 +210,7 @@ export async function RailStatsTab({
                             fontFamily: "var(--font-mono)",
                             fontSize: 10,
                             letterSpacing: "0.12em",
-                            color: "#5A7A92",
+                            color: "var(--bp-accent-steel-soft)",
                             textTransform: "uppercase",
                           }}
                         >
@@ -224,7 +224,7 @@ export async function RailStatsTab({
                             fontSize: 11,
                             fontWeight: 600,
                             letterSpacing: "0.16em",
-                            color: "#E8711A",
+                            color: "var(--bp-accent-orange)",
                             textTransform: "uppercase",
                           }}
                         >
@@ -236,7 +236,7 @@ export async function RailStatsTab({
                             fontFamily: "var(--font-mono)",
                             fontSize: 9,
                             letterSpacing: "0.14em",
-                            color: "#888",
+                            color: "var(--bp-text-muted)",
                             textTransform: "uppercase",
                           }}
                         >
@@ -267,7 +267,7 @@ export async function RailStatsTab({
                 fontFamily: "var(--font-mono)",
                 fontSize: 11,
                 letterSpacing: "0.18em",
-                color: "#888",
+                color: "var(--bp-text-muted)",
                 textTransform: "uppercase",
               }}
             >
@@ -284,11 +284,13 @@ export async function RailStatsTab({
                     <Link
                       href={buildLoopBackHref(active ? null : r.id)}
                       className="flex items-start gap-3 px-4 py-3 transition-colors hover:bg-white"
-                      style={active ? { backgroundColor: "#FFF8F1" } : undefined}
+                      style={
+                        active ? { backgroundColor: "var(--bp-surface-card-active)" } : undefined
+                      }
                     >
                       <CornerUpLeft
                         className="mt-0.5 size-4 shrink-0"
-                        style={{ color: "#E8711A" }}
+                        style={{ color: "var(--bp-accent-orange)" }}
                         strokeWidth={2}
                         aria-hidden
                       />
@@ -299,7 +301,7 @@ export async function RailStatsTab({
                             fontFamily: "var(--font-sans)",
                             fontSize: 14,
                             fontWeight: 500,
-                            color: "#0F0F0F",
+                            color: "var(--bp-text-primary)",
                           }}
                         >
                           {r.railName} — {r.particleName}
@@ -310,7 +312,7 @@ export async function RailStatsTab({
                             fontFamily: "var(--font-mono)",
                             fontSize: 10,
                             letterSpacing: "0.12em",
-                            color: "#888",
+                            color: "var(--bp-text-muted)",
                             textTransform: "uppercase",
                           }}
                         >
@@ -343,7 +345,7 @@ function KpiTile({
   sub: string
   accent?: "muted" | "warning"
 }) {
-  const valueColor = accent === "warning" ? "#E8711A" : "#0F0F0F"
+  const valueColor = accent === "warning" ? "var(--bp-accent-orange)" : "var(--bp-text-primary)"
   return (
     <RegCard state="queued" className="!px-5 !py-5">
       <p
@@ -352,7 +354,7 @@ function KpiTile({
           fontSize: 10,
           fontWeight: 600,
           letterSpacing: "0.18em",
-          color: "#888",
+          color: "var(--bp-text-muted)",
           textTransform: "uppercase",
         }}
       >
@@ -377,7 +379,7 @@ function KpiTile({
           fontFamily: "var(--font-mono)",
           fontSize: 10,
           letterSpacing: "0.12em",
-          color: "#888",
+          color: "var(--bp-text-muted)",
         }}
       >
         {sub}
@@ -415,7 +417,12 @@ function Td({
   align?: "left" | "right"
   accent?: "muted" | "warning" | "primary"
 }) {
-  const color = accent === "warning" ? "#E8711A" : accent === "primary" ? "#0F0F0F" : "#444"
+  const color =
+    accent === "warning"
+      ? "var(--bp-accent-orange)"
+      : accent === "primary"
+        ? "var(--bp-text-primary)"
+        : "var(--bp-text-secondary)"
   return (
     <td
       style={{
@@ -434,7 +441,12 @@ function Td({
 }
 
 function ResolutionPill({ resolution }: { resolution: "open" | "completed" | "cancelled" }) {
-  const color = resolution === "open" ? "#E8711A" : resolution === "completed" ? "#2A3D52" : "#888"
+  const color =
+    resolution === "open"
+      ? "var(--bp-accent-orange)"
+      : resolution === "completed"
+        ? "var(--bp-accent-steel)"
+        : "var(--bp-text-muted)"
   const label = resolution === "open" ? "Open" : resolution === "completed" ? "Resolved" : "Cancel"
   const filled = resolution === "open"
   return (

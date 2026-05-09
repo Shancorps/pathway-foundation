@@ -24,7 +24,12 @@ export function IdleRailIllustration({ width = 480 }: { width?: number }) {
       {/* Faint coordinate grid local to the illustration — adds blueprint feel */}
       <defs>
         <pattern id="iri-grid" width="12" height="12" patternUnits="userSpaceOnUse">
-          <path d="M 12 0 L 0 0 0 12" fill="none" stroke="#2A3D52" strokeWidth="0.3" />
+          <path
+            d="M 12 0 L 0 0 0 12"
+            fill="none"
+            stroke="var(--bp-accent-steel)"
+            strokeWidth="0.3"
+          />
         </pattern>
         <radialGradient id="iri-fade" cx="50%" cy="55%" r="55%">
           <stop offset="0%" stopColor="#fff" stopOpacity="0" />
@@ -41,7 +46,7 @@ export function IdleRailIllustration({ width = 480 }: { width?: number }) {
       {/* Front face */}
       <polygon
         points="100,200 160,200 160,240 100,240"
-        fill="#2A3D52"
+        fill="var(--bp-accent-steel)"
         stroke="#1A1A1A"
         strokeWidth={0.8}
         strokeOpacity={0.8}
@@ -66,7 +71,7 @@ export function IdleRailIllustration({ width = 480 }: { width?: number }) {
       {/* === RIGHT TERMINAL BLOCK === */}
       <polygon
         points="296,200 356,200 356,240 296,240"
-        fill="#2A3D52"
+        fill="var(--bp-accent-steel)"
         stroke="#1A1A1A"
         strokeWidth={0.8}
         strokeOpacity={0.8}
@@ -100,7 +105,7 @@ export function IdleRailIllustration({ width = 480 }: { width?: number }) {
       {/* Front edge of rail strip */}
       <polygon
         points="160,210 296,210 296,214 160,214"
-        fill="#2A3D52"
+        fill="var(--bp-accent-steel)"
         fillOpacity={0.5}
         stroke="#1A1A1A"
         strokeWidth={0.6}
@@ -114,7 +119,7 @@ export function IdleRailIllustration({ width = 480 }: { width?: number }) {
           y1={210}
           x2={x + 24}
           y2={190}
-          stroke="#2A3D52"
+          stroke="var(--bp-accent-steel)"
           strokeWidth={0.4}
           strokeOpacity={0.4}
         />
@@ -122,38 +127,59 @@ export function IdleRailIllustration({ width = 480 }: { width?: number }) {
 
       {/* === LEADER LINES + CALLOUTS === */}
       {/* "TERMINAL 1" — leader from left block top */}
-      <line x1={154} y1={180} x2={154} y2={120} stroke="#AAA" strokeWidth={0.5} />
-      <circle cx={154} cy={120} r={1.5} fill="#AAA" />
+      <line
+        x1={154}
+        y1={180}
+        x2={154}
+        y2={120}
+        stroke="var(--bp-text-disabled)"
+        strokeWidth={0.5}
+      />
+      <circle cx={154} cy={120} r={1.5} fill="var(--bp-text-disabled)" />
       <text
         x={154}
         y={108}
         textAnchor="middle"
         fontFamily="var(--font-mono)"
         fontSize="9"
-        fill="#888"
+        fill="var(--bp-text-muted)"
         letterSpacing="1.2"
       >
         TERMINAL 1
       </text>
 
       {/* "TERMINAL 2" — leader from right block top */}
-      <line x1={350} y1={180} x2={350} y2={120} stroke="#AAA" strokeWidth={0.5} />
-      <circle cx={350} cy={120} r={1.5} fill="#AAA" />
+      <line
+        x1={350}
+        y1={180}
+        x2={350}
+        y2={120}
+        stroke="var(--bp-text-disabled)"
+        strokeWidth={0.5}
+      />
+      <circle cx={350} cy={120} r={1.5} fill="var(--bp-text-disabled)" />
       <text
         x={350}
         y={108}
         textAnchor="middle"
         fontFamily="var(--font-mono)"
         fontSize="9"
-        fill="#888"
+        fill="var(--bp-text-muted)"
         letterSpacing="1.2"
       >
         TERMINAL 2
       </text>
 
       {/* "RAIL — IDLE" — leader from middle of rail */}
-      <line x1={240} y1={205} x2={240} y2={260} stroke="#AAA" strokeWidth={0.5} />
-      <circle cx={240} cy={205} r={1.5} fill="#AAA" />
+      <line
+        x1={240}
+        y1={205}
+        x2={240}
+        y2={260}
+        stroke="var(--bp-text-disabled)"
+        strokeWidth={0.5}
+      />
+      <circle cx={240} cy={205} r={1.5} fill="var(--bp-text-disabled)" />
       <text
         x={240}
         y={273}
@@ -161,7 +187,7 @@ export function IdleRailIllustration({ width = 480 }: { width?: number }) {
         fontFamily="var(--font-mono)"
         fontSize="10"
         fontWeight="600"
-        fill="#0F0F0F"
+        fill="var(--bp-text-primary)"
         letterSpacing="2"
       >
         NO ACTIVE CYCLES
@@ -172,7 +198,7 @@ export function IdleRailIllustration({ width = 480 }: { width?: number }) {
         textAnchor="middle"
         fontFamily="var(--font-mono)"
         fontSize="8"
-        fill="#AAA"
+        fill="var(--bp-text-disabled)"
         letterSpacing="1.5"
       >
         RAIL IDLE — READY FOR ASSIGNMENT
@@ -185,7 +211,7 @@ export function IdleRailIllustration({ width = 480 }: { width?: number }) {
         textAnchor="end"
         fontFamily="var(--font-mono)"
         fontSize="7"
-        fill="#CCC"
+        fill="var(--bp-text-disabled)"
         letterSpacing="2"
       >
         FIG · 01 / IDLE STATE

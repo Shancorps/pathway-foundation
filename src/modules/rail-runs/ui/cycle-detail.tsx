@@ -178,7 +178,7 @@ export function CycleDetail({
                 fontSize: 10,
                 fontWeight: 600,
                 letterSpacing: "0.2em",
-                color: "#888",
+                color: "var(--bp-text-muted)",
                 textTransform: "uppercase",
               }}
             >
@@ -190,7 +190,7 @@ export function CycleDetail({
                 fontFamily: "var(--font-sans)",
                 fontSize: 24,
                 fontWeight: 600,
-                color: "#0F0F0F",
+                color: "var(--bp-text-primary)",
                 lineHeight: 1.15,
                 letterSpacing: "-0.01em",
               }}
@@ -203,7 +203,7 @@ export function CycleDetail({
                 fontFamily: "var(--font-mono)",
                 fontSize: 10,
                 letterSpacing: "0.14em",
-                color: "#5A7A92",
+                color: "var(--bp-accent-steel-soft)",
                 textTransform: "uppercase",
               }}
             >
@@ -215,7 +215,7 @@ export function CycleDetail({
                 style={{
                   fontFamily: "var(--font-sans)",
                   fontSize: 14,
-                  color: "#444",
+                  color: "var(--bp-text-secondary)",
                   lineHeight: 1.55,
                 }}
               >
@@ -257,7 +257,7 @@ export function CycleDetail({
                 fontFamily: "var(--font-mono)",
                 fontSize: 11,
                 letterSpacing: "0.18em",
-                color: "#AAA",
+                color: "var(--bp-text-disabled)",
                 textTransform: "uppercase",
               }}
             >
@@ -285,7 +285,7 @@ export function CycleDetail({
                         style={{
                           fontFamily: "var(--font-sans)",
                           fontSize: 14,
-                          color: item.checked ? "#888" : "#0F0F0F",
+                          color: item.checked ? "var(--bp-text-muted)" : "var(--bp-text-primary)",
                           textDecoration: item.checked ? "line-through" : "none",
                           lineHeight: 1.4,
                         }}
@@ -298,7 +298,7 @@ export function CycleDetail({
                               fontFamily: "var(--font-mono)",
                               fontSize: 9,
                               fontWeight: 600,
-                              color: "#E8711A",
+                              color: "var(--bp-accent-orange)",
                               letterSpacing: "0.12em",
                               textTransform: "uppercase",
                             }}
@@ -320,7 +320,7 @@ export function CycleDetail({
         <section className="space-y-4">
           <SectionDivider label="Fig · 04 / SOP & Tools" count={cycle.toolsLinks.length} />
           <RegCard state="queued">
-            <ul className="divide-y divide-[#E4E4E4]">
+            <ul className="divide-y divide-[var(--bp-border-default)]">
               {cycle.toolsLinks
                 .slice()
                 .sort((a, b) => a.position - b.position)
@@ -338,7 +338,7 @@ export function CycleDetail({
                             fontFamily: "var(--font-sans)",
                             fontSize: 14,
                             fontWeight: 500,
-                            color: "#0F0F0F",
+                            color: "var(--bp-text-primary)",
                           }}
                         >
                           {link.label}
@@ -349,7 +349,7 @@ export function CycleDetail({
                             fontFamily: "var(--font-mono)",
                             fontSize: 10,
                             letterSpacing: "0.06em",
-                            color: "#888",
+                            color: "var(--bp-text-muted)",
                           }}
                         >
                           {link.url}
@@ -366,7 +366,7 @@ export function CycleDetail({
 
       {/* Actions */}
       {!isClosed && (
-        <div className="flex flex-wrap items-center justify-between gap-3 border-t border-[#E4E4E4] pt-6">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-t border-[var(--bp-border-default)] pt-6">
           <BlueprintButton variant="ghost" size="sm" onClick={handleCancelRun}>
             Cancel Run
           </BlueprintButton>
@@ -399,7 +399,7 @@ export function CycleDetail({
                   }}
                   disabled={submittingComplete || submittingReject || hasActiveLoopBack}
                   title="Reject this approval — the rail will end."
-                  style={{ borderColor: "#B83229", color: "#B83229" }}
+                  style={{ borderColor: "var(--bp-accent-end)", color: "var(--bp-accent-end)" }}
                 >
                   Reject
                 </BlueprintButton>
@@ -441,10 +441,10 @@ export function CycleDetail({
         </div>
       )}
 
-      <div className="border-t border-[#E4E4E4] pt-4">
+      <div className="border-t border-[var(--bp-border-default)] pt-4">
         <a
           href={`/runs/${railRunId}`}
-          className="inline-flex items-center gap-2 text-[#888] transition-colors hover:text-[#0F0F0F]"
+          className="inline-flex items-center gap-2 text-[var(--bp-text-muted)] transition-colors hover:text-[var(--bp-text-primary)]"
           style={{
             fontFamily: "var(--font-mono)",
             fontSize: 10,
@@ -509,7 +509,7 @@ function RejectApprovalDialog({
       aria-labelledby="reject-approval-title"
     >
       <div className="w-full max-w-[480px] bg-white" style={{ border: "1px solid #0F0F0F" }}>
-        <div className="flex items-start justify-between gap-4 border-b border-[#E4E4E4] px-6 py-4">
+        <div className="flex items-start justify-between gap-4 border-b border-[var(--bp-border-default)] px-6 py-4">
           <div>
             <p
               style={{
@@ -517,7 +517,7 @@ function RejectApprovalDialog({
                 fontSize: 10,
                 fontWeight: 600,
                 letterSpacing: "0.2em",
-                color: "#B83229",
+                color: "var(--bp-accent-end)",
                 textTransform: "uppercase",
               }}
             >
@@ -530,7 +530,7 @@ function RejectApprovalDialog({
                 fontFamily: "var(--font-sans)",
                 fontSize: 18,
                 fontWeight: 600,
-                color: "#0F0F0F",
+                color: "var(--bp-text-primary)",
                 letterSpacing: "-0.005em",
               }}
             >
@@ -540,7 +540,7 @@ function RejectApprovalDialog({
           <button
             type="button"
             onClick={onClose}
-            className="text-[#888] transition-colors hover:text-[#0F0F0F]"
+            className="text-[var(--bp-text-muted)] transition-colors hover:text-[var(--bp-text-primary)]"
             aria-label="Close"
           >
             <X className="size-4" strokeWidth={2} />
@@ -552,7 +552,7 @@ function RejectApprovalDialog({
             style={{
               fontFamily: "var(--font-sans)",
               fontSize: 13,
-              color: "#444",
+              color: "var(--bp-text-secondary)",
               lineHeight: 1.55,
             }}
           >
@@ -567,7 +567,7 @@ function RejectApprovalDialog({
                 fontSize: 10,
                 fontWeight: 600,
                 letterSpacing: "0.18em",
-                color: "#0F0F0F",
+                color: "var(--bp-text-primary)",
                 textTransform: "uppercase",
               }}
             >
@@ -582,11 +582,11 @@ function RejectApprovalDialog({
               }}
               maxLength={2000}
               placeholder="Why is this being rejected?"
-              className="mt-2 block w-full px-3 py-2 outline-none focus:border-[#0F0F0F]"
+              className="mt-2 block w-full px-3 py-2 outline-none focus:border-[var(--bp-border-graphite)]"
               style={{
                 fontFamily: "var(--font-sans)",
                 fontSize: 14,
-                color: "#0F0F0F",
+                color: "var(--bp-text-primary)",
                 border: "1px solid #D4D4D4",
                 resize: "vertical",
               }}
@@ -594,7 +594,7 @@ function RejectApprovalDialog({
           </div>
         </div>
 
-        <div className="flex items-center justify-end gap-3 border-t border-[#E4E4E4] px-6 py-4">
+        <div className="flex items-center justify-end gap-3 border-t border-[var(--bp-border-default)] px-6 py-4">
           <BlueprintButton variant="ghost" size="sm" onClick={onClose} disabled={submitting}>
             Cancel
           </BlueprintButton>
@@ -604,7 +604,7 @@ function RejectApprovalDialog({
               if (canSubmit) onSubmit(trimmed)
             }}
             disabled={!canSubmit}
-            style={{ backgroundColor: "#B83229", borderColor: "#B83229" }}
+            style={{ backgroundColor: "var(--bp-accent-end)", borderColor: "var(--bp-accent-end)" }}
           >
             {submitting ? "Rejecting..." : "Reject and end rail"}
           </BlueprintButton>
@@ -625,7 +625,7 @@ function LoopBackReceiverBanner({
     <div
       className="flex items-start gap-3 px-5 py-4"
       style={{
-        backgroundColor: "#FFF8F1",
+        backgroundColor: "var(--bp-surface-card-active)",
         border: "1px solid #E8711A",
         borderLeft: "4px solid #E8711A",
       }}
@@ -633,7 +633,7 @@ function LoopBackReceiverBanner({
     >
       <CornerUpLeft
         className="mt-0.5 size-4 shrink-0"
-        style={{ color: "#E8711A" }}
+        style={{ color: "var(--bp-accent-orange)" }}
         strokeWidth={2}
         aria-hidden
       />
@@ -644,7 +644,7 @@ function LoopBackReceiverBanner({
             fontSize: 10,
             fontWeight: 600,
             letterSpacing: "0.2em",
-            color: "#E8711A",
+            color: "var(--bp-accent-orange)",
             textTransform: "uppercase",
           }}
         >
@@ -657,7 +657,7 @@ function LoopBackReceiverBanner({
             style={{
               fontFamily: "var(--font-sans)",
               fontSize: 14,
-              color: "#0F0F0F",
+              color: "var(--bp-text-primary)",
               lineHeight: 1.5,
             }}
           >
@@ -674,7 +674,7 @@ function ActiveLoopBackBanner({ active }: { active: ActiveLoopBack }) {
     <div
       className="flex items-start gap-3 px-5 py-4"
       style={{
-        backgroundColor: "#FAFAFA",
+        backgroundColor: "var(--bp-surface-card-queued)",
         border: "1px solid #2A3D52",
         borderLeft: "4px solid #2A3D52",
       }}
@@ -682,7 +682,7 @@ function ActiveLoopBackBanner({ active }: { active: ActiveLoopBack }) {
     >
       <CornerUpLeft
         className="mt-0.5 size-4 shrink-0"
-        style={{ color: "#2A3D52" }}
+        style={{ color: "var(--bp-accent-steel)" }}
         strokeWidth={2}
         aria-hidden
       />
@@ -693,7 +693,7 @@ function ActiveLoopBackBanner({ active }: { active: ActiveLoopBack }) {
             fontSize: 10,
             fontWeight: 600,
             letterSpacing: "0.2em",
-            color: "#2A3D52",
+            color: "var(--bp-accent-steel)",
             textTransform: "uppercase",
           }}
         >
@@ -705,7 +705,7 @@ function ActiveLoopBackBanner({ active }: { active: ActiveLoopBack }) {
             style={{
               fontFamily: "var(--font-sans)",
               fontSize: 14,
-              color: "#0F0F0F",
+              color: "var(--bp-text-primary)",
               lineHeight: 1.5,
             }}
           >
@@ -742,7 +742,7 @@ function LoopBackDialog({
       aria-labelledby="loop-back-dialog-title"
     >
       <div className="w-full max-w-[560px] bg-white" style={{ border: "1px solid #0F0F0F" }}>
-        <div className="flex items-start justify-between gap-4 border-b border-[#E4E4E4] px-6 py-4">
+        <div className="flex items-start justify-between gap-4 border-b border-[var(--bp-border-default)] px-6 py-4">
           <div>
             <p
               id="loop-back-dialog-title"
@@ -751,7 +751,7 @@ function LoopBackDialog({
                 fontSize: 10,
                 fontWeight: 600,
                 letterSpacing: "0.2em",
-                color: "#E8711A",
+                color: "var(--bp-accent-orange)",
                 textTransform: "uppercase",
               }}
             >
@@ -763,7 +763,7 @@ function LoopBackDialog({
                 fontFamily: "var(--font-sans)",
                 fontSize: 18,
                 fontWeight: 600,
-                color: "#0F0F0F",
+                color: "var(--bp-text-primary)",
                 letterSpacing: "-0.005em",
               }}
             >
@@ -773,7 +773,7 @@ function LoopBackDialog({
           <button
             type="button"
             onClick={onClose}
-            className="text-[#888] transition-colors hover:text-[#0F0F0F]"
+            className="text-[var(--bp-text-muted)] transition-colors hover:text-[var(--bp-text-primary)]"
             aria-label="Close"
           >
             <X className="size-4" strokeWidth={2} />
@@ -788,13 +788,16 @@ function LoopBackDialog({
                 fontSize: 10,
                 fontWeight: 600,
                 letterSpacing: "0.18em",
-                color: "#0F0F0F",
+                color: "var(--bp-text-primary)",
                 textTransform: "uppercase",
               }}
             >
               Target step
             </p>
-            <ul className="mt-3 divide-y divide-[#E4E4E4]" style={{ border: "1px solid #E4E4E4" }}>
+            <ul
+              className="mt-3 divide-y divide-[var(--bp-border-default)]"
+              style={{ border: "1px solid #E4E4E4" }}
+            >
               {targets.map((t) => {
                 const checked = selected === t.id
                 return (
@@ -802,7 +805,7 @@ function LoopBackDialog({
                     <label
                       className="flex cursor-pointer items-start gap-3 px-4 py-3"
                       style={{
-                        backgroundColor: checked ? "#FFF8F1" : "transparent",
+                        backgroundColor: checked ? "var(--bp-surface-card-active)" : "transparent",
                       }}
                     >
                       <input
@@ -821,7 +824,7 @@ function LoopBackDialog({
                             fontFamily: "var(--font-sans)",
                             fontSize: 14,
                             fontWeight: 500,
-                            color: "#0F0F0F",
+                            color: "var(--bp-text-primary)",
                           }}
                         >
                           Step {t.position} · {t.title}
@@ -832,7 +835,7 @@ function LoopBackDialog({
                             fontFamily: "var(--font-mono)",
                             fontSize: 10,
                             letterSpacing: "0.12em",
-                            color: "#888",
+                            color: "var(--bp-text-muted)",
                             textTransform: "uppercase",
                           }}
                         >
@@ -854,7 +857,7 @@ function LoopBackDialog({
                 fontSize: 10,
                 fontWeight: 600,
                 letterSpacing: "0.18em",
-                color: "#0F0F0F",
+                color: "var(--bp-text-primary)",
                 textTransform: "uppercase",
               }}
             >
@@ -869,11 +872,11 @@ function LoopBackDialog({
               }}
               maxLength={2000}
               placeholder="Explain what needs to be redone. The receiver sees this verbatim."
-              className="mt-2 block w-full px-3 py-2 outline-none focus:border-[#0F0F0F]"
+              className="mt-2 block w-full px-3 py-2 outline-none focus:border-[var(--bp-border-graphite)]"
               style={{
                 fontFamily: "var(--font-sans)",
                 fontSize: 14,
-                color: "#0F0F0F",
+                color: "var(--bp-text-primary)",
                 border: "1px solid #D4D4D4",
                 resize: "vertical",
               }}
@@ -884,7 +887,7 @@ function LoopBackDialog({
                 fontFamily: "var(--font-mono)",
                 fontSize: 9,
                 letterSpacing: "0.16em",
-                color: "#AAA",
+                color: "var(--bp-text-disabled)",
                 textTransform: "uppercase",
               }}
             >
@@ -893,7 +896,7 @@ function LoopBackDialog({
           </div>
         </div>
 
-        <div className="flex items-center justify-end gap-3 border-t border-[#E4E4E4] px-6 py-4">
+        <div className="flex items-center justify-end gap-3 border-t border-[var(--bp-border-default)] px-6 py-4">
           <BlueprintButton variant="ghost" size="sm" onClick={onClose} disabled={submitting}>
             Cancel
           </BlueprintButton>
@@ -915,11 +918,17 @@ function LoopBackDialog({
 }
 
 function ExternalLinkIcon() {
-  return <ExternalLink className="size-3.5 shrink-0 text-[#888]" strokeWidth={1.5} aria-hidden />
+  return (
+    <ExternalLink
+      className="size-3.5 shrink-0 text-[var(--bp-text-muted)]"
+      strokeWidth={1.5}
+      aria-hidden
+    />
+  )
 }
 
 function StatusPill({ closed }: { closed: "completed" | "cancelled" }) {
-  const color = closed === "completed" ? "#2A3D52" : "#888"
+  const color = closed === "completed" ? "var(--bp-accent-steel)" : "var(--bp-text-muted)"
   const label = closed === "completed" ? "Completed" : "Cancelled"
   return (
     <span
@@ -1006,7 +1015,11 @@ function Stat({
   live?: boolean
 }) {
   const valueColor =
-    variant === "primary" ? "#0F0F0F" : variant === "warning" ? "#E8711A" : "#0F0F0F"
+    variant === "primary"
+      ? "var(--bp-text-primary)"
+      : variant === "warning"
+        ? "var(--bp-accent-orange)"
+        : "var(--bp-text-primary)"
   return (
     <div className="bg-white px-5 py-4">
       <p
@@ -1016,7 +1029,7 @@ function Stat({
           fontSize: 9,
           fontWeight: 600,
           letterSpacing: "0.2em",
-          color: "#888",
+          color: "var(--bp-text-muted)",
           textTransform: "uppercase",
         }}
       >
@@ -1025,10 +1038,14 @@ function Stat({
           <span className="inline-flex items-center gap-1.5">
             <span
               className="inline-block size-1.5"
-              style={{ backgroundColor: "#E8711A" }}
+              style={{ backgroundColor: "var(--bp-accent-orange)" }}
               aria-hidden
             />
-            <span style={{ color: "#E8711A", fontSize: 8, letterSpacing: "0.16em" }}>Live</span>
+            <span
+              style={{ color: "var(--bp-accent-orange)", fontSize: 8, letterSpacing: "0.16em" }}
+            >
+              Live
+            </span>
           </span>
         )}
       </p>

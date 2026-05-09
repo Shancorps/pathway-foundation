@@ -36,13 +36,13 @@ export function TitleBlock({
               fontSize: 11,
               fontWeight: 600,
               letterSpacing: "0.2em",
-              color: "#888",
+              color: "var(--bp-text-muted)",
             }}
           >
             <span>{coordinate.toUpperCase()}</span>
             <span
               className="inline-block w-10"
-              style={{ height: 1, backgroundColor: "#D4D4D4" }}
+              style={{ height: 1, backgroundColor: "var(--bp-border-strong)" }}
               aria-hidden
             />
           </p>
@@ -51,7 +51,7 @@ export function TitleBlock({
               fontFamily: "var(--font-sans)",
               fontWeight: 600,
               fontSize: 34,
-              color: "#0F0F0F",
+              color: "var(--bp-text-primary)",
               lineHeight: 1.1,
               letterSpacing: "-0.015em",
             }}
@@ -64,7 +64,7 @@ export function TitleBlock({
               style={{
                 fontFamily: "var(--font-sans)",
                 fontSize: 14,
-                color: "#555",
+                color: "var(--bp-text-secondary)",
                 lineHeight: 1.55,
               }}
             >
@@ -79,8 +79,8 @@ export function TitleBlock({
         </div>
       </div>
 
-      {/* Bottom rule — graphite, full width of the title block */}
-      <div className="h-px w-full bg-[#0F0F0F]" />
+      {/* Bottom rule — graphite line, flips to off-white in dark for the same hierarchy. */}
+      <div className="h-px w-full" style={{ backgroundColor: "var(--bp-border-graphite)" }} />
     </header>
   )
 }
@@ -94,7 +94,11 @@ function CoordinateTicks() {
       style={{ height: 6 }}
     >
       {Array.from({ length: 8 }).map((_, i) => (
-        <span key={i} className="block w-px bg-[#CCCCCC]" style={{ height: 4 }} />
+        <span
+          key={i}
+          className="block w-px"
+          style={{ height: 4, backgroundColor: "var(--bp-border-strong)" }}
+        />
       ))}
     </div>
   )

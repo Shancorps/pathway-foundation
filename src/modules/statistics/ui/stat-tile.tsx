@@ -18,7 +18,7 @@ export function StatTile({ data, href }: { data: StatTileData; href: string }) {
                 fontFamily: "var(--font-sans)",
                 fontSize: 16,
                 fontWeight: 600,
-                color: "#0F0F0F",
+                color: "var(--bp-text-primary)",
                 letterSpacing: "-0.005em",
               }}
             >
@@ -31,7 +31,7 @@ export function StatTile({ data, href }: { data: StatTileData; href: string }) {
                 fontSize: 9,
                 fontWeight: 600,
                 letterSpacing: "0.18em",
-                color: "#888",
+                color: "var(--bp-text-muted)",
                 textTransform: "uppercase",
               }}
             >
@@ -57,7 +57,7 @@ export function StatTile({ data, href }: { data: StatTileData; href: string }) {
                 fontFamily: "var(--font-sans)",
                 fontSize: 28,
                 fontWeight: 600,
-                color: "#0F0F0F",
+                color: "var(--bp-text-primary)",
                 letterSpacing: "-0.015em",
                 lineHeight: 1,
               }}
@@ -90,7 +90,7 @@ export function AddTilePlaceholder({ href }: { href: string }) {
               fontSize: 11,
               fontWeight: 600,
               letterSpacing: "0.2em",
-              color: "#0F0F0F",
+              color: "var(--bp-text-primary)",
               textTransform: "uppercase",
             }}
           >
@@ -101,7 +101,7 @@ export function AddTilePlaceholder({ href }: { href: string }) {
             style={{
               fontFamily: "var(--font-sans)",
               fontSize: 12,
-              color: "#888",
+              color: "var(--bp-text-muted)",
               lineHeight: 1.45,
             }}
           >
@@ -122,7 +122,7 @@ function ChangePill({ change, lowerIsBetter }: { change: number | null; lowerIsB
           fontSize: 9,
           fontWeight: 600,
           letterSpacing: "0.18em",
-          color: "#AAA",
+          color: "var(--bp-text-disabled)",
           textTransform: "uppercase",
         }}
       >
@@ -135,7 +135,11 @@ function ChangePill({ change, lowerIsBetter }: { change: number | null; lowerIsB
   const upArrow = change > 0
   const visualUp = lowerIsBetter ? !upArrow : upArrow
   const arrow = upArrow ? "↑" : change < 0 ? "↓" : "·"
-  const color = visualUp ? "#1F4E36" : change < 0 ? "#6B1F2E" : "#888"
+  const color = visualUp
+    ? "var(--bp-accent-success)"
+    : change < 0
+      ? "#6B1F2E"
+      : "var(--bp-text-muted)"
   const pct = (Math.abs(change) * 100).toFixed(0)
   return (
     <span

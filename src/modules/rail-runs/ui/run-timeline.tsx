@@ -22,7 +22,7 @@ export function RunTimeline({ timeline }: { timeline: RunTimeline }) {
                 fontSize: 10,
                 fontWeight: 600,
                 letterSpacing: "0.2em",
-                color: "#888",
+                color: "var(--bp-text-muted)",
                 textTransform: "uppercase",
               }}
             >
@@ -34,7 +34,7 @@ export function RunTimeline({ timeline }: { timeline: RunTimeline }) {
                 fontFamily: "var(--font-sans)",
                 fontSize: 22,
                 fontWeight: 600,
-                color: "#0F0F0F",
+                color: "var(--bp-text-primary)",
                 letterSpacing: "-0.01em",
               }}
             >
@@ -45,7 +45,7 @@ export function RunTimeline({ timeline }: { timeline: RunTimeline }) {
               style={{
                 fontFamily: "var(--font-sans)",
                 fontSize: 13,
-                color: "#444",
+                color: "var(--bp-text-secondary)",
               }}
             >
               Started {formatStamp(run.startedAt)}
@@ -56,7 +56,7 @@ export function RunTimeline({ timeline }: { timeline: RunTimeline }) {
                 style={{
                   fontFamily: "var(--font-sans)",
                   fontSize: 13,
-                  color: "#444",
+                  color: "var(--bp-text-secondary)",
                 }}
               >
                 Completed {formatStamp(run.completedAt)} by {run.finisherName}
@@ -67,7 +67,7 @@ export function RunTimeline({ timeline }: { timeline: RunTimeline }) {
                 style={{
                   fontFamily: "var(--font-sans)",
                   fontSize: 13,
-                  color: "#444",
+                  color: "var(--bp-text-secondary)",
                 }}
               >
                 Cancelled {formatStamp(run.cancelledAt)}
@@ -81,7 +81,7 @@ export function RunTimeline({ timeline }: { timeline: RunTimeline }) {
 
         <div
           className="mt-5 grid grid-cols-1 gap-px overflow-hidden md:grid-cols-3"
-          style={{ backgroundColor: "#E4E4E4" }}
+          style={{ backgroundColor: "var(--bp-border-default)" }}
         >
           <RunStat label="Cycles" value={String(cycles.length)} />
           <RunStat label="Active work" value={formatMinutes(totalActiveMinutes)} />
@@ -98,7 +98,7 @@ export function RunTimeline({ timeline }: { timeline: RunTimeline }) {
                 fontFamily: "var(--font-mono)",
                 fontSize: 11,
                 letterSpacing: "0.18em",
-                color: "#888",
+                color: "var(--bp-text-muted)",
                 textTransform: "uppercase",
               }}
             >
@@ -142,7 +142,7 @@ function CycleRow({ cycle }: { cycle: RunTimelineCycle }) {
                   fontFamily: "var(--font-sans)",
                   fontSize: 15,
                   fontWeight: 600,
-                  color: "#0F0F0F",
+                  color: "var(--bp-text-primary)",
                   letterSpacing: "-0.005em",
                 }}
               >
@@ -158,7 +158,7 @@ function CycleRow({ cycle }: { cycle: RunTimelineCycle }) {
                 fontSize: 10,
                 fontWeight: 600,
                 letterSpacing: "0.16em",
-                color: "#5A7A92",
+                color: "var(--bp-accent-steel-soft)",
                 textTransform: "uppercase",
               }}
             >
@@ -200,7 +200,7 @@ function CycleRow({ cycle }: { cycle: RunTimelineCycle }) {
                     fontSize: 9,
                     fontWeight: 600,
                     letterSpacing: "0.18em",
-                    color: "#E8711A",
+                    color: "var(--bp-accent-orange)",
                     textTransform: "uppercase",
                   }}
                 >
@@ -212,7 +212,7 @@ function CycleRow({ cycle }: { cycle: RunTimelineCycle }) {
                     style={{
                       fontFamily: "var(--font-sans)",
                       fontSize: 13,
-                      color: "#444",
+                      color: "var(--bp-text-secondary)",
                       lineHeight: 1.5,
                     }}
                   >
@@ -235,8 +235,8 @@ function PositionBadge({ n, state }: { n: number; state: "active" | "queued" }) 
       style={{
         width: 32,
         height: 32,
-        backgroundColor: state === "active" ? "#0F0F0F" : "#fff",
-        color: state === "active" ? "#fff" : "#0F0F0F",
+        backgroundColor: state === "active" ? "var(--bp-text-primary)" : "#fff",
+        color: state === "active" ? "#fff" : "var(--bp-text-primary)",
         border: "1px solid #0F0F0F",
         fontFamily: "var(--font-mono)",
         fontSize: 12,
@@ -258,7 +258,7 @@ function RunStat({ label, value }: { label: string; value: string }) {
           fontSize: 9,
           fontWeight: 600,
           letterSpacing: "0.2em",
-          color: "#888",
+          color: "var(--bp-text-muted)",
           textTransform: "uppercase",
         }}
       >
@@ -270,7 +270,7 @@ function RunStat({ label, value }: { label: string; value: string }) {
           fontFamily: "var(--font-sans)",
           fontSize: 22,
           fontWeight: 600,
-          color: "#0F0F0F",
+          color: "var(--bp-text-primary)",
           letterSpacing: "-0.01em",
         }}
       >
@@ -289,7 +289,7 @@ function Field({
   value: string
   accent?: "muted" | "warning"
 }) {
-  const valueColor = accent === "warning" ? "#E8711A" : "#0F0F0F"
+  const valueColor = accent === "warning" ? "var(--bp-accent-orange)" : "var(--bp-text-primary)"
   return (
     <div>
       <dt
@@ -298,7 +298,7 @@ function Field({
           fontSize: 9,
           fontWeight: 600,
           letterSpacing: "0.18em",
-          color: "#888",
+          color: "var(--bp-text-muted)",
           textTransform: "uppercase",
         }}
       >
@@ -321,14 +321,24 @@ function Field({
 
 function RunStatusPill({ status }: { status: "running" | "completed" | "cancelled" }) {
   const config = {
-    running: { color: "#E8711A", label: "Running", filled: true, icon: null as React.ReactNode },
+    running: {
+      color: "var(--bp-accent-orange)",
+      label: "Running",
+      filled: true,
+      icon: null as React.ReactNode,
+    },
     completed: {
-      color: "#1F4E36",
+      color: "var(--bp-accent-success)",
       label: "Completed",
       filled: false,
       icon: (<Check className="size-3" strokeWidth={2.5} aria-hidden />) as React.ReactNode,
     },
-    cancelled: { color: "#888", label: "Cancelled", filled: false, icon: null as React.ReactNode },
+    cancelled: {
+      color: "var(--bp-text-muted)",
+      label: "Cancelled",
+      filled: false,
+      icon: null as React.ReactNode,
+    },
   }[status]
   return (
     <span
@@ -360,7 +370,7 @@ function LoopBackTag() {
         fontWeight: 600,
         letterSpacing: "0.18em",
         color: "#fff",
-        backgroundColor: "#E8711A",
+        backgroundColor: "var(--bp-accent-orange)",
         textTransform: "uppercase",
       }}
     >
@@ -379,7 +389,7 @@ function ActiveLoopBackTag() {
         fontSize: 9,
         fontWeight: 600,
         letterSpacing: "0.18em",
-        color: "#2A3D52",
+        color: "var(--bp-accent-steel)",
         border: "1px solid #2A3D52",
         textTransform: "uppercase",
       }}
@@ -424,7 +434,7 @@ export function BackToRailsLink() {
   return (
     <Link
       href="/rails"
-      className="inline-flex items-center gap-2 text-[#888] transition-colors hover:text-[#0F0F0F]"
+      className="inline-flex items-center gap-2 text-[var(--bp-text-muted)] transition-colors hover:text-[var(--bp-text-primary)]"
       style={{
         fontFamily: "var(--font-mono)",
         fontSize: 10,

@@ -29,7 +29,7 @@ export function Sparkline({
           x2={width - padding}
           y1={height / 2}
           y2={height / 2}
-          stroke="#E4E4E4"
+          stroke="var(--bp-border-default)"
           strokeWidth={1}
           strokeDasharray="2 3"
         />
@@ -80,7 +80,7 @@ export function Sparkline({
         x2={width - padding}
         y1={height - padding}
         y2={height - padding}
-        stroke="#E4E4E4"
+        stroke="var(--bp-border-default)"
         strokeWidth={1}
       />
       <path d={path} fill="none" stroke={color} strokeWidth={strokeWidth} strokeLinejoin="miter" />

@@ -18,13 +18,13 @@ export function DayOverflow({ events }: { events: CalendarEvent[] }) {
         onClick={() => {
           setOpen(true)
         }}
-        className="block w-full px-1 py-0.5 text-left transition-colors hover:bg-[#FAFAFA]"
+        className="block w-full px-1 py-0.5 text-left transition-colors hover:bg-[var(--bp-surface-card-queued)]"
         style={{
           fontFamily: "var(--font-mono)",
           fontSize: 9,
           fontWeight: 600,
           letterSpacing: "0.18em",
-          color: "#888",
+          color: "var(--bp-text-muted)",
           textTransform: "uppercase",
         }}
       >

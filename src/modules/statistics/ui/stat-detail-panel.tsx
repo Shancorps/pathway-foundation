@@ -42,7 +42,7 @@ export function StatDetailPanel({
                 fontSize: 10,
                 fontWeight: 600,
                 letterSpacing: "0.2em",
-                color: "#888",
+                color: "var(--bp-text-muted)",
                 textTransform: "uppercase",
               }}
             >
@@ -54,7 +54,7 @@ export function StatDetailPanel({
                 fontFamily: "var(--font-sans)",
                 fontSize: 24,
                 fontWeight: 600,
-                color: "#0F0F0F",
+                color: "var(--bp-text-primary)",
                 letterSpacing: "-0.01em",
               }}
             >
@@ -66,7 +66,7 @@ export function StatDetailPanel({
                 fontFamily: "var(--font-mono)",
                 fontSize: 10,
                 letterSpacing: "0.16em",
-                color: "#888",
+                color: "var(--bp-text-muted)",
                 textTransform: "uppercase",
               }}
             >
@@ -80,7 +80,7 @@ export function StatDetailPanel({
           <StatisticEditButtons stat={stat} />
           <Link
             href={closeHref}
-            className="text-[#888] transition-colors hover:text-[#0F0F0F]"
+            className="text-[var(--bp-text-muted)] transition-colors hover:text-[var(--bp-text-primary)]"
             aria-label="Close"
           >
             <X className="size-4" strokeWidth={2} />
@@ -104,7 +104,7 @@ export function StatDetailPanel({
             fontSize: 11,
             fontWeight: 600,
             letterSpacing: "0.2em",
-            color: "#0F0F0F",
+            color: "var(--bp-text-primary)",
             textTransform: "uppercase",
           }}
         >
@@ -120,7 +120,7 @@ export function StatDetailPanel({
             fontFamily: "var(--font-mono)",
             fontSize: 11,
             letterSpacing: "0.18em",
-            color: "#888",
+            color: "var(--bp-text-muted)",
             textTransform: "uppercase",
             paddingTop: 24,
             paddingBottom: 24,
@@ -129,7 +129,10 @@ export function StatDetailPanel({
           No entries yet · Add the first one above
         </p>
       ) : (
-        <ul className="mt-4 divide-y divide-[#E4E4E4]" style={{ border: "1px solid #E4E4E4" }}>
+        <ul
+          className="mt-4 divide-y divide-[var(--bp-border-default)]"
+          style={{ border: "1px solid #E4E4E4" }}
+        >
           {points.map((p) => (
             <li key={p.id} className="flex items-center justify-between gap-4 px-4 py-3">
               <div className="min-w-0 flex-1">
@@ -138,7 +141,7 @@ export function StatDetailPanel({
                     fontFamily: "var(--font-sans)",
                     fontSize: 14,
                     fontWeight: 500,
-                    color: "#0F0F0F",
+                    color: "var(--bp-text-primary)",
                   }}
                 >
                   {formatValue(p.value, stat.unit)}
@@ -149,7 +152,7 @@ export function StatDetailPanel({
                     fontFamily: "var(--font-mono)",
                     fontSize: 10,
                     letterSpacing: "0.12em",
-                    color: "#888",
+                    color: "var(--bp-text-muted)",
                     textTransform: "uppercase",
                   }}
                 >
@@ -162,7 +165,7 @@ export function StatDetailPanel({
                     style={{
                       fontFamily: "var(--font-sans)",
                       fontSize: 13,
-                      color: "#444",
+                      color: "var(--bp-text-secondary)",
                       lineHeight: 1.5,
                     }}
                   >

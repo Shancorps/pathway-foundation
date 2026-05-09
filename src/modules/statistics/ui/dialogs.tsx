@@ -192,7 +192,7 @@ export function DataPointRowActions({ point, unit }: { point: DataPoint; unit: s
         onClick={() => {
           setOpen("edit")
         }}
-        className="px-2 py-1 text-[#888] transition-colors hover:text-[#0F0F0F]"
+        className="px-2 py-1 text-[var(--bp-text-muted)] transition-colors hover:text-[var(--bp-text-primary)]"
         style={{
           fontFamily: "var(--font-mono)",
           fontSize: 9,
@@ -208,7 +208,7 @@ export function DataPointRowActions({ point, unit }: { point: DataPoint; unit: s
         onClick={() => {
           setOpen("delete")
         }}
-        className="p-1 text-[#888] transition-colors hover:text-[#E8711A]"
+        className="p-1 text-[var(--bp-text-muted)] transition-colors hover:text-[var(--bp-accent-orange)]"
         aria-label="Delete data point"
       >
         <X className="size-3.5" />
@@ -333,7 +333,7 @@ function StatisticFormDialog({
           }}
           placeholder="e.g. Gross Sales, New Leads"
           maxLength={80}
-          className="block w-full px-3 py-2 outline-none focus:border-[#0F0F0F]"
+          className="block w-full px-3 py-2 outline-none focus:border-[var(--bp-border-graphite)]"
           style={fieldInputStyle}
         />
       </Field>
@@ -346,7 +346,7 @@ function StatisticFormDialog({
           }}
           placeholder="$, %, leads"
           maxLength={20}
-          className="block w-full px-3 py-2 outline-none focus:border-[#0F0F0F]"
+          className="block w-full px-3 py-2 outline-none focus:border-[var(--bp-border-graphite)]"
           style={fieldInputStyle}
         />
       </Field>
@@ -363,8 +363,8 @@ function StatisticFormDialog({
                 }}
                 className={
                   active
-                    ? "border border-[#E8711A] bg-[#E8711A] text-white"
-                    : "border border-[#D4D4D4] bg-white text-[#0F0F0F] hover:border-[#0F0F0F]"
+                    ? "border border-[var(--bp-accent-orange)] bg-[var(--bp-accent-orange)] text-white"
+                    : "border border-[var(--bp-border-strong)] bg-white text-[var(--bp-text-primary)] hover:border-[var(--bp-border-graphite)]"
                 }
                 style={{
                   fontFamily: "var(--font-mono)",
@@ -395,8 +395,8 @@ function StatisticFormDialog({
                   }}
                   className={
                     active
-                      ? "border border-[#E8711A] bg-[#E8711A] text-white"
-                      : "border border-[#D4D4D4] bg-white text-[#0F0F0F] hover:border-[#0F0F0F]"
+                      ? "border border-[var(--bp-accent-orange)] bg-[var(--bp-accent-orange)] text-white"
+                      : "border border-[var(--bp-border-strong)] bg-white text-[var(--bp-text-primary)] hover:border-[var(--bp-border-graphite)]"
                   }
                   style={{
                     fontFamily: "var(--font-mono)",
@@ -428,12 +428,16 @@ function StatisticFormDialog({
                 const v = Number(e.target.value)
                 setForm((s) => ({ ...s, dayOfMonth: Number.isFinite(v) ? v : null }))
               }}
-              className="px-3 py-2 outline-none focus:border-[#0F0F0F]"
+              className="px-3 py-2 outline-none focus:border-[var(--bp-border-graphite)]"
               style={{ ...fieldInputStyle, width: 100, opacity: form.lastDayOfMonth ? 0.4 : 1 }}
             />
             <label
               className="inline-flex items-center gap-2"
-              style={{ fontFamily: "var(--font-sans)", fontSize: 13, color: "#0F0F0F" }}
+              style={{
+                fontFamily: "var(--font-sans)",
+                fontSize: 13,
+                color: "var(--bp-text-primary)",
+              }}
             >
               <input
                 type="checkbox"
@@ -481,7 +485,7 @@ function StatisticFormDialog({
       >
         <label
           className="inline-flex cursor-pointer items-center gap-2"
-          style={{ fontFamily: "var(--font-sans)", fontSize: 14, color: "#0F0F0F" }}
+          style={{ fontFamily: "var(--font-sans)", fontSize: 14, color: "var(--bp-text-primary)" }}
         >
           <input
             type="checkbox"
@@ -584,7 +588,7 @@ function DataPointDialog({
           onChange={(e) => {
             setDate(e.target.value)
           }}
-          className="block w-full px-3 py-2 outline-none focus:border-[#0F0F0F]"
+          className="block w-full px-3 py-2 outline-none focus:border-[var(--bp-border-graphite)]"
           style={fieldInputStyle}
         />
       </Field>
@@ -596,7 +600,7 @@ function DataPointDialog({
           onChange={(e) => {
             setValue(e.target.value)
           }}
-          className="block w-full px-3 py-2 outline-none focus:border-[#0F0F0F]"
+          className="block w-full px-3 py-2 outline-none focus:border-[var(--bp-border-graphite)]"
           style={fieldInputStyle}
         />
       </Field>
@@ -609,7 +613,7 @@ function DataPointDialog({
           }}
           maxLength={500}
           placeholder="Context for this entry..."
-          className="block w-full px-3 py-2 outline-none focus:border-[#0F0F0F]"
+          className="block w-full px-3 py-2 outline-none focus:border-[var(--bp-border-graphite)]"
           style={{ ...fieldInputStyle, resize: "vertical" }}
         />
       </Field>
@@ -639,7 +643,7 @@ function DialogShell({
       aria-label={title}
     >
       <div className="w-full max-w-[560px] bg-white" style={{ border: "1px solid #0F0F0F" }}>
-        <div className="flex items-start justify-between gap-4 border-b border-[#E4E4E4] px-6 py-4">
+        <div className="flex items-start justify-between gap-4 border-b border-[var(--bp-border-default)] px-6 py-4">
           <div>
             <p
               style={{
@@ -647,7 +651,7 @@ function DialogShell({
                 fontSize: 10,
                 fontWeight: 600,
                 letterSpacing: "0.2em",
-                color: "#E8711A",
+                color: "var(--bp-accent-orange)",
                 textTransform: "uppercase",
               }}
             >
@@ -659,7 +663,7 @@ function DialogShell({
                 fontFamily: "var(--font-sans)",
                 fontSize: 18,
                 fontWeight: 600,
-                color: "#0F0F0F",
+                color: "var(--bp-text-primary)",
                 letterSpacing: "-0.005em",
               }}
             >
@@ -669,14 +673,14 @@ function DialogShell({
           <button
             type="button"
             onClick={onClose}
-            className="text-[#888] transition-colors hover:text-[#0F0F0F]"
+            className="text-[var(--bp-text-muted)] transition-colors hover:text-[var(--bp-text-primary)]"
             aria-label="Close"
           >
             <X className="size-4" strokeWidth={2} />
           </button>
         </div>
         <div className="space-y-5 px-6 py-5">{children}</div>
-        <div className="flex items-center justify-end gap-3 border-t border-[#E4E4E4] px-6 py-4">
+        <div className="flex items-center justify-end gap-3 border-t border-[var(--bp-border-default)] px-6 py-4">
           {footer}
         </div>
       </div>
@@ -717,7 +721,7 @@ function ConfirmDialog({
               })
             }}
             disabled={submitting}
-            style={{ backgroundColor: "#E8711A" }}
+            style={{ backgroundColor: "var(--bp-accent-orange)" }}
           >
             {submitting ? "Working..." : confirmLabel}
           </BlueprintButton>
@@ -725,7 +729,12 @@ function ConfirmDialog({
       }
     >
       <p
-        style={{ fontFamily: "var(--font-sans)", fontSize: 14, color: "#0F0F0F", lineHeight: 1.55 }}
+        style={{
+          fontFamily: "var(--font-sans)",
+          fontSize: 14,
+          color: "var(--bp-text-primary)",
+          lineHeight: 1.55,
+        }}
       >
         {body}
       </p>
@@ -750,7 +759,7 @@ function Field({
           fontSize: 10,
           fontWeight: 600,
           letterSpacing: "0.18em",
-          color: "#0F0F0F",
+          color: "var(--bp-text-primary)",
           textTransform: "uppercase",
         }}
       >
@@ -763,7 +772,7 @@ function Field({
           style={{
             fontFamily: "var(--font-sans)",
             fontSize: 12,
-            color: "#888",
+            color: "var(--bp-text-muted)",
             lineHeight: 1.4,
           }}
         >
@@ -777,9 +786,9 @@ function Field({
 const fieldInputStyle: React.CSSProperties = {
   fontFamily: "var(--font-sans)",
   fontSize: 14,
-  color: "#0F0F0F",
+  color: "var(--bp-text-primary)",
   border: "1px solid #D4D4D4",
-  backgroundColor: "#fff",
+  backgroundColor: "var(--bp-surface-card)",
 }
 
 function toLocalInput(d: Date): string {

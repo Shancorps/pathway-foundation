@@ -44,7 +44,7 @@ const RAIL_GROUP: PaletteNode[] = [
     label: "Trigger",
     hint: "Start the flow",
     icon: Zap,
-    iconColor: "#E8711A",
+    iconColor: "var(--bp-accent-orange)",
     // Triggers are added at rail creation; only one allowed today. Disable the
     // drag for now — we render it for visual completeness but it can't be
     // dropped.
@@ -55,7 +55,7 @@ const RAIL_GROUP: PaletteNode[] = [
     label: "Task",
     hint: "Assign a step to a Terminal",
     icon: CheckSquare,
-    iconColor: "#2A3D52",
+    iconColor: "var(--bp-accent-steel)",
     enabled: true,
   },
   {
@@ -63,7 +63,7 @@ const RAIL_GROUP: PaletteNode[] = [
     label: "Initialize",
     hint: "Set required fields",
     icon: Settings2,
-    iconColor: "#5B527A",
+    iconColor: "var(--bp-accent-purple)",
     enabled: false,
   },
   {
@@ -71,7 +71,7 @@ const RAIL_GROUP: PaletteNode[] = [
     label: "Condition",
     hint: "Branch the flow",
     icon: GitBranch,
-    iconColor: "#7A5C1F",
+    iconColor: "var(--bp-accent-warm)",
     enabled: false,
   },
   {
@@ -79,7 +79,7 @@ const RAIL_GROUP: PaletteNode[] = [
     label: "Parallel",
     hint: "Run branches simultaneously",
     icon: GitMerge,
-    iconColor: "#1F4E36",
+    iconColor: "var(--bp-accent-success)",
     enabled: false,
   },
   {
@@ -87,7 +87,7 @@ const RAIL_GROUP: PaletteNode[] = [
     label: "End",
     hint: "Terminate the rail",
     icon: StopCircle,
-    iconColor: "#B83229",
+    iconColor: "var(--bp-accent-end)",
     enabled: true,
   },
 ]
@@ -98,7 +98,7 @@ const ACTION_GROUP: PaletteNode[] = [
     label: "Approval",
     hint: "Request approve / reject",
     icon: CircleDot,
-    iconColor: "#1F4E36",
+    iconColor: "var(--bp-accent-success)",
     enabled: true,
   },
   {
@@ -106,7 +106,7 @@ const ACTION_GROUP: PaletteNode[] = [
     label: "Statistic",
     hint: "Update statistic",
     icon: Workflow,
-    iconColor: "#5A7A92",
+    iconColor: "var(--bp-accent-steel-soft)",
     enabled: false,
   },
   {
@@ -114,7 +114,7 @@ const ACTION_GROUP: PaletteNode[] = [
     label: "Manifest",
     hint: "Update manifest",
     icon: Pencil,
-    iconColor: "#5A7A92",
+    iconColor: "var(--bp-accent-steel-soft)",
     enabled: false,
   },
   {
@@ -122,7 +122,7 @@ const ACTION_GROUP: PaletteNode[] = [
     label: "Sub-Flow",
     hint: "Run another rail",
     icon: Workflow,
-    iconColor: "#5B527A",
+    iconColor: "var(--bp-accent-purple)",
     enabled: true,
   },
 ]
@@ -149,7 +149,7 @@ export function RailPalette({ disabled = false }: { disabled?: boolean }) {
             fontSize: 10,
             fontWeight: 600,
             letterSpacing: "0.2em",
-            color: "#0F0F0F",
+            color: "var(--bp-text-primary)",
             textTransform: "uppercase",
           }}
         >
@@ -168,12 +168,12 @@ export function RailPalette({ disabled = false }: { disabled?: boolean }) {
           className="px-4 py-3"
           style={{
             borderTop: "1px solid #E4E4E4",
-            backgroundColor: "#FAFAFA",
+            backgroundColor: "var(--bp-surface-card-queued)",
             fontFamily: "var(--font-mono)",
             fontSize: 9,
             fontWeight: 600,
             letterSpacing: "0.16em",
-            color: "#888",
+            color: "var(--bp-text-muted)",
             textTransform: "uppercase",
           }}
         >
@@ -202,7 +202,7 @@ function PaletteGroup({
           fontSize: 9,
           fontWeight: 600,
           letterSpacing: "0.22em",
-          color: "#888",
+          color: "var(--bp-text-muted)",
           textTransform: "uppercase",
         }}
       >
@@ -232,7 +232,7 @@ function PaletteCard({ node, disabled }: { node: PaletteNode; disabled: boolean 
       className="flex items-center gap-2 px-2.5 py-2 transition-colors"
       style={{
         border: "1px solid #D4D4D4",
-        backgroundColor: draggable ? "#fff" : "#FAFAFA",
+        backgroundColor: draggable ? "#fff" : "var(--bp-surface-card-queued)",
         cursor: draggable ? "grab" : "not-allowed",
         opacity: draggable ? 1 : 0.55,
       }}
@@ -244,7 +244,7 @@ function PaletteCard({ node, disabled }: { node: PaletteNode; disabled: boolean 
         style={{
           width: 22,
           height: 22,
-          backgroundColor: draggable ? "#FAFAFA" : "transparent",
+          backgroundColor: draggable ? "var(--bp-surface-card-queued)" : "transparent",
           border: `1px solid ${node.iconColor}`,
         }}
       >
@@ -257,7 +257,7 @@ function PaletteCard({ node, disabled }: { node: PaletteNode; disabled: boolean 
             fontFamily: "var(--font-sans)",
             fontSize: 12,
             fontWeight: 600,
-            color: "#0F0F0F",
+            color: "var(--bp-text-primary)",
             lineHeight: 1.2,
           }}
         >
@@ -270,7 +270,7 @@ function PaletteCard({ node, disabled }: { node: PaletteNode; disabled: boolean 
             fontSize: 9,
             fontWeight: 500,
             letterSpacing: "0.04em",
-            color: "#888",
+            color: "var(--bp-text-muted)",
           }}
         >
           {node.enabled ? node.hint : "Soon"}
