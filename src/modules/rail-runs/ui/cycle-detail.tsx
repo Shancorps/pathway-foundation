@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
-import { Pause, Play } from "lucide-react"
+import { ExternalLink, Pause, Play } from "lucide-react"
 import { BlueprintButton } from "@/components/ui/blueprint-button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { ParticleCube } from "@/components/ui/particle-cube"
@@ -244,6 +244,55 @@ export function CycleDetail({
         )}
       </section>
 
+      {/* SOP & Tools */}
+      {cycle.toolsLinks.length > 0 && (
+        <section className="space-y-4">
+          <SectionDivider label="Fig · 04 / SOP & Tools" count={cycle.toolsLinks.length} />
+          <RegCard state="queued">
+            <ul className="divide-y divide-[#E4E4E4]">
+              {cycle.toolsLinks
+                .slice()
+                .sort((a, b) => a.position - b.position)
+                .map((link) => (
+                  <li key={link.id}>
+                    <a
+                      href={link.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center justify-between gap-4 py-3 transition-colors hover:bg-white"
+                    >
+                      <div className="min-w-0 flex-1">
+                        <p
+                          style={{
+                            fontFamily: "var(--font-sans)",
+                            fontSize: 14,
+                            fontWeight: 500,
+                            color: "#0F0F0F",
+                          }}
+                        >
+                          {link.label}
+                        </p>
+                        <p
+                          className="mt-0.5 truncate"
+                          style={{
+                            fontFamily: "var(--font-mono)",
+                            fontSize: 10,
+                            letterSpacing: "0.06em",
+                            color: "#888",
+                          }}
+                        >
+                          {link.url}
+                        </p>
+                      </div>
+                      <ExternalLinkIcon />
+                    </a>
+                  </li>
+                ))}
+            </ul>
+          </RegCard>
+        </section>
+      )}
+
       {/* Actions */}
       {!isClosed && (
         <div className="flex flex-wrap items-center justify-between gap-3 border-t border-[#E4E4E4] pt-6">
@@ -263,6 +312,10 @@ export function CycleDetail({
       )}
     </div>
   )
+}
+
+function ExternalLinkIcon() {
+  return <ExternalLink className="size-3.5 shrink-0 text-[#888]" strokeWidth={1.5} aria-hidden />
 }
 
 function StatusPill({ closed }: { closed: "completed" | "cancelled" }) {

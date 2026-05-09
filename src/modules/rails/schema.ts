@@ -32,6 +32,20 @@ export interface RailNodeChecklistItem {
   position: number
 }
 
+/**
+ * One SOP / Tool deep-link attached to a Task. Per spec Principle 5
+ * ("Pathway is workflow infrastructure, not production tooling"), each Cycle
+ * surfaces direct links to the resources the worker needs — the SOP doc, the
+ * specific Canva file, the QuickBooks page. The label is the human name; the
+ * URL opens externally in a new tab.
+ */
+export interface RailNodeToolsLink {
+  id: string
+  label: string
+  url: string
+  position: number
+}
+
 export const rails = pgTable(
   "rails",
   {
@@ -79,6 +93,9 @@ export const railNodes = pgTable(
     postId: text("post_id").references(() => posts.id, { onDelete: "restrict" }),
     position: integer("position").notNull().default(0),
     checklistItems: jsonb("checklist_items").$type<RailNodeChecklistItem[]>().notNull().default([]),
+    // SOP/Tool deep-links shown on the cycle detail. Snapshotted onto each
+    // Cycle when issued so editing the rail later doesn't mutate live work.
+    toolsLinks: jsonb("tools_links").$type<RailNodeToolsLink[]>().notNull().default([]),
     // Target time to complete this Cycle, in minutes. Snapshotted onto each
     // Cycle when issued, then displayed alongside actual elapsed time.
     idealMinutes: integer("ideal_minutes"),

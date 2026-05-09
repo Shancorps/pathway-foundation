@@ -34,6 +34,7 @@ export async function listMyActionCycles(orgId: string, userId: string): Promise
       title: cycles.title,
       description: cycles.description,
       checklistItems: cycles.checklistItems,
+      toolsLinks: cycles.toolsLinks,
       idealMinutes: cycles.idealMinutes,
       position: cycles.position,
       issuedAt: cycles.issuedAt,

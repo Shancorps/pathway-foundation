@@ -347,6 +347,12 @@ export function RailEditor({
                             {node.checklistItems.length === 1 ? "item" : "items"}
                           </SmallPill>
                         )}
+                        {node.type === "task" && node.toolsLinks.length > 0 && (
+                          <SmallPill>
+                            {String(node.toolsLinks.length)}{" "}
+                            {node.toolsLinks.length === 1 ? "link" : "links"}
+                          </SmallPill>
+                        )}
                         {node.type === "task" && node.idealMinutes != null && (
                           <SmallPill>{formatMinutes(node.idealMinutes)}</SmallPill>
                         )}
@@ -469,8 +475,18 @@ interface ChecklistDraftItem {
   required: boolean
 }
 
+interface ToolsLinkDraftItem {
+  id: string
+  label: string
+  url: string
+}
+
 function newDraftItem(): ChecklistDraftItem {
   return { id: `new_${Math.random().toString(36).slice(2, 10)}`, label: "", required: false }
+}
+
+function newToolsLinkDraft(): ToolsLinkDraftItem {
+  return { id: `new_${Math.random().toString(36).slice(2, 10)}`, label: "", url: "" }
 }
 
 function TaskNodeDialog({
@@ -503,6 +519,14 @@ function TaskNodeDialog({
   const [idealMinutesText, setIdealMinutesText] = useState(
     initial?.idealMinutes != null ? String(initial.idealMinutes) : "",
   )
+  const [tools, setTools] = useState<ToolsLinkDraftItem[]>(
+    initial?.toolsLinks
+      ? initial.toolsLinks
+          .slice()
+          .sort((a, b) => a.position - b.position)
+          .map((t) => ({ id: t.id, label: t.label, url: t.url }))
+      : [],
+  )
   const [submitting, setSubmitting] = useState(false)
 
   function resetForm() {
@@ -511,6 +535,27 @@ function TaskNodeDialog({
     setPostId("")
     setChecklist([])
     setIdealMinutesText("")
+    setTools([])
+  }
+
+  function updateTool(idx: number, patch: Partial<ToolsLinkDraftItem>) {
+    setTools((prev) => prev.map((t, i) => (i === idx ? { ...t, ...patch } : t)))
+  }
+  function deleteTool(idx: number) {
+    setTools((prev) => prev.filter((_, i) => i !== idx))
+  }
+  function moveTool(idx: number, direction: -1 | 1) {
+    const target = idx + direction
+    if (target < 0 || target >= tools.length) return
+    setTools((prev) => {
+      const next = prev.slice()
+      const a = next[idx]
+      const b = next[target]
+      if (!a || !b) return prev
+      next[idx] = b
+      next[target] = a
+      return next
+    })
   }
 
   function updateItem(idx: number, patch: Partial<ChecklistDraftItem>) {
@@ -549,6 +594,30 @@ function TaskNodeDialog({
         required: c.required,
       }))
 
+    // Same shape for tools — strip rows missing label or url; require valid URL.
+    const cleanedTools: { id?: string; label: string; url: string }[] = []
+    for (const t of tools) {
+      const label = t.label.trim()
+      const url = t.url.trim()
+      if (label === "" && url === "") continue // empty row, skip
+      if (label === "" || url === "") {
+        alert("Each SOP/Tool link needs both a label and a URL.")
+        return
+      }
+      try {
+         
+        new URL(url)
+      } catch {
+        alert(`"${url}" isn't a valid URL.`)
+        return
+      }
+      cleanedTools.push({
+        id: t.id.startsWith("new_") ? undefined : t.id,
+        label,
+        url,
+      })
+    }
+
     const idealTrimmed = idealMinutesText.trim()
     let parsedIdeal: number | null = null
     let hasIdealInput = false
@@ -571,6 +640,7 @@ function TaskNodeDialog({
             description: description || undefined,
             postId,
             checklistItems: cleanedChecklist,
+            toolsLinks: cleanedTools,
             ...(hasIdealInput && parsedIdeal !== null ? { idealMinutes: parsedIdeal } : {}),
           })
         : await updateNode({
@@ -579,6 +649,7 @@ function TaskNodeDialog({
             description: description || null,
             postId,
             checklistItems: cleanedChecklist,
+            toolsLinks: cleanedTools,
             // edit mode: empty input clears the value (null), filled input sets it
             idealMinutes: hasIdealInput ? parsedIdeal : null,
           })
@@ -741,6 +812,95 @@ function TaskNodeDialog({
                         deleteItem(idx)
                       }}
                       aria-label="Remove item"
+                      className="grid place-items-center border border-transparent p-1.5 hover:border-[#E4E4E4] hover:bg-white"
+                    >
+                      <Trash2 className="size-3.5" strokeWidth={1.5} />
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+
+          {/* SOP & Tools */}
+          <div className="space-y-2 rounded-md border border-[var(--color-border)] p-3">
+            <div className="flex items-center justify-between">
+              <Label className="text-sm">SOP & Tools</Label>
+              <BlueprintButton
+                type="button"
+                size="sm"
+                variant="outline"
+                onClick={() => {
+                  setTools((prev) => [...prev, newToolsLinkDraft()])
+                }}
+              >
+                <Plus className="size-3" />
+                Add Link
+              </BlueprintButton>
+            </div>
+            {tools.length === 0 ? (
+              <p
+                className="border border-dashed border-[var(--color-border)] p-3 text-center"
+                style={{
+                  fontFamily: "var(--font-mono)",
+                  fontSize: 9,
+                  letterSpacing: "0.16em",
+                  color: "#888",
+                  textTransform: "uppercase",
+                }}
+              >
+                Pathway is the workflow layer · Hand off to where work happens
+              </p>
+            ) : (
+              <ul className="space-y-2">
+                {tools.map((item, idx) => (
+                  <li key={item.id} className="flex items-start gap-2">
+                    <div className="flex flex-col gap-0.5">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          moveTool(idx, -1)
+                        }}
+                        disabled={idx === 0}
+                        aria-label="Move up"
+                        className="grid place-items-center border border-transparent p-1 hover:border-[#E4E4E4] hover:bg-white disabled:opacity-30"
+                      >
+                        <ArrowUp className="size-3" strokeWidth={1.5} />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          moveTool(idx, 1)
+                        }}
+                        disabled={idx === tools.length - 1}
+                        aria-label="Move down"
+                        className="grid place-items-center border border-transparent p-1 hover:border-[#E4E4E4] hover:bg-white disabled:opacity-30"
+                      >
+                        <ArrowDown className="size-3" strokeWidth={1.5} />
+                      </button>
+                    </div>
+                    <div className="flex-1 space-y-1">
+                      <Input
+                        value={item.label}
+                        onChange={(e) => {
+                          updateTool(idx, { label: e.target.value })
+                        }}
+                        placeholder="Label · e.g. Brand SOP, Canva template"
+                      />
+                      <Input
+                        value={item.url}
+                        onChange={(e) => {
+                          updateTool(idx, { url: e.target.value })
+                        }}
+                        placeholder="https://..."
+                      />
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        deleteTool(idx)
+                      }}
+                      aria-label="Remove link"
                       className="grid place-items-center border border-transparent p-1.5 hover:border-[#E4E4E4] hover:bg-white"
                     >
                       <Trash2 className="size-3.5" strokeWidth={1.5} />

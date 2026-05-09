@@ -85,6 +85,13 @@
       "when": 1778316352045,
       "tag": "0011_nosy_squirrel_girl",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1778328323287,
+      "tag": "0012_living_sally_floyd",
+      "breakpoints": true
     }
   ]
 }

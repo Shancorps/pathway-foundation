@@ -25,6 +25,18 @@ export interface CycleChecklistItem {
 }
 
 /**
+ * Snapshot of a rail_node SOP/Tool deep-link, copied onto the Cycle at issue
+ * time. Read-only at runtime — the worker just clicks through. Editing the
+ * rail's tools_links after issue does NOT mutate in-flight cycles.
+ */
+export interface CycleToolsLink {
+  id: string
+  label: string
+  url: string
+  position: number
+}
+
+/**
  * One execution of a Rail on a specific Particle. Created when someone clicks
  * "Start a Rail." Lives until every Cycle in it has been completed (status
  * → 'completed') or someone cancels the run (status → 'cancelled').
@@ -92,6 +104,7 @@ export const cycles = pgTable(
     title: text("title").notNull(),
     description: text("description"),
     checklistItems: jsonb("checklist_items").$type<CycleChecklistItem[]>().notNull().default([]),
+    toolsLinks: jsonb("tools_links").$type<CycleToolsLink[]>().notNull().default([]),
     idealMinutes: integer("ideal_minutes"),
     position: integer("position").notNull(),
     issuedAt: timestamp("issued_at", { withTimezone: true }).notNull().defaultNow(),

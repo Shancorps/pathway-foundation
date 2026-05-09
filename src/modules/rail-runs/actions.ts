@@ -143,10 +143,29 @@ async function issueCycleForNode(
     title: node.name,
     description: node.description,
     checklistItems: snapshotChecklist(node.checklistItems),
+    toolsLinks: snapshotToolsLinks(node.toolsLinks),
     idealMinutes: node.idealMinutes,
     position: node.position,
   })
   return cycleId
+}
+
+/**
+ * Copy a rail_node's tools_links onto a Cycle. Frozen at issue time so
+ * editing the rail later doesn't mutate live work.
+ */
+function snapshotToolsLinks(
+  source: { id: string; label: string; url: string; position: number }[],
+): { id: string; label: string; url: string; position: number }[] {
+  return source
+    .slice()
+    .sort((a, b) => a.position - b.position)
+    .map((item) => ({
+      id: item.id,
+      label: item.label,
+      url: item.url,
+      position: item.position,
+    }))
 }
 
 export const startRail = orgAction

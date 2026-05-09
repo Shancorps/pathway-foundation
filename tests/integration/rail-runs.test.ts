@@ -387,6 +387,51 @@ describe("rail-runs module — the conveyor belt", () => {
     })
   })
 
+  it("snapshots rail_node tools_links onto cycle at issue time", async () => {
+    await withTestDb(async (db) => {
+      const s = await setupCarWashScenario(db)
+      // Add tools_links to the wash task at the rail_node level.
+      const sourceLinks = [
+        { id: "t1", label: "Wash SOP", url: "https://example.com/wash-sop", position: 0 },
+        { id: "t2", label: "Bay 3 Camera", url: "https://example.com/cam-3", position: 1 },
+      ]
+      await db
+        .update(railNodes)
+        .set({ toolsLinks: sourceLinks })
+        .where(eq(railNodes.id, s.washTaskId))
+
+      // Mimic the action's snapshot: copy tools_links onto the cycle.
+      const runId = createId()
+      await db.insert(railRuns).values({
+        id: runId,
+        organizationId: s.orgId,
+        railId: s.railId,
+        particleId: s.civicId,
+        startedBy: s.owner,
+      })
+      const cycleId = createId()
+      await db.insert(cycles).values({
+        id: cycleId,
+        organizationId: s.orgId,
+        railRunId: runId,
+        railNodeId: s.washTaskId,
+        postId: s.washerPostId,
+        title: "Wash Car",
+        position: 1,
+        toolsLinks: sourceLinks,
+      })
+
+      // Now mutate the rail's tools_links — the in-flight cycle must NOT change.
+      await db
+        .update(railNodes)
+        .set({ toolsLinks: [{ id: "t1", label: "DELETED", url: "https://x", position: 0 }] })
+        .where(eq(railNodes.id, s.washTaskId))
+
+      const [cycle] = await db.select().from(cycles).where(eq(cycles.id, cycleId))
+      expect(cycle?.toolsLinks).toEqual(sourceLinks)
+    })
+  })
+
   it("FK on rail_runs.particle_id is RESTRICT (Principle 0)", async () => {
     await withTestDb(async (db) => {
       const s = await setupCarWashScenario(db)

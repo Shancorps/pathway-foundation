@@ -7,7 +7,13 @@ import { ActionError, orgAction } from "@/lib/safe-action"
 import { audit } from "@/modules/audit/audit"
 import { posts } from "@/modules/org-structure/schema"
 import { particleTypes } from "@/modules/particles/schema"
-import { railNodes, rails, type RailNode, type RailNodeChecklistItem } from "./schema"
+import {
+  railNodes,
+  rails,
+  type RailNode,
+  type RailNodeChecklistItem,
+  type RailNodeToolsLink,
+} from "./schema"
 import {
   addTaskNodeInput,
   createRailInput,
@@ -35,6 +41,17 @@ function normalizeChecklist(
     id: item.id ?? createId(),
     label: item.label,
     required: item.required,
+    position,
+  }))
+}
+
+function normalizeToolsLinks(
+  items: readonly { id?: string; label: string; url: string }[],
+): RailNodeToolsLink[] {
+  return items.map((item, position) => ({
+    id: item.id ?? createId(),
+    label: item.label,
+    url: item.url,
     position,
   }))
 }
@@ -281,6 +298,7 @@ export const addTaskNode = orgAction
       postId: parsedInput.postId,
       position: nextPosition,
       checklistItems: normalizeChecklist(parsedInput.checklistItems ?? []),
+      toolsLinks: normalizeToolsLinks(parsedInput.toolsLinks ?? []),
       idealMinutes: parsedInput.idealMinutes ?? null,
       createdBy: ctx.session.user.id,
       updatedBy: ctx.session.user.id,
@@ -347,6 +365,12 @@ export const updateNode = orgAction
         throw new ActionError("VALIDATION", "Trigger nodes cannot have a checklist")
       }
       patch.checklistItems = normalizeChecklist(parsedInput.checklistItems)
+    }
+    if (parsedInput.toolsLinks !== undefined) {
+      if (node.type === "trigger" && parsedInput.toolsLinks.length > 0) {
+        throw new ActionError("VALIDATION", "Trigger nodes cannot have SOP/Tool links")
+      }
+      patch.toolsLinks = normalizeToolsLinks(parsedInput.toolsLinks)
     }
     if (parsedInput.idealMinutes !== undefined) {
       if (node.type === "trigger" && parsedInput.idealMinutes !== null) {
