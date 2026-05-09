@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
-import { Button } from "@/components/ui/button"
+import { BlueprintButton } from "@/components/ui/blueprint-button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
@@ -138,19 +138,26 @@ export function ParticleForm({ type, initial, parentCandidates }: FormProps) {
           }}
         />
       ))}
-      <div className="flex justify-end gap-2 pt-2">
-        <Button
+      <div className="flex justify-end gap-2 border-t border-[#E4E4E4] pt-6">
+        <BlueprintButton
           type="button"
-          variant="outline"
+          variant="ghost"
+          size="sm"
           onClick={() => {
             router.back()
           }}
         >
           Cancel
-        </Button>
-        <Button type="submit" disabled={submitting || !name}>
+        </BlueprintButton>
+        <BlueprintButton
+          type="submit"
+          variant="primary"
+          size="sm"
+          disabled={submitting || !name}
+          particle
+        >
           {submitting ? "Saving..." : isEdit ? "Save" : "Create"}
-        </Button>
+        </BlueprintButton>
       </div>
     </form>
   )

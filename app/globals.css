@@ -1,56 +1,136 @@
 @import "tailwindcss";
 @plugin "tailwindcss-animate";
 
+/*
+ * Pathway design system v1.0 (May 2026).
+ * Three-color palette + IBM Plex typography + zero rounded corners.
+ * See docs/Pathway UI Design/Pathway-Design-Spec-v1.0.docx for the full brief.
+ *
+ * Colors are semantic, not decorative:
+ *   ORANGE = the Particle (active work). One per card maximum.
+ *   STEEL  = the Rail/Terminal (structure, navigation, queued state).
+ *   WHITE  = the Page (drawing surface).
+ *
+ * Adding a fourth color requires deliberate justification.
+ */
+
 @theme {
-  --color-background: oklch(1 0 0);
-  --color-foreground: oklch(0.15 0 0);
-  --color-muted: oklch(0.97 0 0);
-  --color-muted-foreground: oklch(0.45 0 0);
-  --color-card: oklch(1 0 0);
-  --color-card-foreground: oklch(0.15 0 0);
-  --color-popover: oklch(1 0 0);
-  --color-popover-foreground: oklch(0.15 0 0);
-  --color-primary: oklch(0.21 0 0);
-  --color-primary-foreground: oklch(0.985 0 0);
-  --color-secondary: oklch(0.97 0 0);
-  --color-secondary-foreground: oklch(0.21 0 0);
-  --color-accent: oklch(0.97 0 0);
-  --color-accent-foreground: oklch(0.21 0 0);
-  --color-destructive: oklch(0.577 0.245 27.325);
-  --color-destructive-foreground: oklch(0.985 0 0);
-  --color-border: oklch(0.92 0 0);
-  --color-input: oklch(0.92 0 0);
-  --color-ring: oklch(0.708 0 0);
-  --radius: 0.625rem;
-  --font-sans: ui-sans-serif, system-ui, sans-serif;
-  --font-mono: ui-monospace, SFMono-Regular, Menlo, monospace;
+  /* The three colors */
+  --color-particle-orange: #e8711a;
+  --color-particle-orange-top: #f4945a;
+  --color-particle-orange-side: #c05a10;
+  --color-structure-steel: #2a3d52;
+  --color-structure-steel-top: #3a5068;
+  --color-structure-steel-side: #1a2d3e;
+  --color-graphite: #0f0f0f;
+  --color-crisp-white: #ffffff;
+  --color-annotation-grey: #aaaaaa;
+
+  /* Surface tokens, mapped from the palette */
+  --color-background: #ffffff;
+  --color-foreground: #0f0f0f;
+  --color-muted: #fafafa;
+  --color-muted-foreground: #888888;
+  --color-card: #ffffff;
+  --color-card-foreground: #0f0f0f;
+  --color-popover: #ffffff;
+  --color-popover-foreground: #0f0f0f;
+  --color-primary: #e8711a;
+  --color-primary-foreground: #ffffff;
+  --color-secondary: #2a3d52;
+  --color-secondary-foreground: #ffffff;
+  --color-accent: #fafafa;
+  --color-accent-foreground: #0f0f0f;
+  --color-destructive: #c0392b;
+  --color-destructive-foreground: #ffffff;
+  --color-border: #f0f0f0;
+  --color-border-strong: #e4e4e4;
+  --color-input: #e4e4e4;
+  --color-ring: #e8711a;
+
+  /* Hard edges everywhere — the spec forbids rounded corners. */
+  --radius: 0;
+
+  /* IBM Plex via next/font, exposed as variables. */
+  --font-sans: var(--font-plex-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-plex-mono), ui-monospace, SFMono-Regular, Menlo, monospace;
 }
 
 @layer base {
-  * {
+  /* Default border color applied via Tailwind's reset, not a global * selector. */
+  *,
+  ::before,
+  ::after {
     border-color: var(--color-border);
   }
+
+  /* Hard edges on every element that COULD have a radius. Targeted instead of
+   * `* !important` so shadcn primitives that intentionally manage their own
+   * radius (none, after this) don't fight a global override. */
+  div,
+  section,
+  article,
+  aside,
+  header,
+  footer,
+  nav,
+  main,
+  button,
+  input,
+  textarea,
+  select,
+  [role="button"],
+  [role="dialog"],
+  [role="menu"],
+  [role="menuitem"],
+  [data-radix-popper-content-wrapper] > *,
+  img,
+  video,
+  canvas,
+  iframe {
+    border-radius: 0;
+  }
+
   body {
     background-color: var(--color-background);
     color: var(--color-foreground);
+    font-family: var(--font-sans);
+    font-size: 14px;
+    line-height: 1.5;
+    /* Subtle tracking on body text — adds a touch of breathing room without
+     * looking spaced-out. The mono utilities still set their own letter-spacing. */
+    letter-spacing: 0.005em;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
   }
+
+  /* Sentinel: legacy .dark class is now a no-op. The spec is single-look. */
   .dark {
-    --color-background: oklch(0.145 0 0);
-    --color-foreground: oklch(0.985 0 0);
-    --color-muted: oklch(0.205 0 0);
-    --color-muted-foreground: oklch(0.708 0 0);
-    --color-card: oklch(0.205 0 0);
-    --color-card-foreground: oklch(0.985 0 0);
-    --color-popover: oklch(0.205 0 0);
-    --color-popover-foreground: oklch(0.985 0 0);
-    --color-primary: oklch(0.985 0 0);
-    --color-primary-foreground: oklch(0.205 0 0);
-    --color-secondary: oklch(0.269 0 0);
-    --color-secondary-foreground: oklch(0.985 0 0);
-    --color-accent: oklch(0.269 0 0);
-    --color-accent-foreground: oklch(0.985 0 0);
-    --color-border: oklch(0.275 0 0);
-    --color-input: oklch(0.275 0 0);
-    --color-ring: oklch(0.439 0 0);
+    color-scheme: light;
+  }
+}
+
+/*
+ * Mono utility classes for technical-style metadata. Letter-spacing values
+ * pulled directly from the spec.
+ */
+@layer utilities {
+  .font-meta {
+    font-family: var(--font-mono);
+    font-size: 9px;
+    letter-spacing: 0.06em;
+  }
+  .font-label {
+    font-family: var(--font-mono);
+    font-size: 8px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+  .font-section {
+    font-family: var(--font-mono);
+    font-size: 9px;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
   }
 }

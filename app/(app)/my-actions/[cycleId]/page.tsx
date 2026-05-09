@@ -1,7 +1,7 @@
 import Link from "next/link"
 import { notFound, redirect } from "next/navigation"
 import { ArrowLeft } from "lucide-react"
-import { Button } from "@/components/ui/button"
+import { PageShell } from "@/components/ui/page-shell"
 import { getSession } from "@/modules/auth/session"
 import { getCycleForUser } from "@/modules/rail-runs/queries"
 import { CycleDetail } from "@/modules/rail-runs/ui/cycle-detail"
@@ -21,13 +21,21 @@ export default async function CycleDetailPage({
   if (!row) notFound()
 
   return (
-    <div className="space-y-6">
-      <div>
-        <Link href="/my-actions">
-          <Button variant="ghost" size="sm">
-            <ArrowLeft className="size-4" />
-            Back to My Actions
-          </Button>
+    <PageShell>
+      <div className="mb-6">
+        <Link
+          href="/my-actions"
+          className="inline-flex items-center gap-2 text-[#888] transition-colors hover:text-[#0F0F0F]"
+          style={{
+            fontFamily: "var(--font-mono)",
+            fontSize: 10,
+            fontWeight: 500,
+            letterSpacing: "0.18em",
+            textTransform: "uppercase",
+          }}
+        >
+          <ArrowLeft className="size-3" strokeWidth={2} />
+          Back to My Actions
         </Link>
       </div>
 
@@ -38,6 +46,6 @@ export default async function CycleDetailPage({
         railRunId={row.cycle.railRunId}
         postTitle={row.postTitle}
       />
-    </div>
+    </PageShell>
   )
 }

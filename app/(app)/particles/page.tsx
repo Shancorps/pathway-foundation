@@ -1,4 +1,6 @@
 import { redirect } from "next/navigation"
+import { PageShell } from "@/components/ui/page-shell"
+import { TitleBlock } from "@/components/ui/title-block"
 import { getSession } from "@/modules/auth/session"
 import { listParticleTypes, particleCountByType } from "@/modules/particles/queries"
 import { TypesIndex } from "@/modules/particles/ui/types-index"
@@ -15,26 +17,41 @@ export default async function ParticlesPage() {
   ])
 
   return (
-    <div className="space-y-6">
-      <div>
-        <p className="text-xs tracking-wide text-[var(--color-muted-foreground)] uppercase">
-          Particles
-        </p>
-        <h1 className="mt-1 text-2xl font-semibold">Types</h1>
-        <p className="text-sm text-[var(--color-muted-foreground)]">
-          Define what entities your business tracks. Rails route Particles through Terminals.
-        </p>
-      </div>
-
-      <TypesIndex
-        types={types.map((t) => ({
-          id: t.id,
-          name: t.name,
-          description: t.description,
-          fieldCount: t.fields.length,
-          instanceCount: countsMap.get(t.id) ?? 0,
-        }))}
+    <PageShell>
+      <TitleBlock
+        coordinate="03 / Particles"
+        title="Types"
+        subtitle="Define what entities your business tracks. Rails route Particles through Terminals."
+        meta={
+          <div
+            className="text-right"
+            style={{
+              fontFamily: "var(--font-mono)",
+              fontSize: 11,
+              fontWeight: 500,
+              letterSpacing: "0.16em",
+              color: "#666",
+              textTransform: "uppercase",
+            }}
+          >
+            <span style={{ color: "#AAA" }}>Defined</span>{" "}
+            <span style={{ color: "#0F0F0F" }}>·</span>{" "}
+            <span style={{ color: "#0F0F0F", fontWeight: 600 }}>{String(types.length)}</span>
+          </div>
+        }
       />
-    </div>
+
+      <div className="mt-10">
+        <TypesIndex
+          types={types.map((t) => ({
+            id: t.id,
+            name: t.name,
+            description: t.description,
+            fieldCount: t.fields.length,
+            instanceCount: countsMap.get(t.id) ?? 0,
+          }))}
+        />
+      </div>
+    </PageShell>
   )
 }

@@ -2,10 +2,12 @@
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
-import { Check, CircleAlert, Clock, Pause, Play } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
+import { Pause, Play } from "lucide-react"
+import { BlueprintButton } from "@/components/ui/blueprint-button"
 import { Checkbox } from "@/components/ui/checkbox"
+import { ParticleCube } from "@/components/ui/particle-cube"
+import { RegCard } from "@/components/ui/reg-card"
+import { SectionDivider } from "@/components/ui/section-divider"
 import {
   cancelRailRun,
   completeCycle,
@@ -40,13 +42,11 @@ export function CycleDetail({
   const requiredUnchecked = cycle.checklistItems.filter((i) => i.required && !i.checked)
   const canComplete = requiredUnchecked.length === 0
   const isClosed = Boolean(cycle.completedAt) || Boolean(cycle.cancelledAt)
+  const isActive = Boolean(cycle.timerStartedAt) || checkedItems > 0
+  const cardState = isActive && !isClosed ? "active" : "queued"
 
   async function handleToggleItem(item: CycleChecklistItem, checked: boolean) {
-    const result = await updateChecklistItem({
-      cycleId: cycle.id,
-      itemId: item.id,
-      checked,
-    })
+    const result = await updateChecklistItem({ cycleId: cycle.id, itemId: item.id, checked })
     if (result.serverError) alert(result.serverError)
     else router.refresh()
   }
@@ -68,9 +68,7 @@ export function CycleDetail({
   }
 
   async function handleComplete() {
-    if (!confirm(`Complete "${cycle.title}"? The Particle advances to the next Terminal.`)) {
-      return
-    }
+    if (!confirm(`Complete "${cycle.title}"? The Particle advances to the next Terminal.`)) return
     setSubmittingComplete(true)
     const result = await completeCycle({ cycleId: cycle.id })
     setSubmittingComplete(false)
@@ -97,104 +95,194 @@ export function CycleDetail({
   }
 
   return (
-    <div className="space-y-6">
-      <section className="rounded-lg border border-[var(--color-border)] p-4">
-        <p className="text-xs tracking-wide text-[var(--color-muted-foreground)] uppercase">
-          Cycle
-        </p>
-        <h1 className="mt-1 text-2xl font-semibold">{cycle.title}</h1>
-        <p className="mt-1 text-sm text-[var(--color-muted-foreground)]">
-          <span className="font-medium">{particleName}</span> &middot; {railName} &middot;{" "}
-          {postTitle}
-        </p>
-        {cycle.description && (
-          <p className="mt-3 text-sm text-[var(--color-muted-foreground)]">{cycle.description}</p>
-        )}
-        {isClosed && (
-          <div className="mt-3">
-            {cycle.completedAt ? (
-              <Badge variant="default">Completed</Badge>
-            ) : (
-              <Badge variant="destructive">Cancelled</Badge>
+    <div className="space-y-10">
+      {/* Cycle header card */}
+      <RegCard state={cardState} className="space-y-4">
+        <div className="flex items-start gap-4">
+          <ParticleCube state={cardState} size={44} className="mt-0.5" />
+          <div className="min-w-0 flex-1">
+            <p
+              style={{
+                fontFamily: "var(--font-mono)",
+                fontSize: 10,
+                fontWeight: 600,
+                letterSpacing: "0.2em",
+                color: "#888",
+                textTransform: "uppercase",
+              }}
+            >
+              {particleName} · {railName}
+            </p>
+            <h1
+              className="mt-1.5"
+              style={{
+                fontFamily: "var(--font-sans)",
+                fontSize: 24,
+                fontWeight: 600,
+                color: "#0F0F0F",
+                lineHeight: 1.15,
+                letterSpacing: "-0.01em",
+              }}
+            >
+              {cycle.title}
+            </h1>
+            <p
+              className="mt-2"
+              style={{
+                fontFamily: "var(--font-mono)",
+                fontSize: 10,
+                letterSpacing: "0.14em",
+                color: "#5A7A92",
+                textTransform: "uppercase",
+              }}
+            >
+              Terminal · {postTitle}
+            </p>
+            {cycle.description && (
+              <p
+                className="mt-3 max-w-[60ch]"
+                style={{
+                  fontFamily: "var(--font-sans)",
+                  fontSize: 14,
+                  color: "#444",
+                  lineHeight: 1.55,
+                }}
+              >
+                {cycle.description}
+              </p>
+            )}
+            {isClosed && (
+              <div className="mt-3">
+                <StatusPill closed={cycle.completedAt ? "completed" : "cancelled"} />
+              </div>
             )}
           </div>
-        )}
-      </section>
-
-      <TimerPanel
-        cycle={cycle}
-        onStart={handleStartTimer}
-        onStop={handleStopTimer}
-        submitting={submittingTimer}
-        disabled={isClosed}
-      />
-
-      <section className="space-y-3 rounded-lg border border-[var(--color-border)] p-4">
-        <div className="flex items-center justify-between">
-          <h2 className="text-sm font-semibold tracking-wide text-[var(--color-muted-foreground)] uppercase">
-            Checklist ({String(checkedItems)} / {String(totalItems)})
-          </h2>
-          {requiredUnchecked.length > 0 && !isClosed && (
-            <span className="flex items-center gap-1 text-xs text-amber-600">
-              <CircleAlert className="size-3" />
-              {String(requiredUnchecked.length)} required item
-              {requiredUnchecked.length === 1 ? "" : "s"} left
-            </span>
-          )}
         </div>
+      </RegCard>
+
+      {/* Timing */}
+      <section className="space-y-4">
+        <SectionDivider label="Fig · 02 / Timing" />
+        <TimerPanel
+          cycle={cycle}
+          onStart={handleStartTimer}
+          onStop={handleStopTimer}
+          submitting={submittingTimer}
+          disabled={isClosed}
+        />
+      </section>
+
+      {/* Checklist */}
+      <section className="space-y-4">
+        <SectionDivider
+          label="Fig · 03 / Checklist"
+          count={totalItems > 0 ? `${String(checkedItems)} / ${String(totalItems)}` : "—"}
+          variant={requiredUnchecked.length === 0 && totalItems > 0 ? "accent" : "default"}
+        />
         {totalItems === 0 ? (
-          <p className="rounded-md border border-dashed border-[var(--color-border)] p-3 text-center text-xs text-[var(--color-muted-foreground)]">
-            No checklist for this cycle.
-          </p>
+          <RegCard state="new" className="px-8 py-10 text-center">
+            <p
+              style={{
+                fontFamily: "var(--font-mono)",
+                fontSize: 11,
+                letterSpacing: "0.18em",
+                color: "#AAA",
+                textTransform: "uppercase",
+              }}
+            >
+              No checklist for this cycle
+            </p>
+          </RegCard>
         ) : (
-          <ul className="space-y-2">
-            {cycle.checklistItems
-              .slice()
-              .sort((a, b) => a.position - b.position)
-              .map((item) => (
-                <li key={item.id} className="flex items-start gap-2 rounded-md p-2">
-                  <Checkbox
-                    checked={item.checked}
-                    disabled={isClosed}
-                    onCheckedChange={(v) => {
-                      void handleToggleItem(item, Boolean(v))
-                    }}
-                    className="mt-0.5"
-                  />
-                  <div className="flex-1">
-                    <p
-                      className={
-                        item.checked
-                          ? "text-sm text-[var(--color-muted-foreground)] line-through"
-                          : "text-sm"
-                      }
-                    >
-                      {item.label}
-                      {item.required && <span className="ml-1 text-xs text-red-500">*</span>}
-                    </p>
-                  </div>
-                </li>
-              ))}
-          </ul>
+          <RegCard state={cardState}>
+            <ul className="space-y-3">
+              {cycle.checklistItems
+                .slice()
+                .sort((a, b) => a.position - b.position)
+                .map((item) => (
+                  <li key={item.id} className="flex items-start gap-3">
+                    <Checkbox
+                      checked={item.checked}
+                      disabled={isClosed}
+                      onCheckedChange={(v) => {
+                        void handleToggleItem(item, Boolean(v))
+                      }}
+                      className="mt-0.5"
+                    />
+                    <div className="flex-1">
+                      <p
+                        style={{
+                          fontFamily: "var(--font-sans)",
+                          fontSize: 14,
+                          color: item.checked ? "#888" : "#0F0F0F",
+                          textDecoration: item.checked ? "line-through" : "none",
+                          lineHeight: 1.4,
+                        }}
+                      >
+                        {item.label}
+                        {item.required && (
+                          <span
+                            className="ml-1.5"
+                            style={{
+                              fontFamily: "var(--font-mono)",
+                              fontSize: 9,
+                              fontWeight: 600,
+                              color: "#E8711A",
+                              letterSpacing: "0.12em",
+                              textTransform: "uppercase",
+                            }}
+                          >
+                            Req
+                          </span>
+                        )}
+                      </p>
+                    </div>
+                  </li>
+                ))}
+            </ul>
+          </RegCard>
         )}
       </section>
 
+      {/* Actions */}
       {!isClosed && (
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <Button variant="outline" onClick={handleCancelRun}>
+        <div className="flex flex-wrap items-center justify-between gap-3 border-t border-[#E4E4E4] pt-6">
+          <BlueprintButton variant="ghost" size="sm" onClick={handleCancelRun}>
             Cancel Run
-          </Button>
-          <Button
+          </BlueprintButton>
+          <BlueprintButton
+            variant="primary"
             onClick={handleComplete}
             disabled={!canComplete || submittingComplete}
             title={canComplete ? undefined : "Check all required items before completing the cycle"}
+            particle
           >
-            <Check className="size-4" />
             {submittingComplete ? "Completing..." : "Complete Task"}
-          </Button>
+          </BlueprintButton>
         </div>
       )}
     </div>
+  )
+}
+
+function StatusPill({ closed }: { closed: "completed" | "cancelled" }) {
+  const color = closed === "completed" ? "#2A3D52" : "#888"
+  const label = closed === "completed" ? "Completed" : "Cancelled"
+  return (
+    <span
+      className="px-2.5 py-1"
+      style={{
+        fontFamily: "var(--font-mono)",
+        fontSize: 9,
+        fontWeight: 600,
+        letterSpacing: "0.2em",
+        textTransform: "uppercase",
+        color,
+        border: `1px solid ${color}`,
+      }}
+    >
+      {label}
+    </span>
   )
 }
 
@@ -211,80 +299,95 @@ function TimerPanel({
   submitting: boolean
   disabled: boolean
 }) {
-  // Live tick — re-render every 30s while the timer is running so the
-  // displayed elapsed time updates without a server round-trip.
   const now = useNow(30_000)
-
   const liveSegmentMinutes = cycle.timerStartedAt
     ? Math.max(0, Math.round((now - new Date(cycle.timerStartedAt).getTime()) / 60000))
     : 0
   const totalMinutes = cycle.timeSpentMinutes + liveSegmentMinutes
   const issuedMs = now - new Date(cycle.issuedAt).getTime()
   const issuedMinutes = Math.max(0, Math.round(issuedMs / 60000))
-
   const overIdeal = cycle.idealMinutes != null && totalMinutes > cycle.idealMinutes
 
   return (
-    <section className="rounded-lg border border-[var(--color-border)] p-4">
-      <h2 className="text-sm font-semibold tracking-wide text-[var(--color-muted-foreground)] uppercase">
-        Timing
-      </h2>
-      <div className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-3">
-        <Stat label="In your inbox" value={formatMinutes(issuedMinutes)} icon={Clock} />
+    <RegCard state={cycle.timerStartedAt ? "active" : "queued"} className="space-y-4">
+      <div className="grid grid-cols-1 gap-px overflow-hidden bg-[#E4E4E4] md:grid-cols-3">
+        <Stat label="In your inbox" value={formatMinutes(issuedMinutes)} variant="muted" />
         <Stat
           label="Active work"
           value={formatMinutes(totalMinutes)}
-          icon={Play}
+          variant="primary"
           live={Boolean(cycle.timerStartedAt)}
         />
         <Stat
           label="Ideal time"
           value={cycle.idealMinutes != null ? formatMinutes(cycle.idealMinutes) : "—"}
-          icon={Clock}
-          warning={overIdeal}
+          variant={overIdeal ? "warning" : "muted"}
         />
       </div>
-      <div className="mt-3">
+      <div className="flex justify-end">
         {cycle.timerStartedAt ? (
-          <Button variant="outline" onClick={onStop} disabled={disabled || submitting}>
-            <Pause className="size-4" />
-            {submitting ? "..." : "Pause work timer"}
-          </Button>
+          <BlueprintButton variant="outline" onClick={onStop} disabled={disabled || submitting}>
+            <Pause className="size-3.5" />
+            {submitting ? "..." : "Pause Timer"}
+          </BlueprintButton>
         ) : (
-          <Button onClick={onStart} disabled={disabled || submitting}>
-            <Play className="size-4" />
-            {submitting ? "..." : "Start work timer"}
-          </Button>
+          <BlueprintButton variant="primary" onClick={onStart} disabled={disabled || submitting}>
+            <Play className="size-3.5" />
+            {submitting ? "..." : "Start Timer"}
+          </BlueprintButton>
         )}
       </div>
-    </section>
+    </RegCard>
   )
 }
 
 function Stat({
   label,
   value,
-  icon: Icon,
+  variant = "muted",
   live = false,
-  warning = false,
 }: {
   label: string
   value: string
-  icon: typeof Clock
+  variant?: "muted" | "primary" | "warning"
   live?: boolean
-  warning?: boolean
 }) {
+  const valueColor =
+    variant === "primary" ? "#0F0F0F" : variant === "warning" ? "#E8711A" : "#0F0F0F"
   return (
-    <div className="rounded-md border border-[var(--color-border)] p-3">
-      <div className="flex items-center gap-1 text-xs text-[var(--color-muted-foreground)]">
-        <Icon className="size-3" />
-        {label}
-        {live && <span className="ml-1 text-green-500">&#9679; live</span>}
-      </div>
+    <div className="bg-white px-5 py-4">
       <p
-        className={
-          warning ? "mt-1 text-xl font-semibold text-red-500" : "mt-1 text-xl font-semibold"
-        }
+        className="flex items-center gap-2"
+        style={{
+          fontFamily: "var(--font-mono)",
+          fontSize: 9,
+          fontWeight: 600,
+          letterSpacing: "0.2em",
+          color: "#888",
+          textTransform: "uppercase",
+        }}
+      >
+        <span>{label}</span>
+        {live && (
+          <span className="inline-flex items-center gap-1.5">
+            <span
+              className="inline-block size-1.5"
+              style={{ backgroundColor: "#E8711A" }}
+              aria-hidden
+            />
+            <span style={{ color: "#E8711A", fontSize: 8, letterSpacing: "0.16em" }}>Live</span>
+          </span>
+        )}
+      </p>
+      <p
+        className="mt-2"
+        style={{
+          fontFamily: "var(--font-sans)",
+          fontSize: 24,
+          fontWeight: 600,
+          color: valueColor,
+          letterSpacing: "-0.01em",
+        }}
       >
         {value}
       </p>

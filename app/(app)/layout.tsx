@@ -3,9 +3,8 @@ import { headers } from "next/headers"
 import type { ReactNode } from "react"
 import { auth } from "@/lib/auth"
 import { getSession } from "@/modules/auth/session"
-import { getUserOrganizations } from "@/modules/org/queries"
+import { getCurrentMember, getUserOrganizations } from "@/modules/org/queries"
 import { AppSidebar } from "@/modules/org/ui/app-sidebar"
-import { AppTopbar } from "@/modules/org/ui/app-topbar"
 
 export default async function AppLayout({ children }: { children: ReactNode }) {
   const session = await getSession()
@@ -33,16 +32,21 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
     return <>{children}</>
   }
 
+  // Pull the user's role in the active org so the sidebar can show "OWNER" / "ADMIN" etc.
+  const member = await getCurrentMember(activeOrgId, session.user.id)
+
   return (
-    <div className="grid h-screen grid-cols-[240px_1fr] grid-rows-[56px_1fr]">
-      <AppTopbar
-        user={{ name: session.user.name, email: session.user.email }}
+    <div className="flex h-screen">
+      <AppSidebar
+        user={{
+          name: session.user.name,
+          email: session.user.email,
+          role: member?.role ? member.role.toUpperCase() : null,
+        }}
         organizations={organizations.map((o) => ({ id: o.id, name: o.name, slug: o.slug }))}
         activeOrgId={activeOrgId}
-        className="col-span-2 border-b border-[var(--color-border)]"
       />
-      <AppSidebar className="border-r border-[var(--color-border)]" />
-      <main className="overflow-y-auto p-6">{children}</main>
+      <main className="flex-1 overflow-y-auto px-8 py-6">{children}</main>
     </div>
   )
 }

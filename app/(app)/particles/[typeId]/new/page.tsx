@@ -1,7 +1,8 @@
 import Link from "next/link"
 import { notFound, redirect } from "next/navigation"
 import { ArrowLeft } from "lucide-react"
-import { Button } from "@/components/ui/button"
+import { PageShell } from "@/components/ui/page-shell"
+import { TitleBlock } from "@/components/ui/title-block"
 import { getSession } from "@/modules/auth/session"
 import { getParticleType, listParticlesWithTypeForOrg } from "@/modules/particles/queries"
 import { ParticleForm } from "@/modules/particles/ui/particle-form"
@@ -20,29 +21,40 @@ export default async function NewParticlePage({ params }: { params: Promise<{ ty
   if (!type) notFound()
 
   return (
-    <div className="space-y-6">
-      <div>
-        <Link href={`/particles/${type.id}`}>
-          <Button variant="ghost" size="sm">
-            <ArrowLeft className="size-4" />
-            Back
-          </Button>
+    <PageShell>
+      <div className="mb-6">
+        <Link
+          href={`/particles/${type.id}`}
+          className="inline-flex items-center gap-2 text-[#888] transition-colors hover:text-[#0F0F0F]"
+          style={{
+            fontFamily: "var(--font-mono)",
+            fontSize: 10,
+            fontWeight: 500,
+            letterSpacing: "0.18em",
+            textTransform: "uppercase",
+          }}
+        >
+          <ArrowLeft className="size-3" strokeWidth={2} />
+          Back
         </Link>
       </div>
-      <div>
-        <p className="text-xs tracking-wide text-[var(--color-muted-foreground)] uppercase">
-          Particles &gt; {type.name} &gt; New
-        </p>
-        <h1 className="mt-1 text-2xl font-semibold">New {type.name}</h1>
-      </div>
-      <ParticleForm
-        type={type}
-        parentCandidates={parentCandidates.map((p) => ({
-          id: p.id,
-          name: p.name,
-          typeName: p.typeName,
-        }))}
+
+      <TitleBlock
+        coordinate={`03 / Particles · ${type.name}`}
+        title={`New ${type.name}`}
+        subtitle={`Create a new ${type.name} instance to flow through Rails.`}
       />
-    </div>
+
+      <div className="mt-10">
+        <ParticleForm
+          type={type}
+          parentCandidates={parentCandidates.map((p) => ({
+            id: p.id,
+            name: p.name,
+            typeName: p.typeName,
+          }))}
+        />
+      </div>
+    </PageShell>
   )
 }

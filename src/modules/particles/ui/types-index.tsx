@@ -3,11 +3,14 @@
 import { useState } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { Plus, Settings, Trash2 } from "lucide-react"
-import { Button } from "@/components/ui/button"
+import { Settings, Trash2 } from "lucide-react"
+import { BlueprintButton } from "@/components/ui/blueprint-button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
+import { ParticleCube } from "@/components/ui/particle-cube"
+import { RegCard } from "@/components/ui/reg-card"
+import { SectionDivider } from "@/components/ui/section-divider"
 import {
   Dialog,
   DialogContent,
@@ -29,40 +32,78 @@ interface ParticleTypeRow {
 
 export function TypesIndex({ types }: { types: ParticleTypeRow[] }) {
   const [showCreate, setShowCreate] = useState(false)
+
   return (
-    <div className="space-y-4">
+    <div className="space-y-8">
       <div className="flex justify-end">
-        <Button
+        <BlueprintButton
+          variant="primary"
           onClick={() => {
             setShowCreate(true)
           }}
+          particle
         >
-          <Plus className="size-4" />
           New Particle Type
-        </Button>
+        </BlueprintButton>
       </div>
+      <div className="space-y-4">
+        <SectionDivider label="Fig · 01 / Defined Types" count={types.length} />
 
-      {types.length === 0 ? (
-        <div className="rounded-lg border border-dashed border-[var(--color-border)] p-10 text-center">
-          <p className="text-sm text-[var(--color-muted-foreground)]">
-            No particle types yet. Create one to start tracking entities (Clients, Leads,
-            Properties, etc.).
-          </p>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-3">
-          {types.map((t) => (
-            <TypeTile key={t.id} type={t} />
-          ))}
-        </div>
-      )}
+        {types.length === 0 ? (
+          <RegCard state="new" className="px-12 py-16 text-center">
+            <p
+              style={{
+                fontFamily: "var(--font-mono)",
+                fontSize: 11,
+                fontWeight: 600,
+                letterSpacing: "0.18em",
+                color: "#888",
+                textTransform: "uppercase",
+              }}
+            >
+              No particle types defined
+            </p>
+            <p
+              className="mx-auto mt-3 max-w-[42ch]"
+              style={{
+                fontFamily: "var(--font-sans)",
+                fontSize: 14,
+                color: "#444",
+                lineHeight: 1.55,
+              }}
+            >
+              Define a Particle Type for each kind of entity your business tracks — Clients, Leads,
+              Properties, Heavy Machinery. Then create instances and route them through Rails.
+            </p>
+            <div className="mt-7">
+              <BlueprintButton
+                variant="primary"
+                onClick={() => {
+                  setShowCreate(true)
+                }}
+                particle
+              >
+                Define First Type
+              </BlueprintButton>
+            </div>
+          </RegCard>
+        ) : (
+          <ul className="space-y-3">
+            {types.map((t) => (
+              <li key={t.id}>
+                <TypeRow type={t} />
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
 
       <CreateTypeDialog open={showCreate} onOpenChange={setShowCreate} />
     </div>
   )
 }
 
-function TypeTile({ type }: { type: ParticleTypeRow }) {
+function TypeRow({ type }: { type: ParticleTypeRow }) {
   const router = useRouter()
   async function handleDelete(e: React.MouseEvent) {
     e.preventDefault()
@@ -79,39 +120,78 @@ function TypeTile({ type }: { type: ParticleTypeRow }) {
   }
 
   return (
-    <Link
-      href={`/particles/${type.id}`}
-      className="group block rounded-lg border border-[var(--color-border)] p-4 transition-colors hover:border-[var(--color-accent)]"
-    >
-      <div className="flex items-start justify-between">
-        <div className="min-w-0 flex-1">
-          <p className="truncate text-base font-semibold">{type.name}</p>
-          {type.description && (
-            <p className="mt-1 line-clamp-2 text-sm text-[var(--color-muted-foreground)]">
-              {type.description}
+    <Link href={`/particles/${type.id}`} className="block">
+      <RegCard state="queued" className="transition-[background-color]">
+        <div className="flex items-start gap-5">
+          <ParticleCube state="queued" size={36} className="mt-0.5" />
+
+          <div className="min-w-0 flex-1">
+            <h3
+              style={{
+                fontFamily: "var(--font-sans)",
+                fontSize: 16,
+                fontWeight: 600,
+                color: "#0F0F0F",
+                lineHeight: 1.25,
+                letterSpacing: "-0.005em",
+              }}
+            >
+              {type.name}
+            </h3>
+            {type.description && (
+              <p
+                className="mt-1 line-clamp-2 max-w-[60ch]"
+                style={{
+                  fontFamily: "var(--font-sans)",
+                  fontSize: 14,
+                  color: "#666",
+                  lineHeight: 1.4,
+                }}
+              >
+                {type.description}
+              </p>
+            )}
+            <p
+              className="mt-3 flex items-center gap-2.5"
+              style={{
+                fontFamily: "var(--font-mono)",
+                fontSize: 10,
+                fontWeight: 500,
+                color: "#5A7A92",
+                letterSpacing: "0.14em",
+                textTransform: "uppercase",
+              }}
+            >
+              <span>
+                {String(type.fieldCount)} field{type.fieldCount === 1 ? "" : "s"}
+              </span>
+              <span style={{ color: "#CCC" }}>·</span>
+              <span>
+                {String(type.instanceCount)} instance{type.instanceCount === 1 ? "" : "s"}
+              </span>
             </p>
-          )}
-          <p className="mt-3 text-xs text-[var(--color-muted-foreground)]">
-            {type.fieldCount} field{type.fieldCount === 1 ? "" : "s"} · {type.instanceCount}{" "}
-            instance{type.instanceCount === 1 ? "" : "s"}
-          </p>
+          </div>
+
+          <div className="flex shrink-0 gap-1">
+            <Link
+              href={`/particles/${type.id}/edit`}
+              onClick={(e) => {
+                e.stopPropagation()
+              }}
+              className="grid place-items-center border border-transparent p-1.5 hover:border-[#E4E4E4] hover:bg-white"
+            >
+              <Settings className="size-3.5" strokeWidth={1.5} />
+            </Link>
+            <button
+              type="button"
+              onClick={handleDelete}
+              className="grid place-items-center border border-transparent p-1.5 hover:border-[#E4E4E4] hover:bg-white"
+            >
+              <Trash2 className="size-3.5" strokeWidth={1.5} />
+            </button>
+          </div>
         </div>
-        <div className="flex gap-1 opacity-0 transition-opacity group-hover:opacity-100">
-          <Link
-            href={`/particles/${type.id}/edit`}
-            onClick={(e) => {
-              e.stopPropagation()
-            }}
-          >
-            <Button size="sm" variant="ghost">
-              <Settings className="size-3" />
-            </Button>
-          </Link>
-          <Button size="sm" variant="ghost" onClick={handleDelete}>
-            <Trash2 className="size-3" />
-          </Button>
-        </div>
-      </div>
+      </RegCard>
     </Link>
   )
 }
@@ -181,18 +261,24 @@ function CreateTypeDialog({
             />
           </div>
           <DialogFooter>
-            <Button
+            <BlueprintButton
               type="button"
-              variant="outline"
+              variant="ghost"
+              size="sm"
               onClick={() => {
                 onOpenChange(false)
               }}
             >
               Cancel
-            </Button>
-            <Button type="submit" disabled={submitting || !name}>
+            </BlueprintButton>
+            <BlueprintButton
+              type="submit"
+              variant="primary"
+              size="sm"
+              disabled={submitting || !name}
+            >
               {submitting ? "Creating..." : "Create"}
-            </Button>
+            </BlueprintButton>
           </DialogFooter>
         </form>
       </DialogContent>
@@ -200,5 +286,4 @@ function CreateTypeDialog({
   )
 }
 
-// Helper for callers (server component) — preserve type alias via re-export
 export type { ParticleType }

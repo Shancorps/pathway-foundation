@@ -2,13 +2,14 @@
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
-import { ArrowDown, ArrowUp, Pencil, Plus, Trash2 } from "lucide-react"
-import { Button } from "@/components/ui/button"
+import { ArrowDown, ArrowUp, Pencil, Trash2 } from "lucide-react"
+import { BlueprintButton } from "@/components/ui/blueprint-button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { Badge } from "@/components/ui/badge"
 import { Checkbox } from "@/components/ui/checkbox"
+import { RegCard } from "@/components/ui/reg-card"
+import { SectionDivider } from "@/components/ui/section-divider"
 import {
   Dialog,
   DialogContent,
@@ -105,126 +106,194 @@ export function TypeEditor({ type }: { type: ParticleType }) {
   }
 
   return (
-    <div className="space-y-6">
-      <section className="space-y-3 rounded-lg border border-[var(--color-border)] p-4">
-        <h2 className="text-sm font-semibold tracking-wide text-[var(--color-muted-foreground)] uppercase">
-          Type settings
-        </h2>
-        <div className="grid gap-3 md:grid-cols-2">
-          <div>
-            <Label htmlFor="meta-name">Name</Label>
-            <Input
-              id="meta-name"
-              value={name}
-              onChange={(e) => {
-                setName(e.target.value)
-              }}
-            />
+    <div className="space-y-10">
+      {/* Type settings */}
+      <section className="space-y-4">
+        <SectionDivider label="Fig · 01 / Type Settings" />
+        <RegCard state="queued" className="space-y-4">
+          <div className="grid gap-4 md:grid-cols-2">
+            <div>
+              <Label htmlFor="meta-name">Name</Label>
+              <Input
+                id="meta-name"
+                value={name}
+                onChange={(e) => {
+                  setName(e.target.value)
+                }}
+              />
+            </div>
+            <div>
+              <Label htmlFor="meta-name-label">Particle Identifier Tag</Label>
+              <Input
+                id="meta-name-label"
+                value={nameLabel}
+                onChange={(e) => {
+                  setNameLabel(e.target.value)
+                }}
+                placeholder="Name"
+              />
+              <p
+                className="mt-2"
+                style={{
+                  fontFamily: "var(--font-sans)",
+                  fontSize: 12,
+                  color: "#666",
+                  lineHeight: 1.5,
+                }}
+              >
+                The headline field for this type. e.g. &ldquo;Name&rdquo; for Clients,
+                &ldquo;Address&rdquo; for Properties, &ldquo;Business Name&rdquo; for Vendors,
+                &ldquo;Brand + Model&rdquo; for Machinery.
+              </p>
+            </div>
+            <div className="md:col-span-2">
+              <Label htmlFor="meta-description">Description (optional)</Label>
+              <Textarea
+                id="meta-description"
+                value={description}
+                onChange={(e) => {
+                  setDescription(e.target.value)
+                }}
+                rows={2}
+              />
+            </div>
           </div>
-          <div>
-            <Label htmlFor="meta-name-label">Particle Identifier Tag</Label>
-            <Input
-              id="meta-name-label"
-              value={nameLabel}
-              onChange={(e) => {
-                setNameLabel(e.target.value)
-              }}
-              placeholder="Name"
-            />
-            <p className="mt-1 text-xs text-[var(--color-muted-foreground)]">
-              The headline field for this type. e.g. &ldquo;Name&rdquo; for Clients,
-              &ldquo;Address&rdquo; for Properties, &ldquo;Business Name&rdquo; for Vendors,
-              &ldquo;Brand + Model&rdquo; for Machinery.
-            </p>
+          <div className="flex justify-end">
+            <BlueprintButton
+              variant="primary"
+              size="sm"
+              onClick={handleSaveMeta}
+              disabled={savingMeta || !name || !nameLabel}
+              particle
+            >
+              {savingMeta ? "Saving..." : "Save Settings"}
+            </BlueprintButton>
           </div>
-          <div className="md:col-span-2">
-            <Label htmlFor="meta-description">Description (optional)</Label>
-            <Textarea
-              id="meta-description"
-              value={description}
-              onChange={(e) => {
-                setDescription(e.target.value)
-              }}
-              rows={2}
-            />
-          </div>
-        </div>
-        <div>
-          <Button size="sm" onClick={handleSaveMeta} disabled={savingMeta || !name || !nameLabel}>
-            {savingMeta ? "Saving..." : "Save settings"}
-          </Button>
-        </div>
+        </RegCard>
       </section>
 
-      <section className="space-y-3 rounded-lg border border-[var(--color-border)] p-4">
-        <div className="flex items-center justify-between">
-          <h2 className="text-sm font-semibold tracking-wide text-[var(--color-muted-foreground)] uppercase">
-            Fields ({type.fields.length})
-          </h2>
-          <Button
+      {/* Fields */}
+      <section className="space-y-4">
+        <SectionDivider label="Fig · 02 / Fields" count={type.fields.length} />
+
+        <div className="flex justify-end">
+          <BlueprintButton
+            variant="primary"
             size="sm"
             onClick={() => {
               setShowAddField(true)
             }}
+            particle
           >
-            <Plus className="size-4" />
             Add Field
-          </Button>
+          </BlueprintButton>
         </div>
 
         {type.fields.length === 0 ? (
-          <p className="rounded-md border border-dashed border-[var(--color-border)] p-6 text-center text-sm text-[var(--color-muted-foreground)]">
-            No fields yet. Click &ldquo;Add Field&rdquo; to define what data this particle tracks.
-          </p>
+          <RegCard state="new" className="px-10 py-12 text-center">
+            <p
+              style={{
+                fontFamily: "var(--font-mono)",
+                fontSize: 11,
+                fontWeight: 600,
+                letterSpacing: "0.18em",
+                color: "#888",
+                textTransform: "uppercase",
+              }}
+            >
+              No fields defined
+            </p>
+            <p
+              className="mx-auto mt-3 max-w-[42ch]"
+              style={{
+                fontFamily: "var(--font-sans)",
+                fontSize: 14,
+                color: "#444",
+                lineHeight: 1.55,
+              }}
+            >
+              Define what data this Particle Type tracks. Each field becomes part of the form for
+              new instances.
+            </p>
+          </RegCard>
         ) : (
-          <ul className="divide-y divide-[var(--color-border)] rounded-md border border-[var(--color-border)]">
+          <ul className="space-y-2">
             {type.fields.map((field, idx) => (
-              <li key={field.key} className="flex items-center gap-3 p-3">
-                <div className="flex flex-col">
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={() => void move(idx, -1)}
-                    disabled={idx === 0}
-                    aria-label="Move up"
-                  >
-                    <ArrowUp className="size-3" />
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={() => void move(idx, 1)}
-                    disabled={idx === type.fields.length - 1}
-                    aria-label="Move down"
-                  >
-                    <ArrowDown className="size-3" />
-                  </Button>
-                </div>
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-2">
-                    <p className="font-medium">{field.label}</p>
-                    <Badge variant="secondary">{TYPE_LABELS[field.type]}</Badge>
-                    {field.required && <Badge variant="outline">Required</Badge>}
+              <li key={field.key}>
+                <RegCard state="queued" className="px-4 py-3">
+                  <div className="flex items-center gap-3">
+                    <div className="flex flex-col gap-0.5">
+                      <button
+                        type="button"
+                        onClick={() => void move(idx, -1)}
+                        disabled={idx === 0}
+                        aria-label="Move up"
+                        className="grid place-items-center border border-transparent p-1 hover:border-[#E4E4E4] hover:bg-white disabled:opacity-30"
+                      >
+                        <ArrowUp className="size-3" strokeWidth={1.5} />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => void move(idx, 1)}
+                        disabled={idx === type.fields.length - 1}
+                        aria-label="Move down"
+                        className="grid place-items-center border border-transparent p-1 hover:border-[#E4E4E4] hover:bg-white disabled:opacity-30"
+                      >
+                        <ArrowDown className="size-3" strokeWidth={1.5} />
+                      </button>
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2">
+                        <p
+                          style={{
+                            fontFamily: "var(--font-sans)",
+                            fontSize: 14,
+                            fontWeight: 600,
+                            color: "#0F0F0F",
+                          }}
+                        >
+                          {field.label}
+                        </p>
+                        <FieldTypePill label={TYPE_LABELS[field.type]} />
+                        {field.required && <RequiredPill />}
+                      </div>
+                      <p
+                        className="mt-1"
+                        style={{
+                          fontFamily: "var(--font-mono)",
+                          fontSize: 10,
+                          color: "#888",
+                          letterSpacing: "0.08em",
+                        }}
+                      >
+                        key · {field.key}
+                        {field.options && field.options.length > 0 && (
+                          <> · options · {field.options.join(", ")}</>
+                        )}
+                      </p>
+                    </div>
+                    <div className="flex shrink-0 gap-1">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setEditingField(field)
+                        }}
+                        className="grid place-items-center border border-transparent p-1.5 hover:border-[#E4E4E4] hover:bg-white"
+                        aria-label="Edit field"
+                      >
+                        <Pencil className="size-3.5" strokeWidth={1.5} />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => void handleDeleteField(field.key)}
+                        className="grid place-items-center border border-transparent p-1.5 hover:border-[#E4E4E4] hover:bg-white"
+                        aria-label="Delete field"
+                      >
+                        <Trash2 className="size-3.5" strokeWidth={1.5} />
+                      </button>
+                    </div>
                   </div>
-                  <p className="text-xs text-[var(--color-muted-foreground)]">
-                    key: <code>{field.key}</code>
-                    {field.options && field.options.length > 0 && (
-                      <> · options: {field.options.join(", ")}</>
-                    )}
-                  </p>
-                </div>
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  onClick={() => {
-                    setEditingField(field)
-                  }}
-                >
-                  <Pencil className="size-3" />
-                </Button>
-                <Button size="sm" variant="ghost" onClick={() => void handleDeleteField(field.key)}>
-                  <Trash2 className="size-3" />
-                </Button>
+                </RegCard>
               </li>
             ))}
           </ul>
@@ -251,6 +320,44 @@ export function TypeEditor({ type }: { type: ParticleType }) {
         />
       )}
     </div>
+  )
+}
+
+function FieldTypePill({ label }: { label: string }) {
+  return (
+    <span
+      className="px-1.5 py-0.5"
+      style={{
+        fontFamily: "var(--font-mono)",
+        fontSize: 8,
+        fontWeight: 600,
+        letterSpacing: "0.18em",
+        color: "#5A7A92",
+        border: "1px solid #5A7A92",
+        textTransform: "uppercase",
+      }}
+    >
+      {label}
+    </span>
+  )
+}
+
+function RequiredPill() {
+  return (
+    <span
+      className="px-1.5 py-0.5"
+      style={{
+        fontFamily: "var(--font-mono)",
+        fontSize: 8,
+        fontWeight: 600,
+        letterSpacing: "0.18em",
+        color: "#E8711A",
+        border: "1px solid #E8711A",
+        textTransform: "uppercase",
+      }}
+    >
+      Required
+    </span>
   )
 }
 
@@ -369,7 +476,15 @@ function FieldDialog({
               disabled={mode === "edit"}
               placeholder="snake_case_key"
             />
-            <p className="mt-1 text-xs text-[var(--color-muted-foreground)]">
+            <p
+              className="mt-1"
+              style={{
+                fontFamily: "var(--font-mono)",
+                fontSize: 10,
+                color: "#888",
+                letterSpacing: "0.06em",
+              }}
+            >
               Auto-generated from the label. Edit to override.
             </p>
           </div>
@@ -430,18 +545,24 @@ function FieldDialog({
             </Label>
           </div>
           <DialogFooter>
-            <Button
+            <BlueprintButton
               type="button"
-              variant="outline"
+              variant="ghost"
+              size="sm"
               onClick={() => {
                 onOpenChange(false)
               }}
             >
               Cancel
-            </Button>
-            <Button type="submit" disabled={submitting || !label}>
+            </BlueprintButton>
+            <BlueprintButton
+              type="submit"
+              variant="primary"
+              size="sm"
+              disabled={submitting || !label}
+            >
               {submitting ? "Saving..." : mode === "add" ? "Add Field" : "Save"}
-            </Button>
+            </BlueprintButton>
           </DialogFooter>
         </form>
       </DialogContent>

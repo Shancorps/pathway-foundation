@@ -1,7 +1,7 @@
 import Link from "next/link"
 import { notFound, redirect } from "next/navigation"
 import { ArrowLeft } from "lucide-react"
-import { Button } from "@/components/ui/button"
+import { PageShell } from "@/components/ui/page-shell"
 import { getSession } from "@/modules/auth/session"
 import { listContainersForOrg, listPostsForOrg } from "@/modules/org-structure/queries"
 import { getParticleType } from "@/modules/particles/queries"
@@ -26,13 +26,21 @@ export default async function RailEditPage({ params }: { params: Promise<{ id: s
   const containerById = new Map(containers.map((c) => [c.id, c.name]))
 
   return (
-    <div className="space-y-6">
-      <div>
-        <Link href="/rails">
-          <Button variant="ghost" size="sm">
-            <ArrowLeft className="size-4" />
-            Back to Rails
-          </Button>
+    <PageShell>
+      <div className="mb-6">
+        <Link
+          href="/rails"
+          className="inline-flex items-center gap-2 text-[#888] transition-colors hover:text-[#0F0F0F]"
+          style={{
+            fontFamily: "var(--font-mono)",
+            fontSize: 10,
+            fontWeight: 500,
+            letterSpacing: "0.18em",
+            textTransform: "uppercase",
+          }}
+        >
+          <ArrowLeft className="size-3" strokeWidth={2} />
+          Back to Rails
         </Link>
       </div>
 
@@ -49,6 +57,6 @@ export default async function RailEditPage({ params }: { params: Promise<{ id: s
           vacant: p.assignedUsers.length === 0,
         }))}
       />
-    </div>
+    </PageShell>
   )
 }

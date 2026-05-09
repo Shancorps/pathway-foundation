@@ -3,12 +3,13 @@
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { ArrowDown, ArrowUp, CircleDot, GripVertical, Pencil, Plus, Trash2 } from "lucide-react"
-import { Button } from "@/components/ui/button"
+import { BlueprintButton } from "@/components/ui/blueprint-button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { Badge } from "@/components/ui/badge"
 import { Checkbox } from "@/components/ui/checkbox"
+import { RegCard } from "@/components/ui/reg-card"
+import { SectionDivider } from "@/components/ui/section-divider"
 import {
   Dialog,
   DialogContent,
@@ -40,6 +41,65 @@ interface PostOption {
   title: string
   containerLabel?: string | null
   vacant: boolean
+}
+
+function RailStatusPill({ published }: { published: boolean }) {
+  return (
+    <span
+      className="px-2 py-0.5"
+      style={{
+        fontFamily: "var(--font-mono)",
+        fontSize: 9,
+        fontWeight: 600,
+        letterSpacing: "0.2em",
+        textTransform: "uppercase",
+        color: published ? "#fff" : "#888",
+        backgroundColor: published ? "#E8711A" : "transparent",
+        border: `1px solid ${published ? "#E8711A" : "#888"}`,
+      }}
+    >
+      {published ? "Published" : "Draft"}
+    </span>
+  )
+}
+
+function NodeTypePill({ type }: { type: string }) {
+  const isTrigger = type === "trigger"
+  const color = isTrigger ? "#E8711A" : "#5A7A92"
+  return (
+    <span
+      className="px-1.5 py-0.5"
+      style={{
+        fontFamily: "var(--font-mono)",
+        fontSize: 8,
+        fontWeight: 600,
+        letterSpacing: "0.2em",
+        color,
+        border: `1px solid ${color}`,
+        textTransform: "uppercase",
+      }}
+    >
+      {type}
+    </span>
+  )
+}
+
+function SmallPill({ children }: { children: React.ReactNode }) {
+  return (
+    <span
+      className="px-1.5 py-0.5"
+      style={{
+        fontFamily: "var(--font-mono)",
+        fontSize: 8,
+        fontWeight: 500,
+        letterSpacing: "0.16em",
+        color: "#666",
+        border: "1px solid #D4D4D4",
+      }}
+    >
+      {children}
+    </span>
+  )
 }
 
 function formatMinutes(minutes: number): string {
@@ -115,184 +175,266 @@ export function RailEditor({
   }
 
   return (
-    <div className="space-y-6">
-      <section className="flex items-end justify-between rounded-lg border border-[var(--color-border)] p-4">
-        <div className="min-w-0 flex-1">
-          <p className="text-xs tracking-wide text-[var(--color-muted-foreground)] uppercase">
-            Rail
-          </p>
-          <h1 className="mt-1 truncate text-2xl font-semibold">{rail.name}</h1>
-          {particleTypeName && (
-            <p className="mt-1 text-sm text-[var(--color-muted-foreground)]">
-              Operates on <span className="font-medium">{particleTypeName}</span>
+    <div className="space-y-10">
+      {/* Header */}
+      <RegCard state={isPublished ? "active" : "queued"}>
+        <div className="flex items-start justify-between gap-4">
+          <div className="min-w-0 flex-1">
+            <p
+              style={{
+                fontFamily: "var(--font-mono)",
+                fontSize: 10,
+                fontWeight: 600,
+                letterSpacing: "0.2em",
+                color: "#888",
+                textTransform: "uppercase",
+              }}
+            >
+              Rail
+              {particleTypeName && (
+                <>
+                  <span className="px-1.5 text-[#CCC]">·</span>
+                  <span style={{ color: "#5A7A92" }}>Operates on {particleTypeName}</span>
+                </>
+              )}
             </p>
-          )}
-        </div>
-        <div className="flex items-center gap-2">
-          <Badge variant={isPublished ? "default" : "secondary"} className="capitalize">
-            {rail.status}
-          </Badge>
-          {isPublished ? (
-            <Button variant="outline" onClick={handleUnpublish}>
-              Unpublish
-            </Button>
-          ) : (
-            <Button onClick={handlePublish}>Publish</Button>
-          )}
-        </div>
-      </section>
-
-      <section className="space-y-3 rounded-lg border border-[var(--color-border)] p-4">
-        <h2 className="text-sm font-semibold tracking-wide text-[var(--color-muted-foreground)] uppercase">
-          Settings
-        </h2>
-        <div className="grid gap-3 md:grid-cols-2">
-          <div>
-            <Label htmlFor="rail-name">Name</Label>
-            <Input
-              id="rail-name"
-              value={name}
-              onChange={(e) => {
-                setName(e.target.value)
+            <h1
+              className="mt-2 truncate"
+              style={{
+                fontFamily: "var(--font-sans)",
+                fontSize: 26,
+                fontWeight: 600,
+                color: "#0F0F0F",
+                letterSpacing: "-0.01em",
               }}
-              disabled={isPublished}
-            />
+            >
+              {rail.name}
+            </h1>
           </div>
-          <div className="md:col-span-2">
-            <Label htmlFor="rail-description">Description</Label>
-            <Textarea
-              id="rail-description"
-              value={description}
-              onChange={(e) => {
-                setDescription(e.target.value)
-              }}
-              disabled={isPublished}
-              rows={2}
-            />
+          <div className="flex shrink-0 items-center gap-2">
+            <RailStatusPill published={isPublished} />
+            {isPublished ? (
+              <BlueprintButton variant="outline" size="sm" onClick={handleUnpublish}>
+                Unpublish
+              </BlueprintButton>
+            ) : (
+              <BlueprintButton variant="primary" size="sm" onClick={handlePublish} particle>
+                Publish
+              </BlueprintButton>
+            )}
           </div>
         </div>
-        <div>
-          <Button size="sm" onClick={handleSaveMeta} disabled={isPublished || savingMeta || !name}>
-            {savingMeta ? "Saving..." : "Save settings"}
-          </Button>
-        </div>
+      </RegCard>
+
+      {/* Settings */}
+      <section className="space-y-4">
+        <SectionDivider label="Fig · 01 / Settings" />
+        <RegCard state="queued" className="space-y-4">
+          <div className="grid gap-4 md:grid-cols-2">
+            <div>
+              <Label htmlFor="rail-name">Name</Label>
+              <Input
+                id="rail-name"
+                value={name}
+                onChange={(e) => {
+                  setName(e.target.value)
+                }}
+                disabled={isPublished}
+              />
+            </div>
+            <div className="md:col-span-2">
+              <Label htmlFor="rail-description">Description</Label>
+              <Textarea
+                id="rail-description"
+                value={description}
+                onChange={(e) => {
+                  setDescription(e.target.value)
+                }}
+                disabled={isPublished}
+                rows={2}
+              />
+            </div>
+          </div>
+          <div className="flex justify-end">
+            <BlueprintButton
+              variant="primary"
+              size="sm"
+              onClick={handleSaveMeta}
+              disabled={isPublished || savingMeta || !name}
+              particle
+            >
+              {savingMeta ? "Saving..." : "Save Settings"}
+            </BlueprintButton>
+          </div>
+        </RegCard>
       </section>
 
-      <section className="space-y-3 rounded-lg border border-[var(--color-border)] p-4">
-        <div className="flex items-center justify-between">
-          <h2 className="text-sm font-semibold tracking-wide text-[var(--color-muted-foreground)] uppercase">
-            Steps ({nodes.length})
-          </h2>
-          <Button
+      {/* Steps */}
+      <section className="space-y-4">
+        <SectionDivider label="Fig · 02 / Steps" count={nodes.length} />
+
+        <div className="flex justify-end">
+          <BlueprintButton
+            variant="primary"
             size="sm"
             onClick={() => {
               setShowAddTask(true)
             }}
             disabled={isPublished}
+            particle
           >
-            <Plus className="size-4" />
             Add Task
-          </Button>
+          </BlueprintButton>
         </div>
 
         <ol className="space-y-2">
           {nodes.map((node, idx) => {
             const post = posts.find((p) => p.id === node.postId)
+            const nodeIsTrigger = node.type === "trigger"
             return (
-              <li
-                key={node.id}
-                className="flex items-center gap-3 rounded-md border border-[var(--color-border)] p-3"
-              >
-                <div className="flex flex-col">
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={() => void moveNode(idx, -1)}
-                    disabled={isPublished || idx <= 1 || node.type === "trigger"}
-                    aria-label="Move up"
-                  >
-                    <ArrowUp className="size-3" />
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={() => void moveNode(idx, 1)}
-                    disabled={isPublished || idx === nodes.length - 1 || node.type === "trigger"}
-                    aria-label="Move down"
-                  >
-                    <ArrowDown className="size-3" />
-                  </Button>
-                </div>
-                <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-[var(--color-muted)]">
-                  <CircleDot className="size-4" />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-2">
-                    <Badge variant="outline" className="capitalize">
-                      {node.type}
-                    </Badge>
-                    <p className="truncate font-medium">{node.name}</p>
-                    {node.type === "task" && node.checklistItems.length > 0 && (
-                      <Badge variant="secondary">
-                        {String(node.checklistItems.length)}{" "}
-                        {node.checklistItems.length === 1 ? "item" : "items"}
-                      </Badge>
+              <li key={node.id}>
+                <RegCard state={nodeIsTrigger ? "active" : "queued"} className="px-4 py-3">
+                  <div className="flex items-start gap-3">
+                    {!nodeIsTrigger && (
+                      <div className="flex flex-col gap-0.5">
+                        <button
+                          type="button"
+                          onClick={() => void moveNode(idx, -1)}
+                          disabled={isPublished || idx <= 1}
+                          aria-label="Move up"
+                          className="grid place-items-center border border-transparent p-1 hover:border-[#E4E4E4] hover:bg-white disabled:opacity-30"
+                        >
+                          <ArrowUp className="size-3" strokeWidth={1.5} />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => void moveNode(idx, 1)}
+                          disabled={isPublished || idx === nodes.length - 1}
+                          aria-label="Move down"
+                          className="grid place-items-center border border-transparent p-1 hover:border-[#E4E4E4] hover:bg-white disabled:opacity-30"
+                        >
+                          <ArrowDown className="size-3" strokeWidth={1.5} />
+                        </button>
+                      </div>
                     )}
-                    {node.type === "task" && node.idealMinutes != null && (
-                      <Badge variant="outline">{formatMinutes(node.idealMinutes)}</Badge>
+                    <div
+                      className="grid place-items-center"
+                      style={{
+                        width: 32,
+                        height: 32,
+                        backgroundColor: nodeIsTrigger ? "#E8711A" : "#2A3D52",
+                        flexShrink: 0,
+                      }}
+                    >
+                      <CircleDot className="size-4 text-white" strokeWidth={2} />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <NodeTypePill type={node.type} />
+                        <p
+                          style={{
+                            fontFamily: "var(--font-sans)",
+                            fontSize: 14,
+                            fontWeight: 600,
+                            color: "#0F0F0F",
+                          }}
+                        >
+                          {node.name}
+                        </p>
+                        {node.type === "task" && node.checklistItems.length > 0 && (
+                          <SmallPill>
+                            {String(node.checklistItems.length)}{" "}
+                            {node.checklistItems.length === 1 ? "item" : "items"}
+                          </SmallPill>
+                        )}
+                        {node.type === "task" && node.idealMinutes != null && (
+                          <SmallPill>{formatMinutes(node.idealMinutes)}</SmallPill>
+                        )}
+                      </div>
+                      {node.type === "task" && (
+                        <p
+                          className="mt-1.5"
+                          style={{
+                            fontFamily: "var(--font-mono)",
+                            fontSize: 10,
+                            fontWeight: 500,
+                            color: "#5A7A92",
+                            letterSpacing: "0.12em",
+                            textTransform: "uppercase",
+                          }}
+                        >
+                          Terminal ·{" "}
+                          {post ? (
+                            <span style={{ color: "#0F0F0F" }}>
+                              {post.title}
+                              {post.containerLabel ? ` / ${post.containerLabel}` : ""}
+                              {post.vacant ? " (Vacant)" : ""}
+                            </span>
+                          ) : (
+                            <span style={{ color: "#E8711A" }}>No Post assigned</span>
+                          )}
+                        </p>
+                      )}
+                      {node.description && (
+                        <p
+                          className="mt-2"
+                          style={{
+                            fontFamily: "var(--font-sans)",
+                            fontSize: 13,
+                            color: "#666",
+                            lineHeight: 1.4,
+                          }}
+                        >
+                          {node.description}
+                        </p>
+                      )}
+                    </div>
+                    {!nodeIsTrigger && (
+                      <div className="flex shrink-0 gap-1">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setEditingNode(node)
+                          }}
+                          disabled={isPublished}
+                          className="grid place-items-center border border-transparent p-1.5 hover:border-[#E4E4E4] hover:bg-white disabled:opacity-30"
+                          aria-label="Edit"
+                        >
+                          <Pencil className="size-3.5" strokeWidth={1.5} />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => void handleDeleteNode(node)}
+                          disabled={isPublished}
+                          className="grid place-items-center border border-transparent p-1.5 hover:border-[#E4E4E4] hover:bg-white disabled:opacity-30"
+                          aria-label="Delete"
+                        >
+                          <Trash2 className="size-3.5" strokeWidth={1.5} />
+                        </button>
+                      </div>
                     )}
                   </div>
-                  {node.type === "task" && (
-                    <p className="text-xs text-[var(--color-muted-foreground)]">
-                      Terminal:{" "}
-                      {post ? (
-                        <span className="font-medium">
-                          {post.title}
-                          {post.containerLabel ? ` · ${post.containerLabel}` : ""}
-                          {post.vacant ? " (vacant)" : ""}
-                        </span>
-                      ) : (
-                        <span className="text-red-500">no post assigned</span>
-                      )}
-                    </p>
-                  )}
-                  {node.description && (
-                    <p className="mt-1 text-xs text-[var(--color-muted-foreground)]">
-                      {node.description}
-                    </p>
-                  )}
-                </div>
-                {node.type !== "trigger" && (
-                  <>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => {
-                        setEditingNode(node)
-                      }}
-                      disabled={isPublished}
-                    >
-                      <Pencil className="size-3" />
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => void handleDeleteNode(node)}
-                      disabled={isPublished}
-                    >
-                      <Trash2 className="size-3" />
-                    </Button>
-                  </>
-                )}
+                </RegCard>
               </li>
             )
           })}
         </ol>
 
         {nodes.filter((n) => n.type === "task").length === 0 && (
-          <p className="rounded-md border border-dashed border-[var(--color-border)] p-6 text-center text-sm text-[var(--color-muted-foreground)]">
-            Add at least one Task to publish this rail.
-          </p>
+          <RegCard state="new" className="px-10 py-10 text-center">
+            <p
+              style={{
+                fontFamily: "var(--font-mono)",
+                fontSize: 10,
+                fontWeight: 600,
+                letterSpacing: "0.18em",
+                color: "#888",
+                textTransform: "uppercase",
+              }}
+            >
+              Add at least one Task to publish this rail
+            </p>
+          </RegCard>
         )}
       </section>
 
@@ -530,7 +672,7 @@ function TaskNodeDialog({
           <div className="space-y-2 rounded-md border border-[var(--color-border)] p-3">
             <div className="flex items-center justify-between">
               <Label className="text-sm">Checklist</Label>
-              <Button
+              <BlueprintButton
                 type="button"
                 size="sm"
                 variant="outline"
@@ -540,7 +682,7 @@ function TaskNodeDialog({
               >
                 <Plus className="size-3" />
                 Add Item
-              </Button>
+              </BlueprintButton>
             </div>
             {checklist.length === 0 ? (
               <p className="rounded-md border border-dashed border-[var(--color-border)] p-3 text-center text-xs text-[var(--color-muted-foreground)]">
@@ -550,33 +692,31 @@ function TaskNodeDialog({
               <ul className="space-y-2">
                 {checklist.map((item, idx) => (
                   <li key={item.id} className="flex items-start gap-2">
-                    <div className="flex flex-col">
-                      <Button
+                    <div className="flex flex-col gap-0.5">
+                      <button
                         type="button"
-                        size="sm"
-                        variant="ghost"
                         onClick={() => {
                           moveItem(idx, -1)
                         }}
                         disabled={idx === 0}
                         aria-label="Move up"
+                        className="grid place-items-center border border-transparent p-1 hover:border-[#E4E4E4] hover:bg-white disabled:opacity-30"
                       >
-                        <ArrowUp className="size-3" />
-                      </Button>
-                      <Button
+                        <ArrowUp className="size-3" strokeWidth={1.5} />
+                      </button>
+                      <button
                         type="button"
-                        size="sm"
-                        variant="ghost"
                         onClick={() => {
                           moveItem(idx, 1)
                         }}
                         disabled={idx === checklist.length - 1}
                         aria-label="Move down"
+                        className="grid place-items-center border border-transparent p-1 hover:border-[#E4E4E4] hover:bg-white disabled:opacity-30"
                       >
-                        <ArrowDown className="size-3" />
-                      </Button>
+                        <ArrowDown className="size-3" strokeWidth={1.5} />
+                      </button>
                     </div>
-                    <GripVertical className="mt-2 size-4 shrink-0 text-[var(--color-muted-foreground)]" />
+                    <GripVertical className="mt-2 size-4 shrink-0 text-[#AAA]" />
                     <div className="flex-1 space-y-1">
                       <Input
                         value={item.label}
@@ -595,17 +735,16 @@ function TaskNodeDialog({
                         Required to complete the cycle
                       </label>
                     </div>
-                    <Button
+                    <button
                       type="button"
-                      size="sm"
-                      variant="ghost"
                       onClick={() => {
                         deleteItem(idx)
                       }}
                       aria-label="Remove item"
+                      className="grid place-items-center border border-transparent p-1.5 hover:border-[#E4E4E4] hover:bg-white"
                     >
-                      <Trash2 className="size-3" />
-                    </Button>
+                      <Trash2 className="size-3.5" strokeWidth={1.5} />
+                    </button>
                   </li>
                 ))}
               </ul>
@@ -613,18 +752,24 @@ function TaskNodeDialog({
           </div>
 
           <DialogFooter>
-            <Button
+            <BlueprintButton
               type="button"
-              variant="outline"
+              variant="ghost"
+              size="sm"
               onClick={() => {
                 onOpenChange(false)
               }}
             >
               Cancel
-            </Button>
-            <Button type="submit" disabled={submitting || !name || !postId}>
+            </BlueprintButton>
+            <BlueprintButton
+              type="submit"
+              variant="primary"
+              size="sm"
+              disabled={submitting || !name || !postId}
+            >
               {submitting ? "Saving..." : mode === "add" ? "Add" : "Save"}
-            </Button>
+            </BlueprintButton>
           </DialogFooter>
         </form>
       </DialogContent>

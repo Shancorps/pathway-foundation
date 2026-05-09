@@ -2,11 +2,12 @@
 
 import { useMemo, useState } from "react"
 import { useRouter } from "next/navigation"
-import { Plus, Star, Trash2, UserPlus2, X } from "lucide-react"
-import { Button } from "@/components/ui/button"
+import { Star, Trash2, UserPlus2, X } from "lucide-react"
+import { BlueprintButton } from "@/components/ui/blueprint-button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Badge } from "@/components/ui/badge"
+import { RegCard } from "@/components/ui/reg-card"
+import { SectionDivider } from "@/components/ui/section-divider"
 import {
   Dialog,
   DialogContent,
@@ -105,47 +106,90 @@ export function StructureTree({
   const [showAddDivision, setShowAddDivision] = useState(false)
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       <div className="flex justify-end">
-        <Button
+        <BlueprintButton
+          variant="primary"
           onClick={() => {
             setShowAddDivision(true)
           }}
+          particle
         >
-          <Plus className="size-4" />
           Add Division
-        </Button>
+        </BlueprintButton>
       </div>
 
       {topContainers.length === 0 && floatingPosts.length === 0 ? (
-        <div className="rounded-lg border border-dashed border-[var(--color-border)] p-10 text-center">
-          <p className="text-sm text-[var(--color-muted-foreground)]">
-            No org structure yet. Start by adding a division.
-          </p>
+        <div className="space-y-4">
+          <SectionDivider label="Fig · 01 / Org Structure" count={0} />
+          <RegCard state="new" className="px-10 py-12 text-center">
+            <p
+              style={{
+                fontFamily: "var(--font-mono)",
+                fontSize: 11,
+                fontWeight: 600,
+                letterSpacing: "0.18em",
+                color: "#888",
+                textTransform: "uppercase",
+              }}
+            >
+              No structure defined
+            </p>
+            <p
+              className="mx-auto mt-3 max-w-[42ch]"
+              style={{
+                fontFamily: "var(--font-sans)",
+                fontSize: 14,
+                color: "#444",
+                lineHeight: 1.55,
+              }}
+            >
+              Build the org chart from the top down. Posts on this chart become Terminals — work
+              routes through them at runtime.
+            </p>
+          </RegCard>
         </div>
       ) : (
-        <div className="space-y-3">
-          {topContainers.map((container) => (
-            <ContainerNode
-              key={container.id}
-              container={container}
-              containersByParent={containersByParent}
-              postsByContainer={postsByContainer}
-              members={members}
-            />
-          ))}
-          {floatingPosts.length > 0 && (
-            <div className="rounded-lg border border-[var(--color-border)] p-4">
-              <p className="text-xs tracking-wide text-[var(--color-muted-foreground)] uppercase">
-                Floating posts (no container)
-              </p>
-              <div className="mt-3 space-y-2">
-                {floatingPosts.map((post) => (
-                  <PostNode key={post.id} post={post} members={members} />
-                ))}
-              </div>
-            </div>
-          )}
+        <div className="space-y-4">
+          <SectionDivider
+            label="Fig · 01 / Org Structure"
+            count={containers.length + posts.length}
+          />
+
+          <div className="space-y-3">
+            {topContainers.map((container) => (
+              <ContainerNode
+                key={container.id}
+                container={container}
+                containersByParent={containersByParent}
+                postsByContainer={postsByContainer}
+                members={members}
+                depth={0}
+              />
+            ))}
+            {floatingPosts.length > 0 && (
+              <RegCard state="new">
+                <p
+                  className="mb-3"
+                  style={{
+                    fontFamily: "var(--font-mono)",
+                    fontSize: 9,
+                    fontWeight: 600,
+                    letterSpacing: "0.2em",
+                    color: "#888",
+                    textTransform: "uppercase",
+                  }}
+                >
+                  Floating posts (no container)
+                </p>
+                <div className="space-y-2">
+                  {floatingPosts.map((post) => (
+                    <PostNode key={post.id} post={post} members={members} />
+                  ))}
+                </div>
+              </RegCard>
+            )}
+          </div>
         </div>
       )}
 
@@ -164,11 +208,13 @@ function ContainerNode({
   containersByParent,
   postsByContainer,
   members,
+  depth,
 }: {
   container: OrgContainer
   containersByParent: Map<string | null, OrgContainer[]>
   postsByContainer: Map<string | null, SerializablePost[]>
   members: Member[]
+  depth: number
 }) {
   const router = useRouter()
   const children = containersByParent.get(container.id) ?? []
@@ -188,58 +234,98 @@ function ContainerNode({
   }
 
   return (
-    <div
-      className="rounded-lg border border-[var(--color-border)] p-4"
-      style={container.color ? { borderColor: container.color, borderWidth: 2 } : undefined}
-    >
-      <div className="flex items-start justify-between">
-        <div>
-          <div className="flex items-center gap-2">
-            <Badge variant="secondary" className="tracking-wide uppercase">
+    <RegCard state={depth === 0 ? "active" : "queued"}>
+      <div className="flex items-start justify-between gap-4">
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-2.5">
+            <span
+              className="px-2 py-0.5"
+              style={{
+                fontFamily: "var(--font-mono)",
+                fontSize: 9,
+                fontWeight: 600,
+                letterSpacing: "0.2em",
+                color: depth === 0 ? "#E8711A" : "#5A7A92",
+                border: `1px solid ${depth === 0 ? "#E8711A" : "#5A7A92"}`,
+                textTransform: "uppercase",
+              }}
+            >
               {container.level}
-            </Badge>
-            <p className="text-base font-semibold">{container.name}</p>
+            </span>
+            <h3
+              style={{
+                fontFamily: "var(--font-sans)",
+                fontSize: 16,
+                fontWeight: 600,
+                color: "#0F0F0F",
+                lineHeight: 1.25,
+              }}
+            >
+              {container.name}
+            </h3>
           </div>
           {container.description && (
-            <p className="mt-1 text-sm text-[var(--color-muted-foreground)]">
+            <p
+              className="mt-2 max-w-[60ch]"
+              style={{
+                fontFamily: "var(--font-sans)",
+                fontSize: 14,
+                color: "#666",
+                lineHeight: 1.4,
+              }}
+            >
               {container.description}
             </p>
           )}
           {container.vfp && (
-            <p className="mt-1 text-xs text-[var(--color-muted-foreground)]">
-              <span className="font-medium">VFP:</span> {container.vfp}
+            <p
+              className="mt-2"
+              style={{
+                fontFamily: "var(--font-mono)",
+                fontSize: 10,
+                color: "#5A7A92",
+                letterSpacing: "0.12em",
+                textTransform: "uppercase",
+              }}
+            >
+              VFP · {container.vfp}
             </p>
           )}
         </div>
-        <div className="flex gap-1">
+        <div className="flex shrink-0 gap-1.5">
           {nextChildLevel && (
-            <Button
-              size="sm"
+            <BlueprintButton
               variant="outline"
+              size="sm"
               onClick={() => {
                 setShowAddChild(true)
               }}
             >
-              <Plus className="size-3" /> {nextChildLevel}
-            </Button>
+              + {nextChildLevel}
+            </BlueprintButton>
           )}
-          <Button
-            size="sm"
+          <BlueprintButton
             variant="outline"
+            size="sm"
             onClick={() => {
               setShowAddPost(true)
             }}
           >
-            <Plus className="size-3" /> Post
-          </Button>
-          <Button size="sm" variant="ghost" onClick={handleDelete}>
-            <Trash2 className="size-3" />
-          </Button>
+            + Post
+          </BlueprintButton>
+          <button
+            type="button"
+            onClick={handleDelete}
+            className="grid place-items-center border border-transparent p-1.5 hover:border-[#E4E4E4] hover:bg-white"
+            aria-label="Delete container"
+          >
+            <Trash2 className="size-3.5" strokeWidth={1.5} />
+          </button>
         </div>
       </div>
 
       {(children.length > 0 || localPosts.length > 0) && (
-        <div className="mt-3 space-y-2 border-l-2 border-[var(--color-border)] pl-4">
+        <div className="mt-4 space-y-3 border-l border-[#E4E4E4] pl-5">
           {localPosts.map((post) => (
             <PostNode key={post.id} post={post} members={members} />
           ))}
@@ -250,6 +336,7 @@ function ContainerNode({
               containersByParent={containersByParent}
               postsByContainer={postsByContainer}
               members={members}
+              depth={depth + 1}
             />
           ))}
         </div>
@@ -268,7 +355,7 @@ function ContainerNode({
         onOpenChange={setShowAddPost}
         parentContainerId={container.id}
       />
-    </div>
+    </RegCard>
   )
 }
 
@@ -291,57 +378,108 @@ function PostNode({ post, members }: { post: SerializablePost; members: Member[]
 
   const assignedIds = new Set(post.assignedUsers.map((u) => u.id))
   const availableMembers = members.filter((m) => !assignedIds.has(m.userId))
+  const isVacant = post.assignedUsers.length === 0
 
   return (
-    <div className="rounded-md bg-[var(--color-muted)]/30 p-3">
-      <div className="flex items-start justify-between">
-        <div className="flex items-start gap-2">
-          {post.isAreaManager && <Star className="mt-0.5 size-3 fill-amber-400 text-amber-400" />}
-          <div>
-            <p className="text-sm font-medium">{post.title}</p>
-            {post.assignedUsers.length === 0 ? (
-              <p className="text-xs text-[var(--color-muted-foreground)]">Vacant</p>
+    <div className="bg-white p-3" style={{ border: "1px solid #E4E4E4" }}>
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-2">
+            {post.isAreaManager && (
+              <Star className="size-3 fill-[#E8711A] text-[#E8711A]" strokeWidth={1.5} />
+            )}
+            <span
+              className="px-1.5 py-0.5"
+              style={{
+                fontFamily: "var(--font-mono)",
+                fontSize: 8,
+                fontWeight: 600,
+                letterSpacing: "0.2em",
+                color: "#5A7A92",
+                border: "1px solid #5A7A92",
+                textTransform: "uppercase",
+              }}
+            >
+              Post
+            </span>
+            <p
+              style={{
+                fontFamily: "var(--font-sans)",
+                fontSize: 14,
+                fontWeight: 600,
+                color: "#0F0F0F",
+              }}
+            >
+              {post.title}
+            </p>
+          </div>
+          <div className="mt-2 flex flex-wrap items-center gap-1.5">
+            {isVacant ? (
+              <span
+                style={{
+                  fontFamily: "var(--font-mono)",
+                  fontSize: 9,
+                  fontWeight: 500,
+                  letterSpacing: "0.18em",
+                  color: "#AAA",
+                  textTransform: "uppercase",
+                }}
+              >
+                Vacant
+              </span>
             ) : (
-              <div className="mt-1 flex flex-wrap gap-1">
-                {post.assignedUsers.map((u) => (
-                  <span
-                    key={u.id}
-                    className="inline-flex items-center gap-1 rounded-full bg-[var(--color-background)] px-2 py-0.5 text-xs"
+              post.assignedUsers.map((u) => (
+                <span
+                  key={u.id}
+                  className="inline-flex items-center gap-1 px-2 py-0.5"
+                  style={{
+                    fontFamily: "var(--font-mono)",
+                    fontSize: 9,
+                    fontWeight: 500,
+                    letterSpacing: "0.1em",
+                    color: "#0F0F0F",
+                    backgroundColor: "#FAFAFA",
+                    border: "1px solid #E4E4E4",
+                  }}
+                >
+                  {u.name || u.email}
+                  <button
+                    type="button"
+                    onClick={() => void handleUnassign(u.id)}
+                    className="text-[#888] hover:text-[#E8711A]"
+                    aria-label={`Remove ${u.name || u.email}`}
                   >
-                    {u.name || u.email}
-                    <button
-                      type="button"
-                      onClick={() => void handleUnassign(u.id)}
-                      className="text-[var(--color-muted-foreground)] hover:text-red-500"
-                      aria-label={`Remove ${u.name || u.email}`}
-                    >
-                      <X className="size-3" />
-                    </button>
-                  </span>
-                ))}
-              </div>
+                    <X className="size-3" strokeWidth={2} />
+                  </button>
+                </span>
+              ))
             )}
           </div>
         </div>
-        <div className="flex gap-1">
-          <Button
-            size="sm"
-            variant="ghost"
+        <div className="flex shrink-0 gap-1">
+          <button
+            type="button"
             onClick={() => {
               setShowAssign(true)
             }}
             disabled={availableMembers.length === 0}
+            className="grid place-items-center border border-transparent p-1.5 hover:border-[#E4E4E4] disabled:opacity-30"
             title={
               availableMembers.length === 0
                 ? "Every team member is already assigned"
                 : "Assign a team member"
             }
           >
-            <UserPlus2 className="size-3" />
-          </Button>
-          <Button size="sm" variant="ghost" onClick={handleDelete}>
-            <Trash2 className="size-3" />
-          </Button>
+            <UserPlus2 className="size-3.5" strokeWidth={1.5} />
+          </button>
+          <button
+            type="button"
+            onClick={handleDelete}
+            className="grid place-items-center border border-transparent p-1.5 hover:border-[#E4E4E4]"
+            aria-label="Delete post"
+          >
+            <Trash2 className="size-3.5" strokeWidth={1.5} />
+          </button>
         </div>
       </div>
       <AssignPostDialog
@@ -434,18 +572,24 @@ function AddContainerDialog({
             />
           </div>
           <DialogFooter>
-            <Button
+            <BlueprintButton
               type="button"
-              variant="outline"
+              variant="ghost"
+              size="sm"
               onClick={() => {
                 onOpenChange(false)
               }}
             >
               Cancel
-            </Button>
-            <Button type="submit" disabled={submitting || !name}>
+            </BlueprintButton>
+            <BlueprintButton
+              type="submit"
+              variant="primary"
+              size="sm"
+              disabled={submitting || !name}
+            >
               {submitting ? "Creating..." : "Create"}
-            </Button>
+            </BlueprintButton>
           </DialogFooter>
         </form>
       </DialogContent>
@@ -519,18 +663,24 @@ function AddPostDialog({
             />
           </div>
           <DialogFooter>
-            <Button
+            <BlueprintButton
               type="button"
-              variant="outline"
+              variant="ghost"
+              size="sm"
               onClick={() => {
                 onOpenChange(false)
               }}
             >
               Cancel
-            </Button>
-            <Button type="submit" disabled={submitting || !title}>
+            </BlueprintButton>
+            <BlueprintButton
+              type="submit"
+              variant="primary"
+              size="sm"
+              disabled={submitting || !title}
+            >
               {submitting ? "Creating..." : "Create"}
-            </Button>
+            </BlueprintButton>
           </DialogFooter>
         </form>
       </DialogContent>
@@ -571,7 +721,7 @@ function AssignPostDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Assign employee</DialogTitle>
+          <DialogTitle>Assign Employee</DialogTitle>
           <DialogDescription>
             Pick a team member to hold this post. They&rsquo;ll receive cycles routed to it.
           </DialogDescription>
@@ -591,18 +741,25 @@ function AssignPostDialog({
           </Select>
         </div>
         <DialogFooter>
-          <Button
+          <BlueprintButton
             type="button"
-            variant="outline"
+            variant="ghost"
+            size="sm"
             onClick={() => {
               onOpenChange(false)
             }}
           >
             Cancel
-          </Button>
-          <Button onClick={handleSubmit} disabled={submitting || !userId}>
+          </BlueprintButton>
+          <BlueprintButton
+            type="button"
+            variant="primary"
+            size="sm"
+            onClick={handleSubmit}
+            disabled={submitting || !userId}
+          >
             {submitting ? "Assigning..." : "Assign"}
-          </Button>
+          </BlueprintButton>
         </DialogFooter>
       </DialogContent>
     </Dialog>

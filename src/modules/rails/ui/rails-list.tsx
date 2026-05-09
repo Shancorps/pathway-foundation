@@ -3,12 +3,14 @@
 import { useState } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { Play, Plus, Trash2 } from "lucide-react"
-import { Button } from "@/components/ui/button"
+import { Play, Trash2 } from "lucide-react"
+import { BlueprintButton, BlueprintLink } from "@/components/ui/blueprint-button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { Badge } from "@/components/ui/badge"
+import { ParticleCube } from "@/components/ui/particle-cube"
+import { RegCard, type RegCardState } from "@/components/ui/reg-card"
+import { SectionDivider } from "@/components/ui/section-divider"
 import {
   Dialog,
   DialogContent,
@@ -57,48 +59,95 @@ export function RailsList({
   particles: ParticleOption[]
 }) {
   const [showCreate, setShowCreate] = useState(false)
+
   return (
-    <div className="space-y-4">
+    <div className="space-y-8">
       <div className="flex justify-end">
-        <Button
+        <BlueprintButton
+          variant="primary"
           onClick={() => {
             setShowCreate(true)
           }}
           disabled={particleTypes.length === 0}
+          particle
         >
-          <Plus className="size-4" />
           New Rail
-        </Button>
+        </BlueprintButton>
       </div>
 
       {particleTypes.length === 0 && (
-        <div className="rounded-lg border border-dashed border-[var(--color-border)] p-6 text-center">
-          <p className="text-sm text-[var(--color-muted-foreground)]">
-            Rails route Particles &mdash; create at least one Particle Type first.
+        <RegCard state="new" className="px-10 py-10 text-center">
+          <p
+            style={{
+              fontFamily: "var(--font-mono)",
+              fontSize: 11,
+              fontWeight: 600,
+              letterSpacing: "0.18em",
+              color: "#888",
+              textTransform: "uppercase",
+            }}
+          >
+            No particle types yet
           </p>
-          <Link href="/particles" className="mt-3 inline-block">
-            <Button variant="outline" size="sm">
-              Go to Particle Types
-            </Button>
-          </Link>
-        </div>
+          <p
+            className="mx-auto mt-3 max-w-[42ch]"
+            style={{
+              fontFamily: "var(--font-sans)",
+              fontSize: 14,
+              color: "#444",
+              lineHeight: 1.55,
+            }}
+          >
+            Rails route Particles. Define at least one Particle Type before creating a rail.
+          </p>
+          <BlueprintLink href="/particles" variant="outline" className="mt-6">
+            Go to Particle Types →
+          </BlueprintLink>
+        </RegCard>
       )}
 
-      {rails.length === 0 ? (
-        particleTypes.length > 0 && (
-          <div className="rounded-lg border border-dashed border-[var(--color-border)] p-10 text-center">
-            <p className="text-sm text-[var(--color-muted-foreground)]">
-              No rails yet. Create one to define a workflow.
+      {rails.length === 0 && particleTypes.length > 0 ? (
+        <div className="space-y-4">
+          <SectionDivider label="Fig · 01 / Defined Rails" count={0} />
+          <RegCard state="new" className="px-10 py-12 text-center">
+            <p
+              style={{
+                fontFamily: "var(--font-mono)",
+                fontSize: 11,
+                fontWeight: 600,
+                letterSpacing: "0.18em",
+                color: "#888",
+                textTransform: "uppercase",
+              }}
+            >
+              No rails defined
             </p>
-          </div>
-        )
-      ) : (
-        <div className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-3">
-          {rails.map((r) => (
-            <RailTile key={r.id} rail={r} particles={particles} />
-          ))}
+            <p
+              className="mx-auto mt-3 max-w-[42ch]"
+              style={{
+                fontFamily: "var(--font-sans)",
+                fontSize: 14,
+                color: "#444",
+                lineHeight: 1.55,
+              }}
+            >
+              Define a Rail to specify how a Particle moves through Terminals — what steps run, in
+              what order, at which Posts.
+            </p>
+          </RegCard>
         </div>
-      )}
+      ) : rails.length > 0 ? (
+        <div className="space-y-4">
+          <SectionDivider label="Fig · 01 / Defined Rails" count={rails.length} />
+          <ul className="space-y-3">
+            {rails.map((r) => (
+              <li key={r.id}>
+                <RailRowItem rail={r} particles={particles} />
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
 
       <CreateRailDialog
         open={showCreate}
@@ -109,9 +158,10 @@ export function RailsList({
   )
 }
 
-function RailTile({ rail, particles }: { rail: RailRow; particles: ParticleOption[] }) {
+function RailRowItem({ rail, particles }: { rail: RailRow; particles: ParticleOption[] }) {
   const router = useRouter()
   const [showRun, setShowRun] = useState(false)
+
   async function handleDelete(e: React.MouseEvent) {
     e.preventDefault()
     e.stopPropagation()
@@ -122,61 +172,92 @@ function RailTile({ rail, particles }: { rail: RailRow; particles: ParticleOptio
   }
 
   const matchingParticles = particles.filter((p) => p.particleTypeId === rail.particleTypeId)
+  const isPublished = rail.status === "published"
+  const cardState: RegCardState = isPublished ? "active" : "queued"
 
   return (
     <>
-      <div className="group block rounded-lg border border-[var(--color-border)] p-4 transition-colors hover:border-[var(--color-accent)]">
-        <div className="flex items-start justify-between">
-          <Link href={`/rails/${rail.id}`} className="min-w-0 flex-1">
-            <p className="truncate text-base font-semibold">{rail.name}</p>
-            {rail.particleTypeName && (
-              <p className="mt-1 text-xs text-[var(--color-muted-foreground)]">
-                Operates on <span className="font-medium">{rail.particleTypeName}</span>
-              </p>
-            )}
-            {rail.description && (
-              <p className="mt-2 line-clamp-2 text-sm text-[var(--color-muted-foreground)]">
-                {rail.description}
-              </p>
-            )}
-            <div className="mt-3">
-              <Badge
-                variant={rail.status === "published" ? "default" : "secondary"}
-                className="capitalize"
-              >
-                {rail.status}
-              </Badge>
-            </div>
-          </Link>
-          <div className="flex flex-col gap-1">
-            {rail.status === "published" && (
-              <Button
-                size="sm"
-                onClick={(e) => {
-                  e.preventDefault()
-                  e.stopPropagation()
-                  setShowRun(true)
+      <div className="block">
+        <RegCard state={cardState} className="transition-[background-color]">
+          <div className="flex items-start gap-5">
+            <ParticleCube state={cardState} size={36} className="mt-0.5" />
+
+            <Link href={`/rails/${rail.id}`} className="min-w-0 flex-1">
+              <h3
+                style={{
+                  fontFamily: "var(--font-sans)",
+                  fontSize: 16,
+                  fontWeight: 600,
+                  color: "#0F0F0F",
+                  lineHeight: 1.25,
                 }}
-                title={
-                  matchingParticles.length === 0
-                    ? `Create a ${rail.particleTypeName ?? "Particle"} first`
-                    : "Run this rail on a Particle"
-                }
               >
-                <Play className="size-3" />
-                Run
-              </Button>
-            )}
-            <Button
-              size="sm"
-              variant="ghost"
-              onClick={handleDelete}
-              className="opacity-0 transition-opacity group-hover:opacity-100"
-            >
-              <Trash2 className="size-3" />
-            </Button>
+                {rail.name}
+              </h3>
+              {rail.particleTypeName && (
+                <p
+                  className="mt-1.5"
+                  style={{
+                    fontFamily: "var(--font-mono)",
+                    fontSize: 10,
+                    fontWeight: 500,
+                    color: "#5A7A92",
+                    letterSpacing: "0.14em",
+                    textTransform: "uppercase",
+                  }}
+                >
+                  Operates on · {rail.particleTypeName}
+                </p>
+              )}
+              {rail.description && (
+                <p
+                  className="mt-2 line-clamp-2 max-w-[60ch]"
+                  style={{
+                    fontFamily: "var(--font-sans)",
+                    fontSize: 14,
+                    color: "#666",
+                    lineHeight: 1.4,
+                  }}
+                >
+                  {rail.description}
+                </p>
+              )}
+              <div className="mt-3">
+                <StatusPill published={isPublished} />
+              </div>
+            </Link>
+
+            <div className="flex shrink-0 flex-col items-end gap-2">
+              {isPublished && (
+                <BlueprintButton
+                  variant="primary"
+                  size="sm"
+                  onClick={(e) => {
+                    e.preventDefault()
+                    e.stopPropagation()
+                    setShowRun(true)
+                  }}
+                  title={
+                    matchingParticles.length === 0
+                      ? `Create a ${rail.particleTypeName ?? "Particle"} first`
+                      : "Run this rail on a Particle"
+                  }
+                >
+                  <Play className="size-3" />
+                  Run
+                </BlueprintButton>
+              )}
+              <button
+                type="button"
+                onClick={handleDelete}
+                className="grid place-items-center border border-transparent p-1.5 hover:border-[#E4E4E4] hover:bg-white"
+                aria-label="Delete rail"
+              >
+                <Trash2 className="size-3.5" strokeWidth={1.5} />
+              </button>
+            </div>
           </div>
-        </div>
+        </RegCard>
       </div>
       <RunRailDialog
         open={showRun}
@@ -185,6 +266,27 @@ function RailTile({ rail, particles }: { rail: RailRow; particles: ParticleOptio
         particles={matchingParticles}
       />
     </>
+  )
+}
+
+function StatusPill({ published }: { published: boolean }) {
+  const color = published ? "#E8711A" : "#888"
+  return (
+    <span
+      className="px-2 py-0.5"
+      style={{
+        fontFamily: "var(--font-mono)",
+        fontSize: 9,
+        fontWeight: 600,
+        letterSpacing: "0.2em",
+        textTransform: "uppercase",
+        color: published ? "#fff" : color,
+        backgroundColor: published ? "#E8711A" : "transparent",
+        border: `1px solid ${color}`,
+      }}
+    >
+      {published ? "Published" : "Draft"}
+    </span>
   )
 }
 
@@ -241,7 +343,10 @@ function RunRailDialog({
           </DialogDescription>
         </DialogHeader>
         {particles.length === 0 ? (
-          <div className="rounded-md border border-dashed border-[var(--color-border)] p-4 text-center text-sm text-[var(--color-muted-foreground)]">
+          <div
+            className="border border-dashed border-[#D4D4D4] p-4 text-center"
+            style={{ fontFamily: "var(--font-sans)", fontSize: 13, color: "#666" }}
+          >
             No {rail.particleTypeName ?? "Particle"}s yet.
             <Link href="/particles" className="ml-1 underline">
               Create one
@@ -266,18 +371,24 @@ function RunRailDialog({
               </Select>
             </div>
             <DialogFooter>
-              <Button
+              <BlueprintButton
                 type="button"
-                variant="outline"
+                variant="ghost"
+                size="sm"
                 onClick={() => {
                   onOpenChange(false)
                 }}
               >
                 Cancel
-              </Button>
-              <Button type="submit" disabled={submitting || !particleId}>
+              </BlueprintButton>
+              <BlueprintButton
+                type="submit"
+                variant="primary"
+                size="sm"
+                disabled={submitting || !particleId}
+              >
                 {submitting ? "Starting..." : "Start Rail"}
-              </Button>
+              </BlueprintButton>
             </DialogFooter>
           </form>
         )}
@@ -373,18 +484,24 @@ function CreateRailDialog({
             />
           </div>
           <DialogFooter>
-            <Button
+            <BlueprintButton
               type="button"
-              variant="outline"
+              variant="ghost"
+              size="sm"
               onClick={() => {
                 onOpenChange(false)
               }}
             >
               Cancel
-            </Button>
-            <Button type="submit" disabled={submitting || !name || !particleTypeId}>
+            </BlueprintButton>
+            <BlueprintButton
+              type="submit"
+              variant="primary"
+              size="sm"
+              disabled={submitting || !name || !particleTypeId}
+            >
               {submitting ? "Creating..." : "Create"}
-            </Button>
+            </BlueprintButton>
           </DialogFooter>
         </form>
       </DialogContent>

@@ -1,6 +1,8 @@
-import Link from "next/link"
 import { redirect } from "next/navigation"
-import { Button } from "@/components/ui/button"
+import { BlueprintLink } from "@/components/ui/blueprint-button"
+import { IdleRailIllustration } from "@/components/ui/idle-rail-illustration"
+import { PageShell } from "@/components/ui/page-shell"
+import { TitleBlock } from "@/components/ui/title-block"
 import { getSession } from "@/modules/auth/session"
 import { listPostsHeldByUser } from "@/modules/org-structure/queries"
 import { listMyActionCycles } from "@/modules/rail-runs/queries"
@@ -17,40 +19,63 @@ export default async function MyActionsPage() {
     listPostsHeldByUser(orgId, session.user.id),
   ])
 
-  return (
-    <div className="space-y-6">
-      <div className="flex items-end justify-between">
-        <div>
-          <p className="text-xs tracking-wide text-[var(--color-muted-foreground)] uppercase">
-            Workspace
-          </p>
-          <h1 className="mt-1 text-2xl font-semibold">My Actions</h1>
-          <p className="text-sm text-[var(--color-muted-foreground)]">
-            What&rsquo;s in front of you right now. The only way out is through.
-          </p>
-        </div>
-        <Link href="/rails">
-          <Button variant="outline">Start a Rail</Button>
-        </Link>
-      </div>
+  const revStamp = new Date()
+    .toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })
+    .toUpperCase()
 
-      <MyActionsList
-        cycles={cycles.map((c) => ({
-          id: c.id,
-          postId: c.postId,
-          title: c.title,
-          particleName: c.particleName,
-          railName: c.railName,
-          postTitle: c.postTitle,
-          position: c.position,
-          issuedAt: c.issuedAt.toISOString(),
-          idealMinutes: c.idealMinutes,
-          timeSpentMinutes: c.timeSpentMinutes,
-          timerStartedAt: c.timerStartedAt ? c.timerStartedAt.toISOString() : null,
-          checklistItems: c.checklistItems,
-        }))}
-        postsHeld={postsHeld.map((p) => ({ id: p.id, title: p.title }))}
+  return (
+    <PageShell>
+      <TitleBlock
+        coordinate="01 / Workspace"
+        title="My Actions"
+        subtitle="What's in front of you right now. The only way out is through."
+        meta={
+          <div
+            className="space-y-1 text-right"
+            style={{
+              fontFamily: "var(--font-mono)",
+              fontSize: 11,
+              fontWeight: 500,
+              letterSpacing: "0.16em",
+              color: "#666",
+              textTransform: "uppercase",
+            }}
+          >
+            <div>
+              <span style={{ color: "#AAA" }}>Posts Held</span>{" "}
+              <span style={{ color: "#0F0F0F" }}>·</span>{" "}
+              <span style={{ color: "#0F0F0F", fontWeight: 600 }}>{String(postsHeld.length)}</span>
+            </div>
+            <div style={{ color: "#AAA" }}>Rev · {revStamp}</div>
+          </div>
+        }
+        action={
+          <BlueprintLink href="/rails" variant="outline" particle>
+            Start a Rail
+          </BlueprintLink>
+        }
       />
-    </div>
+
+      <div className="mt-10">
+        <MyActionsList
+          cycles={cycles.map((c) => ({
+            id: c.id,
+            postId: c.postId,
+            title: c.title,
+            particleName: c.particleName,
+            railName: c.railName,
+            postTitle: c.postTitle,
+            position: c.position,
+            issuedAt: c.issuedAt.toISOString(),
+            idealMinutes: c.idealMinutes,
+            timeSpentMinutes: c.timeSpentMinutes,
+            timerStartedAt: c.timerStartedAt ? c.timerStartedAt.toISOString() : null,
+            checklistItems: c.checklistItems,
+          }))}
+          postsHeld={postsHeld.map((p) => ({ id: p.id, title: p.title }))}
+          IdleEmptyState={<IdleRailIllustration width={480} />}
+        />
+      </div>
+    </PageShell>
   )
 }

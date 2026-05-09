@@ -1,8 +1,12 @@
 import Link from "next/link"
 import { redirect } from "next/navigation"
+import { BlueprintLink } from "@/components/ui/blueprint-button"
+import { PageShell } from "@/components/ui/page-shell"
+import { RegCard } from "@/components/ui/reg-card"
+import { SectionDivider } from "@/components/ui/section-divider"
+import { TitleBlock } from "@/components/ui/title-block"
 import { getSession } from "@/modules/auth/session"
 import { listItemsForOrg } from "@/modules/items/queries"
-import { Button } from "@/components/ui/button"
 
 export default async function ItemsPage() {
   const session = await getSession()
@@ -13,45 +17,97 @@ export default async function ItemsPage() {
   const items = await listItemsForOrg(orgId)
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-end justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold">Items</h1>
-          <p className="text-sm text-[var(--color-muted-foreground)]">
-            Worked-example feature. Copy this module to add new features.
-          </p>
-        </div>
-        <Link href="/items/new">
-          <Button>New item</Button>
-        </Link>
-      </div>
+    <PageShell>
+      <TitleBlock
+        coordinate="04 / Admin · Items (template)"
+        title="Items"
+        subtitle="Worked-example feature. Copy this module's pattern to add new features."
+        action={
+          <BlueprintLink href="/items/new" variant="primary" particle>
+            New Item
+          </BlueprintLink>
+        }
+      />
 
-      {items.length === 0 ? (
-        <div className="rounded-lg border border-dashed border-[var(--color-border)] p-10 text-center">
-          <p className="text-sm text-[var(--color-muted-foreground)]">
-            No items yet. Create your first item.
-          </p>
-        </div>
-      ) : (
-        <ul className="divide-y divide-[var(--color-border)] rounded-lg border border-[var(--color-border)]">
-          {items.map((item) => (
-            <li key={item.id} className="p-4">
-              <Link
-                href={`/items/${item.id}`}
-                className="flex items-center justify-between hover:underline"
-              >
-                <div>
-                  <p className="font-medium">{item.name}</p>
-                  <p className="text-xs text-[var(--color-muted-foreground)]">{item.status}</p>
-                </div>
-                <span className="text-xs text-[var(--color-muted-foreground)]">
-                  {item.createdAt.toLocaleDateString()}
-                </span>
-              </Link>
-            </li>
-          ))}
-        </ul>
-      )}
-    </div>
+      <div className="mt-10 space-y-4">
+        <SectionDivider label="Fig · 01 / Items" count={items.length} />
+        {items.length === 0 ? (
+          <RegCard state="new" className="px-10 py-12 text-center">
+            <p
+              style={{
+                fontFamily: "var(--font-mono)",
+                fontSize: 11,
+                fontWeight: 600,
+                letterSpacing: "0.18em",
+                color: "#888",
+                textTransform: "uppercase",
+              }}
+            >
+              No items yet
+            </p>
+            <p
+              className="mx-auto mt-3 max-w-[42ch]"
+              style={{
+                fontFamily: "var(--font-sans)",
+                fontSize: 14,
+                color: "#444",
+                lineHeight: 1.55,
+              }}
+            >
+              The items module is a worked example for new features. Create one to see the pattern.
+            </p>
+          </RegCard>
+        ) : (
+          <ul className="space-y-2">
+            {items.map((item) => (
+              <li key={item.id}>
+                <Link href={`/items/${item.id}`} className="block">
+                  <RegCard state="queued" className="px-4 py-3 transition-[background-color]">
+                    <div className="flex items-center justify-between gap-4">
+                      <div className="min-w-0 flex-1">
+                        <p
+                          style={{
+                            fontFamily: "var(--font-sans)",
+                            fontSize: 14,
+                            fontWeight: 600,
+                            color: "#0F0F0F",
+                          }}
+                        >
+                          {item.name}
+                        </p>
+                        <p
+                          className="mt-0.5"
+                          style={{
+                            fontFamily: "var(--font-mono)",
+                            fontSize: 9,
+                            fontWeight: 500,
+                            letterSpacing: "0.18em",
+                            color: "#888",
+                            textTransform: "uppercase",
+                          }}
+                        >
+                          {item.status}
+                        </p>
+                      </div>
+                      <span
+                        className="shrink-0"
+                        style={{
+                          fontFamily: "var(--font-mono)",
+                          fontSize: 10,
+                          color: "#AAA",
+                          letterSpacing: "0.1em",
+                        }}
+                      >
+                        {item.createdAt.toLocaleDateString()}
+                      </span>
+                    </div>
+                  </RegCard>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+    </PageShell>
   )
 }
