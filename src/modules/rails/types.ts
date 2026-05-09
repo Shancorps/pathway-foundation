@@ -33,6 +33,7 @@ export const deleteRailInput = z.object({ id: z.string() })
 export const restoreRailInput = z.object({ id: z.string() })
 export const publishRailInput = z.object({ id: z.string() })
 export const unpublishRailInput = z.object({ id: z.string() })
+export const pushRailUpdateToCyclesInput = z.object({ railId: z.string() })
 
 export const addTaskNodeInput = z.object({
   railId: z.string(),

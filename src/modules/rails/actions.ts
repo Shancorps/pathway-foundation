@@ -14,12 +14,14 @@ import {
   type RailNodeChecklistItem,
   type RailNodeToolsLink,
 } from "./schema"
+import { cycles, type CycleChecklistItem } from "@/modules/rail-runs/schema"
 import {
   addTaskNodeInput,
   createRailInput,
   deleteNodeInput,
   deleteRailInput,
   publishRailInput,
+  pushRailUpdateToCyclesInput,
   reorderNodesInput,
   restoreRailInput,
   unpublishRailInput,
@@ -568,4 +570,121 @@ export const unpublishRail = orgAction
     revalidatePath(RAILS_PATH)
     revalidatePath(`${RAILS_PATH}/${rail.id}`)
     return { id: rail.id }
+  })
+
+/**
+ * Push the rail's CURRENT node definitions onto every still-open cycle in
+ * every still-running rail_run for that rail. Used after editing a published
+ * rail when the user wants the change to apply to in-progress work too
+ * (e.g., a new policy step added mid-flight).
+ *
+ * What gets re-snapshotted, per cycle:
+ *   - title, description from the matching rail_node
+ *   - checklist: structurally re-snapshotted, but `checked` / `checkedAt` /
+ *     `checkedBy` are preserved for items whose `id` survives (so progress
+ *     isn't wiped by an unrelated edit)
+ *   - tools_links — full replace
+ *   - ideal_minutes — replace
+ *   - post_id — replace (the cycle re-routes to the new Terminal)
+ *
+ * What does NOT change:
+ *   - position — structural, locked at issue
+ *   - the cycle's own runtime fields (issuedAt, timer state, completedAt, etc)
+ *   - cycles whose rail_node has been deleted (orphaned; left alone for the
+ *     worker to finish under the original terms)
+ *   - completed / cancelled cycles — they're done
+ */
+export const pushRailUpdateToCycles = orgAction
+  .metadata({ actionName: "rails.push_update_to_cycles" })
+  .inputSchema(pushRailUpdateToCyclesInput)
+  .action(async ({ parsedInput, ctx }) => {
+    const rail = await loadRail(ctx, parsedInput.railId)
+    const nodes = await ctx.db
+      .select()
+      .from(railNodes)
+      .where(and(eq(railNodes.railId, rail.id), isNull(railNodes.deletedAt)))
+    const nodeById = new Map(nodes.map((n) => [n.id, n]))
+
+    const { railRuns } = await import("@/modules/rail-runs/schema")
+    const cyclesToUpdate = await ctx.db
+      .select({
+        id: cycles.id,
+        railNodeId: cycles.railNodeId,
+        checklistItems: cycles.checklistItems,
+      })
+      .from(cycles)
+      .innerJoin(railRuns, eq(railRuns.id, cycles.railRunId))
+      .where(
+        and(
+          eq(cycles.organizationId, ctx.activeOrg.id),
+          eq(railRuns.railId, rail.id),
+          eq(railRuns.status, "running"),
+          isNull(cycles.completedAt),
+          isNull(cycles.cancelledAt),
+          isNull(cycles.deletedAt),
+          isNull(railRuns.deletedAt),
+        ),
+      )
+
+    let updated = 0
+    let skipped = 0
+    const now = new Date()
+    for (const c of cyclesToUpdate) {
+      const node = nodeById.get(c.railNodeId)
+      if (!node) {
+        skipped += 1
+        continue
+      }
+      // Merge checklist: preserve checked-state for items whose id survives.
+      const previous = new Map(c.checklistItems.map((i) => [i.id, i]))
+      const mergedChecklist: CycleChecklistItem[] = node.checklistItems
+        .slice()
+        .sort((a, b) => a.position - b.position)
+        .map((item) => {
+          const prev = previous.get(item.id)
+          return {
+            id: item.id,
+            label: item.label,
+            required: item.required,
+            position: item.position,
+            checked: prev?.checked ?? false,
+            checkedAt: prev?.checkedAt ?? null,
+            checkedBy: prev?.checkedBy ?? null,
+          }
+        })
+
+      await ctx.db
+        .update(cycles)
+        .set({
+          title: node.name,
+          description: node.description,
+          checklistItems: mergedChecklist,
+          toolsLinks: node.toolsLinks.slice().sort((a, b) => a.position - b.position),
+          idealMinutes: node.idealMinutes,
+          postId: node.postId ?? c.railNodeId, // keep something non-null; if a node has no post, leave the cycle's previous routing in place
+          updatedAt: now,
+        })
+        .where(eq(cycles.id, c.id))
+      updated += 1
+    }
+
+    await audit(
+      {
+        db: ctx.db,
+        organizationId: ctx.activeOrg.id,
+        actorUserId: ctx.session.user.id,
+        ipAddress: ctx.ipAddress,
+        userAgent: ctx.userAgent,
+      },
+      "rails.update_pushed_to_cycles",
+      {
+        resourceType: "rail",
+        resourceId: rail.id,
+        metadata: { updated, skipped },
+      },
+    )
+    revalidatePath(RAILS_PATH)
+    revalidatePath(`${RAILS_PATH}/${rail.id}`)
+    revalidatePath("/my-actions")
+    return { updated, skipped }
   })

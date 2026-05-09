@@ -60,6 +60,7 @@ export function TaskNodeDialog({
   railId,
   posts,
   initial,
+  onSaved,
 }: {
   open: boolean
   onOpenChange: (open: boolean) => void
@@ -67,6 +68,12 @@ export function TaskNodeDialog({
   railId: string
   posts: PostOption[]
   initial?: RailNode
+  /**
+   * Fires after the action succeeds and the dialog closes. The parent uses
+   * this to decide whether to surface the "push to in-progress runs"
+   * confirmation. If omitted, the dialog calls router.refresh() itself.
+   */
+  onSaved?: () => void
 }) {
   const router = useRouter()
   const [name, setName] = useState(initial?.name ?? "")
@@ -219,7 +226,8 @@ export function TaskNodeDialog({
     }
     if (mode === "add") resetForm()
     onOpenChange(false)
-    router.refresh()
+    if (onSaved) onSaved()
+    else router.refresh()
   }
 
   return (

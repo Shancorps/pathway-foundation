@@ -16,7 +16,14 @@ import {
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { deleteNode, publishRail, reorderNodes, unpublishRail, updateRail } from "../actions"
+import {
+  deleteNode,
+  publishRail,
+  pushRailUpdateToCycles,
+  reorderNodes,
+  unpublishRail,
+  updateRail,
+} from "../actions"
 import type { Rail, RailNode } from "../schema"
 import { RailCanvas } from "./rail-canvas"
 import { RailPalette } from "./rail-palette"
@@ -73,6 +80,31 @@ export function RailEditor({
   // are still permissive at the server, so unlocking + editing is enough.
   const editsDisabled = locked
 
+  // After any successful edit on a published rail with running runs, ask
+  // whether to push the update to in-progress cycles. Closed by Default-No
+  // (preserves snapshot semantics) or Confirm-Yes (pushes update).
+  const [showPushConfirm, setShowPushConfirm] = useState(false)
+  const [pushing, setPushing] = useState(false)
+
+  function notifyEditSaved() {
+    router.refresh()
+    if (isPublished && runningRunCount > 0) {
+      setShowPushConfirm(true)
+    }
+  }
+
+  async function handlePushUpdate() {
+    setPushing(true)
+    const result = await pushRailUpdateToCycles({ railId: rail.id })
+    setPushing(false)
+    if (result.serverError) {
+      alert(result.serverError)
+      return
+    }
+    setShowPushConfirm(false)
+    router.refresh()
+  }
+
   async function handlePublish() {
     const result = await publishRail({ id: rail.id })
     if (result.serverError) alert(result.serverError)
@@ -87,7 +119,7 @@ export function RailEditor({
     if (!confirm(`Delete step "${node.name}"?`)) return
     const result = await deleteNode({ id: node.id })
     if (result.serverError) alert(result.serverError)
-    else router.refresh()
+    else notifyEditSaved()
   }
 
   return (
@@ -147,7 +179,7 @@ export function RailEditor({
               void reorderNodes({ railId: rail.id, nodeIdsInOrder: newIdsInOrder }).then(
                 (result) => {
                   if (result.serverError) alert(result.serverError)
-                  else router.refresh()
+                  else notifyEditSaved()
                 },
               )
             }}
@@ -171,6 +203,7 @@ export function RailEditor({
         mode="add"
         railId={rail.id}
         posts={posts}
+        onSaved={notifyEditSaved}
       />
       {editingNode && (
         <TaskNodeDialog
@@ -182,6 +215,20 @@ export function RailEditor({
           railId={rail.id}
           posts={posts}
           initial={editingNode}
+          onSaved={notifyEditSaved}
+        />
+      )}
+
+      {showPushConfirm && (
+        <PushUpdateConfirm
+          runCount={runningRunCount}
+          submitting={pushing}
+          onCancel={() => {
+            setShowPushConfirm(false)
+          }}
+          onConfirm={() => {
+            void handlePushUpdate()
+          }}
         />
       )}
     </div>
@@ -519,5 +566,79 @@ function PublishedEditingBanner({ runCount }: { runCount: number }) {
         </p>
       </div>
     </div>
+  )
+}
+
+function PushUpdateConfirm({
+  runCount,
+  submitting,
+  onCancel,
+  onConfirm,
+}: {
+  runCount: number
+  submitting: boolean
+  onCancel: () => void
+  onConfirm: () => void
+}) {
+  return (
+    <Dialog
+      open
+      onOpenChange={(open) => {
+        if (!open && !submitting) onCancel()
+      }}
+    >
+      <DialogContent className="max-w-lg">
+        <DialogHeader>
+          <DialogTitle>Update ongoing rail instances?</DialogTitle>
+          <DialogDescription>
+            This rail has {String(runCount)} run{runCount === 1 ? "" : "s"} in progress.
+            <br />
+            <br />
+            <strong>Yes</strong> — push your edits onto every still-open cycle in those runs. Useful
+            when the change is a policy update everyone needs to follow now (e.g. a new required
+            checklist item).
+            <br />
+            <br />
+            <strong>No</strong> — only new cycles issued from now on will see the change. Currently
+            in-progress cycles keep the snapshot they were issued with.
+          </DialogDescription>
+        </DialogHeader>
+        <p
+          className="rounded-md bg-[#FAFAFA] px-3 py-2"
+          style={{
+            fontFamily: "var(--font-mono)",
+            fontSize: 11,
+            letterSpacing: "0.06em",
+            color: "#444",
+            lineHeight: 1.55,
+          }}
+        >
+          Checked-off checklist items keep their progress for items whose id survived the edit.
+          Cycles whose node was deleted are left as-is (the worker can still complete them under the
+          original terms).
+        </p>
+        <DialogFooter>
+          <BlueprintButton
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={onCancel}
+            disabled={submitting}
+          >
+            No, only new cycles
+          </BlueprintButton>
+          <BlueprintButton
+            type="button"
+            variant="primary"
+            size="sm"
+            particle
+            onClick={onConfirm}
+            disabled={submitting}
+          >
+            {submitting ? "Pushing..." : "Yes, push to in-progress"}
+          </BlueprintButton>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   )
 }
