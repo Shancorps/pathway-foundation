@@ -71,23 +71,6 @@ function snapshotChecklist(
     }))
 }
 
-async function findFirstTaskNode(ctx: Ctx, railId: string) {
-  const [row] = await ctx.db
-    .select()
-    .from(railNodes)
-    .where(
-      and(
-        eq(railNodes.railId, railId),
-        eq(railNodes.organizationId, ctx.activeOrg.id),
-        eq(railNodes.type, "task"),
-        isNull(railNodes.deletedAt),
-      ),
-    )
-    .orderBy(asc(railNodes.position))
-    .limit(1)
-  return row ?? null
-}
-
 /**
  * Find the next node in the rail after the given position, regardless of
  * type. completeCycle inspects the node's type to decide whether to issue a
@@ -234,11 +217,6 @@ async function fireSubFlow(
       `Sub-Flow target rail "${targetRail.name}" is not published.`,
     )
   }
-  const childFirst = await findFirstTaskNode(ctx, targetRail.id)
-  if (!childFirst) {
-    throw new ActionError("VALIDATION", `Sub-Flow target rail has no Task node to start at.`)
-  }
-
   const childRunId = createId()
   await ctx.db.insert(railRuns).values({
     id: childRunId,
@@ -250,7 +228,18 @@ async function fireSubFlow(
     parentRunId: parentRun.id,
     parentAtNodeId: subFlowNode.id,
   })
-  await issueCycleForNode(ctx, childRunId, childFirst)
+  // Walk the child from position 0 (its trigger) so any non-task first node
+  // (Approval / Sub-Flow / End) is honored — same advance logic as the
+  // top-level startRail.
+  const [childRun] = await ctx.db
+    .select()
+    .from(railRuns)
+    .where(eq(railRuns.id, childRunId))
+    .limit(1)
+  if (!childRun) {
+    throw new ActionError("NOT_FOUND", "Child rail run not found after insert")
+  }
+  await advanceRun(ctx, childRun, 0)
 
   if (subFlowNode.config.waitForCompletion) {
     // Parent pauses here. No cycle for parent until child reaches End and
@@ -368,12 +357,12 @@ export const startRail = orgAction
       )
     }
 
-    // Find the first Task (skip the trigger).
-    const firstTask = await findFirstTaskNode(ctx, rail.id)
-    if (!firstTask) {
-      throw new ActionError("VALIDATION", "Rail has no Task nodes — nothing to start")
-    }
-
+    // Create the run first; advanceRun walks from position 0 (the trigger),
+    // auto-resolving structural nodes (End, Sub-Flow) until it issues the
+    // first cycle (Task / Approval) — or terminates if the rail is just
+    // Trigger → End. Using advanceRun here closes the bug where Approval /
+    // Sub-Flow as the first step were silently skipped because the legacy
+    // findFirstTaskNode filtered to type === "task".
     const runId = createId()
     await ctx.db.insert(railRuns).values({
       id: runId,
@@ -383,23 +372,37 @@ export const startRail = orgAction
       status: "running",
       startedBy: ctx.session.user.id,
     })
-    const cycleId = await issueCycleForNode(ctx, runId, firstTask)
+    const [run] = await ctx.db.select().from(railRuns).where(eq(railRuns.id, runId)).limit(1)
+    if (!run) throw new ActionError("NOT_FOUND", "Rail run could not be loaded after insert")
+    const advance = await advanceRun(ctx, run, 0)
+    const cycleId = advance.nextCycleId
 
-    // Look up the Post + its current holders so the UI can tell the actor where
-    // the first cycle went. Without this they wouldn't know which sign-in to test.
-    const [firstPost] = await ctx.db
-      .select({ id: posts.id, title: posts.title })
-      .from(posts)
-      // firstTask.postId is guaranteed non-null by issueCycleForNode's checks above
-      .where(eq(posts.id, firstTask.postId ?? ""))
-      .limit(1)
-    const holders = firstTask.postId
-      ? await ctx.db
+    // Resolve the first cycle's post + holders for the UI feedback. Null
+    // when the run had no cycle to issue (e.g., Trigger → End immediate
+    // termination, or Sub-Flow with wait-for-completion at the start).
+    let firstPostTitle: string | null = null
+    let firstPostHolders: string[] = []
+    if (cycleId) {
+      const [issued] = await ctx.db
+        .select({ postId: cycles.postId })
+        .from(cycles)
+        .where(eq(cycles.id, cycleId))
+        .limit(1)
+      if (issued) {
+        const [firstPost] = await ctx.db
+          .select({ id: posts.id, title: posts.title })
+          .from(posts)
+          .where(eq(posts.id, issued.postId))
+          .limit(1)
+        firstPostTitle = firstPost?.title ?? null
+        const holders = await ctx.db
           .select({ userId: postAssignments.userId, userName: user.name })
           .from(postAssignments)
           .innerJoin(user, eq(user.id, postAssignments.userId))
-          .where(eq(postAssignments.postId, firstTask.postId))
-      : []
+          .where(eq(postAssignments.postId, issued.postId))
+        firstPostHolders = holders.map((h) => h.userName)
+      }
+    }
 
     await audit(
       {
@@ -413,7 +416,13 @@ export const startRail = orgAction
       {
         resourceType: "rail_run",
         resourceId: runId,
-        metadata: { railId: rail.id, particleId: particle.id, firstCycleId: cycleId },
+        metadata: {
+          railId: rail.id,
+          particleId: particle.id,
+          firstCycleId: cycleId,
+          runFinishedImmediately: advance.runFinished,
+          childRunId: advance.childRunId,
+        },
       },
     )
     revalidatePath(MY_ACTIONS_PATH)
@@ -421,8 +430,8 @@ export const startRail = orgAction
     return {
       runId,
       cycleId,
-      firstPostTitle: firstPost?.title ?? null,
-      firstPostHolders: holders.map((h) => h.userName),
+      firstPostTitle,
+      firstPostHolders,
     }
   })
 
