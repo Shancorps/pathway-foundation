@@ -1,7 +1,7 @@
 "use server"
 
 import { revalidatePath } from "next/cache"
-import { and, asc, eq, gt, isNull } from "drizzle-orm"
+import { and, asc, desc, eq, gt, isNull, lt } from "drizzle-orm"
 import { createId } from "@paralleldrive/cuid2"
 import { ActionError, orgAction } from "@/lib/safe-action"
 import { audit } from "@/modules/audit/audit"
@@ -13,6 +13,7 @@ import { cycles, railRuns, type Cycle, type CycleChecklistItem } from "./schema"
 import {
   cancelRailRunInput,
   completeCycleInput,
+  loopBackCycleInput,
   startCycleTimerInput,
   startRailInput,
   stopCycleTimerInput,
@@ -375,6 +376,32 @@ export const completeCycle = orgAction
       })
       .where(eq(cycles.id, cycle.id))
 
+    // Loop-back cycles are re-dos — they don't advance the rail. The original
+    // cycle is still open in the looper-backer's inbox. Skip successor logic.
+    if (cycle.loopBackOfCycleId) {
+      await audit(
+        {
+          db: ctx.db,
+          organizationId: ctx.activeOrg.id,
+          actorUserId: ctx.session.user.id,
+          ipAddress: ctx.ipAddress,
+          userAgent: ctx.userAgent,
+        },
+        "rail_runs.loop_back_completed",
+        {
+          resourceType: "cycle",
+          resourceId: cycle.id,
+          metadata: {
+            originCycleId: cycle.loopBackOfCycleId,
+            timeSpentMinutes,
+          },
+        },
+      )
+      revalidatePath(MY_ACTIONS_PATH)
+      revalidatePath(`${MY_ACTIONS_PATH}/${cycle.id}`)
+      return { id: cycle.id, nextCycleId: null, runFinished: false, loopBack: true }
+    }
+
     // Find the run and the next node. If no next node, the run is finished.
     const [run] = await ctx.db
       .select()
@@ -426,6 +453,117 @@ export const completeCycle = orgAction
     revalidatePath(MY_ACTIONS_PATH)
     revalidatePath(`${MY_ACTIONS_PATH}/${cycle.id}`)
     return { id: cycle.id, nextCycleId, runFinished: !nextNode }
+  })
+
+/**
+ * Loop Back: the holder of the current cycle returns work to the immediately
+ * prior step's Post for re-do. We snapshot the prior cycle's title / description
+ * / checklist (reset to unchecked) / tools / ideal minutes / post / position
+ * onto a new cycle flagged with loop_back_of_cycle_id + reason + initiator.
+ *
+ * The current cycle stays open in the looper-backer's inbox — they continue
+ * waiting on the upstream re-do. Completing the loop-back cycle does NOT
+ * advance the rail (see `completeCycle`).
+ *
+ * "Prior" excludes other loop-back cycles, so a chain of loop-backs always
+ * routes to the original upstream step rather than re-doing a re-do.
+ */
+export const loopBackCycle = orgAction
+  .metadata({ actionName: "rail_runs.loop_back" })
+  .inputSchema(loopBackCycleInput)
+  .action(async ({ parsedInput, ctx }) => {
+    const cycle = await loadCycleForUser(ctx, parsedInput.cycleId)
+    if (cycle.loopBackOfCycleId) {
+      throw new ActionError(
+        "VALIDATION",
+        "Cannot loop back from a loop-back cycle. Complete this re-do first.",
+      )
+    }
+
+    const [prior] = await ctx.db
+      .select()
+      .from(cycles)
+      .where(
+        and(
+          eq(cycles.organizationId, ctx.activeOrg.id),
+          eq(cycles.railRunId, cycle.railRunId),
+          lt(cycles.position, cycle.position),
+          isNull(cycles.loopBackOfCycleId),
+          isNull(cycles.deletedAt),
+        ),
+      )
+      .orderBy(desc(cycles.position))
+      .limit(1)
+    if (!prior) {
+      throw new ActionError("VALIDATION", "No prior step in this run to loop back to")
+    }
+
+    // Ensure the prior step's Post still exists (not soft-deleted). If the
+    // Terminal was retired we can't route the re-do anywhere.
+    const [priorPost] = await ctx.db
+      .select({ id: posts.id })
+      .from(posts)
+      .where(
+        and(
+          eq(posts.id, prior.postId),
+          eq(posts.organizationId, ctx.activeOrg.id),
+          isNull(posts.deletedAt),
+        ),
+      )
+      .limit(1)
+    if (!priorPost) {
+      throw new ActionError(
+        "VALIDATION",
+        "The Terminal for the prior step no longer exists. Cannot route the loop-back.",
+      )
+    }
+
+    const newCycleId = createId()
+    await ctx.db.insert(cycles).values({
+      id: newCycleId,
+      organizationId: ctx.activeOrg.id,
+      railRunId: prior.railRunId,
+      railNodeId: prior.railNodeId,
+      postId: prior.postId,
+      title: prior.title,
+      description: prior.description,
+      checklistItems: prior.checklistItems.map((item) => ({
+        ...item,
+        checked: false,
+        checkedAt: null,
+        checkedBy: null,
+      })),
+      toolsLinks: prior.toolsLinks,
+      idealMinutes: prior.idealMinutes,
+      position: prior.position,
+      loopBackOfCycleId: prior.id,
+      loopBackReason: parsedInput.reason,
+      loopBackInitiatedBy: ctx.session.user.id,
+    })
+
+    await audit(
+      {
+        db: ctx.db,
+        organizationId: ctx.activeOrg.id,
+        actorUserId: ctx.session.user.id,
+        ipAddress: ctx.ipAddress,
+        userAgent: ctx.userAgent,
+      },
+      "rail_runs.looped_back",
+      {
+        resourceType: "cycle",
+        resourceId: newCycleId,
+        metadata: {
+          fromCycleId: cycle.id,
+          priorCycleId: prior.id,
+          runId: cycle.railRunId,
+          reason: parsedInput.reason,
+        },
+      },
+    )
+    revalidatePath(MY_ACTIONS_PATH)
+    revalidatePath(`${MY_ACTIONS_PATH}/${cycle.id}`)
+    return { id: newCycleId, priorCycleId: prior.id }
   })
 
 export const cancelRailRun = orgAction

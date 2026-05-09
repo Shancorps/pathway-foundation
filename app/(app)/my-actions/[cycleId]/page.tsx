@@ -45,6 +45,7 @@ export default async function CycleDetailPage({
         railName={row.railName}
         railRunId={row.cycle.railRunId}
         postTitle={row.postTitle}
+        loopBackInitiatorName={row.loopBackInitiatorName}
       />
     </PageShell>
   )

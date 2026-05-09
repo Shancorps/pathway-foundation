@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
-import { ExternalLink, Pause, Play } from "lucide-react"
+import { CornerUpLeft, ExternalLink, Pause, Play } from "lucide-react"
 import { BlueprintButton } from "@/components/ui/blueprint-button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { ParticleCube } from "@/components/ui/particle-cube"
@@ -11,6 +11,7 @@ import { SectionDivider } from "@/components/ui/section-divider"
 import {
   cancelRailRun,
   completeCycle,
+  loopBackCycle,
   startCycleTimer,
   stopCycleTimer,
   updateChecklistItem,
@@ -24,6 +25,7 @@ interface CycleDetailProps {
   railName: string
   railRunId: string
   postTitle: string
+  loopBackInitiatorName: string | null
 }
 
 export function CycleDetail({
@@ -32,10 +34,13 @@ export function CycleDetail({
   railName,
   railRunId,
   postTitle,
+  loopBackInitiatorName,
 }: CycleDetailProps) {
   const router = useRouter()
   const [submittingComplete, setSubmittingComplete] = useState(false)
   const [submittingTimer, setSubmittingTimer] = useState(false)
+  const [submittingLoopBack, setSubmittingLoopBack] = useState(false)
+  const isLoopBack = Boolean(cycle.loopBackOfCycleId)
 
   const totalItems = cycle.checklistItems.length
   const checkedItems = cycle.checklistItems.filter((i) => i.checked).length
@@ -94,8 +99,74 @@ export function CycleDetail({
     }
   }
 
+  async function handleLoopBack() {
+    const reason = prompt(
+      "Why are you sending this back to the previous step? The reason is logged and shown to the upstream Terminal.",
+    )
+    if (reason === null) return
+    const trimmed = reason.trim()
+    if (!trimmed) {
+      alert("A reason is required to loop back.")
+      return
+    }
+    setSubmittingLoopBack(true)
+    const result = await loopBackCycle({ cycleId: cycle.id, reason: trimmed })
+    setSubmittingLoopBack(false)
+    if (result.serverError) {
+      alert(result.serverError)
+      return
+    }
+    router.refresh()
+  }
+
   return (
     <div className="space-y-10">
+      {isLoopBack && (
+        <div
+          className="flex items-start gap-3 px-5 py-4"
+          style={{
+            backgroundColor: "#FFF8F1",
+            border: "1px solid #E8711A",
+            borderLeft: "4px solid #E8711A",
+          }}
+          role="status"
+        >
+          <CornerUpLeft
+            className="mt-0.5 size-4 shrink-0"
+            style={{ color: "#E8711A" }}
+            strokeWidth={2}
+            aria-hidden
+          />
+          <div className="min-w-0 flex-1">
+            <p
+              style={{
+                fontFamily: "var(--font-mono)",
+                fontSize: 10,
+                fontWeight: 600,
+                letterSpacing: "0.2em",
+                color: "#E8711A",
+                textTransform: "uppercase",
+              }}
+            >
+              Re-do · Loop Back
+              {loopBackInitiatorName ? ` · Requested by ${loopBackInitiatorName}` : ""}
+            </p>
+            {cycle.loopBackReason && (
+              <p
+                className="mt-1.5"
+                style={{
+                  fontFamily: "var(--font-sans)",
+                  fontSize: 14,
+                  color: "#0F0F0F",
+                  lineHeight: 1.5,
+                }}
+              >
+                {cycle.loopBackReason}
+              </p>
+            )}
+          </div>
+        </div>
+      )}
       {/* Cycle header card */}
       <RegCard state={cardState} className="space-y-4">
         <div className="flex items-start gap-4">
@@ -299,15 +370,30 @@ export function CycleDetail({
           <BlueprintButton variant="ghost" size="sm" onClick={handleCancelRun}>
             Cancel Run
           </BlueprintButton>
-          <BlueprintButton
-            variant="primary"
-            onClick={handleComplete}
-            disabled={!canComplete || submittingComplete}
-            title={canComplete ? undefined : "Check all required items before completing the cycle"}
-            particle
-          >
-            {submittingComplete ? "Completing..." : "Complete Task"}
-          </BlueprintButton>
+          <div className="flex flex-wrap items-center gap-3">
+            {!isLoopBack && (
+              <BlueprintButton
+                variant="outline"
+                onClick={handleLoopBack}
+                disabled={submittingLoopBack}
+                title="Send this Particle back to the previous Terminal for re-do, with a written reason."
+              >
+                <CornerUpLeft className="size-3.5" />
+                {submittingLoopBack ? "Sending..." : "Loop Back"}
+              </BlueprintButton>
+            )}
+            <BlueprintButton
+              variant="primary"
+              onClick={handleComplete}
+              disabled={!canComplete || submittingComplete}
+              title={
+                canComplete ? undefined : "Check all required items before completing the cycle"
+              }
+              particle
+            >
+              {submittingComplete ? "Completing..." : "Complete Task"}
+            </BlueprintButton>
+          </div>
         </div>
       )}
     </div>

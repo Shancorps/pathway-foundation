@@ -432,6 +432,172 @@ describe("rail-runs module — the conveyor belt", () => {
     })
   })
 
+  it("loop-back cycle copies the prior cycle's data and resets checklist to unchecked", async () => {
+    await withTestDb(async (db) => {
+      const s = await setupCarWashScenario(db)
+      const runId = createId()
+      await db.insert(railRuns).values({
+        id: runId,
+        organizationId: s.orgId,
+        railId: s.railId,
+        particleId: s.civicId,
+        startedBy: s.owner,
+      })
+      // Wash cycle was completed (with checks). Pay cycle now open at cashier.
+      const washCycleId = createId()
+      const completedChecklist: CycleChecklistItem[] = [
+        {
+          id: "ck1",
+          label: "Pre-rinse",
+          required: true,
+          position: 0,
+          checked: true,
+          checkedAt: new Date().toISOString(),
+          checkedBy: s.washerUser,
+        },
+        {
+          id: "ck2",
+          label: "Soap",
+          required: true,
+          position: 1,
+          checked: true,
+          checkedAt: new Date().toISOString(),
+          checkedBy: s.washerUser,
+        },
+      ]
+      const sourceTools = [
+        { id: "t1", label: "Wash SOP", url: "https://example.com/wash-sop", position: 0 },
+      ]
+      await db.insert(cycles).values({
+        id: washCycleId,
+        organizationId: s.orgId,
+        railRunId: runId,
+        railNodeId: s.washTaskId,
+        postId: s.washerPostId,
+        title: "Wash Car",
+        description: "Run the bay 3 wash routine.",
+        position: 1,
+        checklistItems: completedChecklist,
+        toolsLinks: sourceTools,
+        idealMinutes: 15,
+        completedAt: new Date(),
+        completedBy: s.washerUser,
+      })
+      const payCycleId = createId()
+      await db.insert(cycles).values({
+        id: payCycleId,
+        organizationId: s.orgId,
+        railRunId: runId,
+        railNodeId: s.payTaskId,
+        postId: s.cashierPostId,
+        title: "Collect Payment",
+        position: 2,
+      })
+
+      // Cashier loops back: snapshot prior wash cycle into a new cycle flagged
+      // with loop_back_of_cycle_id + reason.
+      const loopBackId = createId()
+      const reason = "Driver-side window streaks. Re-do soap + dry."
+      await db.insert(cycles).values({
+        id: loopBackId,
+        organizationId: s.orgId,
+        railRunId: runId,
+        railNodeId: s.washTaskId,
+        postId: s.washerPostId,
+        title: "Wash Car",
+        description: "Run the bay 3 wash routine.",
+        position: 1,
+        checklistItems: completedChecklist.map((item) => ({
+          ...item,
+          checked: false,
+          checkedAt: null,
+          checkedBy: null,
+        })),
+        toolsLinks: sourceTools,
+        idealMinutes: 15,
+        loopBackOfCycleId: washCycleId,
+        loopBackReason: reason,
+        loopBackInitiatedBy: s.cashierUser,
+      })
+
+      // The loop-back is routed back to the washer's inbox, not the cashier's.
+      const mikeOpen = await db
+        .select({ id: cycles.id, isLoopBack: cycles.loopBackOfCycleId })
+        .from(cycles)
+        .innerJoin(postAssignments, eq(postAssignments.postId, cycles.postId))
+        .where(
+          and(
+            eq(cycles.organizationId, s.orgId),
+            eq(postAssignments.userId, s.washerUser),
+            isNull(cycles.completedAt),
+            isNull(cycles.cancelledAt),
+            isNull(cycles.deletedAt),
+          ),
+        )
+      expect(mikeOpen).toHaveLength(1)
+      expect(mikeOpen[0]?.isLoopBack).toBe(washCycleId)
+
+      // Checklist is reset (all items unchecked) and metadata is preserved.
+      const [reissued] = await db.select().from(cycles).where(eq(cycles.id, loopBackId))
+      expect(reissued?.checklistItems.every((c) => !c.checked)).toBe(true)
+      expect(reissued?.checklistItems.every((c) => c.checkedAt === null)).toBe(true)
+      expect(reissued?.toolsLinks).toEqual(sourceTools)
+      expect(reissued?.idealMinutes).toBe(15)
+      expect(reissued?.loopBackReason).toBe(reason)
+      expect(reissued?.loopBackInitiatedBy).toBe(s.cashierUser)
+
+      // The cashier's pay cycle is still open — looper-backer waits for the re-do.
+      const [pay] = await db.select().from(cycles).where(eq(cycles.id, payCycleId))
+      expect(pay?.completedAt).toBeNull()
+      expect(pay?.cancelledAt).toBeNull()
+    })
+  })
+
+  it("hard-deleting the origin cycle nulls loop_back_of_cycle_id (ON DELETE SET NULL)", async () => {
+    await withTestDb(async (db) => {
+      const s = await setupCarWashScenario(db)
+      const runId = createId()
+      await db.insert(railRuns).values({
+        id: runId,
+        organizationId: s.orgId,
+        railId: s.railId,
+        particleId: s.civicId,
+        startedBy: s.owner,
+      })
+      const originId = createId()
+      const loopBackId = createId()
+      await db.insert(cycles).values([
+        {
+          id: originId,
+          organizationId: s.orgId,
+          railRunId: runId,
+          railNodeId: s.washTaskId,
+          postId: s.washerPostId,
+          title: "Wash Car",
+          position: 1,
+          completedAt: new Date(),
+          completedBy: s.washerUser,
+        },
+        {
+          id: loopBackId,
+          organizationId: s.orgId,
+          railRunId: runId,
+          railNodeId: s.washTaskId,
+          postId: s.washerPostId,
+          title: "Wash Car",
+          position: 1,
+          loopBackOfCycleId: originId,
+          loopBackReason: "test",
+          loopBackInitiatedBy: s.cashierUser,
+        },
+      ])
+      await db.delete(cycles).where(eq(cycles.id, originId))
+      const [survived] = await db.select().from(cycles).where(eq(cycles.id, loopBackId))
+      expect(survived?.loopBackOfCycleId).toBeNull()
+      expect(survived?.loopBackReason).toBe("test") // reason is retained as a free-text receipt
+    })
+  })
+
   it("FK on rail_runs.particle_id is RESTRICT (Principle 0)", async () => {
     await withTestDb(async (db) => {
       const s = await setupCarWashScenario(db)

@@ -1,6 +1,7 @@
 import "server-only"
 import { and, asc, count, desc, eq, isNull } from "drizzle-orm"
 import { db } from "@/lib/db"
+import { user } from "@/modules/auth/schema"
 import { posts, postAssignments } from "@/modules/org-structure/schema"
 import { particles } from "@/modules/particles/schema"
 import { rails } from "@/modules/rails/schema"
@@ -45,6 +46,9 @@ export async function listMyActionCycles(orgId: string, userId: string): Promise
       completedBy: cycles.completedBy,
       cancelledAt: cycles.cancelledAt,
       cancelledBy: cycles.cancelledBy,
+      loopBackOfCycleId: cycles.loopBackOfCycleId,
+      loopBackReason: cycles.loopBackReason,
+      loopBackInitiatedBy: cycles.loopBackInitiatedBy,
       createdAt: cycles.createdAt,
       updatedAt: cycles.updatedAt,
       deletedAt: cycles.deletedAt,
@@ -82,6 +86,7 @@ export async function getCycleForUser(orgId: string, userId: string, cycleId: st
       railName: rails.name,
       railId: rails.id,
       postTitle: posts.title,
+      loopBackInitiatorName: user.name,
     })
     .from(cycles)
     .innerJoin(postAssignments, eq(postAssignments.postId, cycles.postId))
@@ -89,6 +94,9 @@ export async function getCycleForUser(orgId: string, userId: string, cycleId: st
     .innerJoin(railRuns, eq(railRuns.id, cycles.railRunId))
     .innerJoin(rails, eq(rails.id, railRuns.railId))
     .innerJoin(particles, eq(particles.id, railRuns.particleId))
+    // Optional join: only present when the cycle is a loop-back. Used by the UI
+    // to show "Re-do requested by NAME" without a second round-trip.
+    .leftJoin(user, eq(user.id, cycles.loopBackInitiatedBy))
     .where(
       and(
         eq(cycles.id, cycleId),

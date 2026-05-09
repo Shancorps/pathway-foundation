@@ -1,4 +1,12 @@
-import { index, integer, jsonb, pgTable, text, timestamp } from "drizzle-orm/pg-core"
+import {
+  type AnyPgColumn,
+  index,
+  integer,
+  jsonb,
+  pgTable,
+  text,
+  timestamp,
+} from "drizzle-orm/pg-core"
 import { organization, user } from "@/modules/auth/schema"
 import { posts } from "@/modules/org-structure/schema"
 import { particles } from "@/modules/particles/schema"
@@ -120,6 +128,18 @@ export const cycles = pgTable(
     completedBy: text("completed_by").references(() => user.id, { onDelete: "set null" }),
     cancelledAt: timestamp("cancelled_at", { withTimezone: true }),
     cancelledBy: text("cancelled_by").references(() => user.id, { onDelete: "set null" }),
+    // Loop-back metadata. When non-null, this cycle is a re-do of an earlier
+    // completed cycle in the same run, sent back by the next-step holder with
+    // a written reason. Completing a loop-back cycle does NOT advance the rail
+    // (no successor issued) — the original cycle is still open in the
+    // looper-backer's inbox.
+    loopBackOfCycleId: text("loop_back_of_cycle_id").references((): AnyPgColumn => cycles.id, {
+      onDelete: "set null",
+    }),
+    loopBackReason: text("loop_back_reason"),
+    loopBackInitiatedBy: text("loop_back_initiated_by").references(() => user.id, {
+      onDelete: "set null",
+    }),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
     deletedAt: timestamp("deleted_at", { withTimezone: true }),
@@ -138,6 +158,8 @@ export const cycles = pgTable(
     // For finding the "next cycle" within a run.
     index("cycles_run_position_idx").on(t.railRunId, t.position),
     index("cycles_org_deleted_idx").on(t.organizationId, t.deletedAt),
+    // For looking up loop-back chains (uncommon read path but cheap to add).
+    index("cycles_org_loopback_idx").on(t.organizationId, t.loopBackOfCycleId),
   ],
 )
 
