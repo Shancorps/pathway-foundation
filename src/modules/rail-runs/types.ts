@@ -34,6 +34,15 @@ export const completeCycleInput = z.object({
   cycleId: z.string(),
 })
 
+/**
+ * Reject an Approval cycle. Reason is optional unless the source rail_node's
+ * config.mode === "with_reason" — server validates that against the node.
+ */
+export const rejectApprovalCycleInput = z.object({
+  cycleId: z.string(),
+  reason: z.string().max(2000).optional(),
+})
+
 export const startCycleTimerInput = z.object({
   cycleId: z.string(),
 })

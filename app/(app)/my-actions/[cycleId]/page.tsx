@@ -49,6 +49,8 @@ export default async function CycleDetailPage({
         loopBackInitiatorName={row.loopBackInitiatorName}
         loopBackTargets={loopBackTargets}
         activeLoopBack={row.activeLoopBack}
+        sourceNodeType={row.sourceNodeType}
+        approvalMode={row.sourceNodeConfig.kind === "approval" ? row.sourceNodeConfig.mode : null}
       />
     </PageShell>
   )

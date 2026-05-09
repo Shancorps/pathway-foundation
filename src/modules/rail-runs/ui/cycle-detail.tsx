@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
-import { CornerUpLeft, ExternalLink, Pause, Play, X } from "lucide-react"
+import { Check, CornerUpLeft, ExternalLink, Pause, Play, X } from "lucide-react"
 import { BlueprintButton } from "@/components/ui/blueprint-button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { ParticleCube } from "@/components/ui/particle-cube"
@@ -12,6 +12,7 @@ import {
   cancelRailRun,
   completeCycle,
   loopBackCycle,
+  rejectApprovalCycle,
   startCycleTimer,
   stopCycleTimer,
   updateChecklistItem,
@@ -43,6 +44,10 @@ interface CycleDetailProps {
   loopBackInitiatorName: string | null
   loopBackTargets: LoopBackTarget[]
   activeLoopBack: ActiveLoopBack | null
+  /** Node type the cycle was issued from. Drives Approve/Reject vs Complete. */
+  sourceNodeType: string
+  /** Approval mode if sourceNodeType === "approval" — controls reason requirement. */
+  approvalMode: "approve_reject" | "with_reason" | null
 }
 
 export function CycleDetail({
@@ -54,12 +59,17 @@ export function CycleDetail({
   loopBackInitiatorName,
   loopBackTargets,
   activeLoopBack,
+  sourceNodeType,
+  approvalMode,
 }: CycleDetailProps) {
+  const isApproval = sourceNodeType === "approval"
   const router = useRouter()
   const [submittingComplete, setSubmittingComplete] = useState(false)
   const [submittingTimer, setSubmittingTimer] = useState(false)
   const [submittingLoopBack, setSubmittingLoopBack] = useState(false)
   const [loopBackOpen, setLoopBackOpen] = useState(false)
+  const [rejectOpen, setRejectOpen] = useState(false)
+  const [submittingReject, setSubmittingReject] = useState(false)
   const isLoopBack = Boolean(cycle.loopBackOfCycleId)
   const hasActiveLoopBack = activeLoopBack !== null
 
@@ -118,6 +128,22 @@ export function CycleDetail({
       router.push("/my-actions")
       router.refresh()
     }
+  }
+
+  async function handleRejectSubmit(reason: string) {
+    setSubmittingReject(true)
+    const result = await rejectApprovalCycle({
+      cycleId: cycle.id,
+      reason: reason.trim() || undefined,
+    })
+    setSubmittingReject(false)
+    if (result.serverError) {
+      alert(result.serverError)
+      return
+    }
+    setRejectOpen(false)
+    router.push("/my-actions")
+    router.refresh()
   }
 
   async function handleLoopBackSubmit(targetCycleId: string, reason: string) {
@@ -364,21 +390,53 @@ export function CycleDetail({
                 Loop Back
               </BlueprintButton>
             )}
-            <BlueprintButton
-              variant="primary"
-              onClick={handleComplete}
-              disabled={!canComplete || submittingComplete || hasActiveLoopBack}
-              title={
-                hasActiveLoopBack
-                  ? "Waiting on the active loop-back to close before this cycle can complete."
-                  : canComplete
-                    ? undefined
-                    : "Check all required items before completing the cycle"
-              }
-              particle
-            >
-              {submittingComplete ? "Completing..." : "Complete Task"}
-            </BlueprintButton>
+            {isApproval ? (
+              <>
+                <BlueprintButton
+                  variant="outline"
+                  onClick={() => {
+                    setRejectOpen(true)
+                  }}
+                  disabled={submittingComplete || submittingReject || hasActiveLoopBack}
+                  title="Reject this approval — the rail will end."
+                  style={{ borderColor: "#B83229", color: "#B83229" }}
+                >
+                  Reject
+                </BlueprintButton>
+                <BlueprintButton
+                  variant="primary"
+                  onClick={handleComplete}
+                  disabled={!canComplete || submittingComplete || hasActiveLoopBack}
+                  title={
+                    hasActiveLoopBack
+                      ? "Waiting on the active loop-back to close before this cycle can advance."
+                      : canComplete
+                        ? undefined
+                        : "Check all required items before approving"
+                  }
+                  particle
+                >
+                  <Check className="size-3.5" />
+                  {submittingComplete ? "Approving..." : "Approve"}
+                </BlueprintButton>
+              </>
+            ) : (
+              <BlueprintButton
+                variant="primary"
+                onClick={handleComplete}
+                disabled={!canComplete || submittingComplete || hasActiveLoopBack}
+                title={
+                  hasActiveLoopBack
+                    ? "Waiting on the active loop-back to close before this cycle can complete."
+                    : canComplete
+                      ? undefined
+                      : "Check all required items before completing the cycle"
+                }
+                particle
+              >
+                {submittingComplete ? "Completing..." : "Complete Task"}
+              </BlueprintButton>
+            )}
           </div>
         </div>
       )}
@@ -411,6 +469,147 @@ export function CycleDetail({
           }}
         />
       )}
+
+      {rejectOpen && (
+        <RejectApprovalDialog
+          requireReason={approvalMode === "with_reason"}
+          submitting={submittingReject}
+          onClose={() => {
+            setRejectOpen(false)
+          }}
+          onSubmit={(reason) => {
+            void handleRejectSubmit(reason)
+          }}
+        />
+      )}
+    </div>
+  )
+}
+
+function RejectApprovalDialog({
+  requireReason,
+  submitting,
+  onClose,
+  onSubmit,
+}: {
+  requireReason: boolean
+  submitting: boolean
+  onClose: () => void
+  onSubmit: (reason: string) => void
+}) {
+  const [reason, setReason] = useState("")
+  const trimmed = reason.trim()
+  const canSubmit = !submitting && (!requireReason || trimmed.length > 0)
+  return (
+    <div
+      className="fixed inset-0 z-50 grid place-items-center px-4 py-8"
+      style={{ backgroundColor: "rgba(15,15,15,0.45)" }}
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="reject-approval-title"
+    >
+      <div className="w-full max-w-[480px] bg-white" style={{ border: "1px solid #0F0F0F" }}>
+        <div className="flex items-start justify-between gap-4 border-b border-[#E4E4E4] px-6 py-4">
+          <div>
+            <p
+              style={{
+                fontFamily: "var(--font-mono)",
+                fontSize: 10,
+                fontWeight: 600,
+                letterSpacing: "0.2em",
+                color: "#B83229",
+                textTransform: "uppercase",
+              }}
+            >
+              Reject · Approval
+            </p>
+            <h2
+              id="reject-approval-title"
+              className="mt-1.5"
+              style={{
+                fontFamily: "var(--font-sans)",
+                fontSize: 18,
+                fontWeight: 600,
+                color: "#0F0F0F",
+                letterSpacing: "-0.005em",
+              }}
+            >
+              End the rail with a rejection
+            </h2>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="text-[#888] transition-colors hover:text-[#0F0F0F]"
+            aria-label="Close"
+          >
+            <X className="size-4" strokeWidth={2} />
+          </button>
+        </div>
+
+        <div className="space-y-4 px-6 py-5">
+          <p
+            style={{
+              fontFamily: "var(--font-sans)",
+              fontSize: 13,
+              color: "#444",
+              lineHeight: 1.55,
+            }}
+          >
+            Rejecting will mark this cycle as rejected and end the rail run.
+            {requireReason ? " A reason is required." : " A reason is optional but recommended."}
+          </p>
+          <div>
+            <label
+              htmlFor="reject-reason"
+              style={{
+                fontFamily: "var(--font-mono)",
+                fontSize: 10,
+                fontWeight: 600,
+                letterSpacing: "0.18em",
+                color: "#0F0F0F",
+                textTransform: "uppercase",
+              }}
+            >
+              Reason {requireReason ? "(required)" : "(optional)"}
+            </label>
+            <textarea
+              id="reject-reason"
+              rows={4}
+              value={reason}
+              onChange={(e) => {
+                setReason(e.target.value)
+              }}
+              maxLength={2000}
+              placeholder="Why is this being rejected?"
+              className="mt-2 block w-full px-3 py-2 outline-none focus:border-[#0F0F0F]"
+              style={{
+                fontFamily: "var(--font-sans)",
+                fontSize: 14,
+                color: "#0F0F0F",
+                border: "1px solid #D4D4D4",
+                resize: "vertical",
+              }}
+            />
+          </div>
+        </div>
+
+        <div className="flex items-center justify-end gap-3 border-t border-[#E4E4E4] px-6 py-4">
+          <BlueprintButton variant="ghost" size="sm" onClick={onClose} disabled={submitting}>
+            Cancel
+          </BlueprintButton>
+          <BlueprintButton
+            variant="primary"
+            onClick={() => {
+              if (canSubmit) onSubmit(trimmed)
+            }}
+            disabled={!canSubmit}
+            style={{ backgroundColor: "#B83229", borderColor: "#B83229" }}
+          >
+            {submitting ? "Rejecting..." : "Reject and end rail"}
+          </BlueprintButton>
+        </div>
+      </div>
     </div>
   )
 }

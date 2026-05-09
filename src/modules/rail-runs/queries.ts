@@ -4,7 +4,7 @@ import { db } from "@/lib/db"
 import { user } from "@/modules/auth/schema"
 import { posts, postAssignments } from "@/modules/org-structure/schema"
 import { particles } from "@/modules/particles/schema"
-import { rails } from "@/modules/rails/schema"
+import { railNodes, rails } from "@/modules/rails/schema"
 import { cycles, railRuns, type Cycle } from "./schema"
 
 interface ListOptions {
@@ -51,6 +51,8 @@ export async function listMyActionCycles(orgId: string, userId: string): Promise
       completedBy: cycles.completedBy,
       cancelledAt: cycles.cancelledAt,
       cancelledBy: cycles.cancelledBy,
+      outcome: cycles.outcome,
+      outcomeReason: cycles.outcomeReason,
       loopBackOfCycleId: cycles.loopBackOfCycleId,
       loopBackReason: cycles.loopBackReason,
       loopBackInitiatedBy: cycles.loopBackInitiatedBy,
@@ -118,6 +120,11 @@ export async function getCycleForUser(orgId: string, userId: string, cycleId: st
       railName: rails.name,
       railId: rails.id,
       postTitle: posts.title,
+      // Source-node info so the cycle UI knows whether this is an Approval
+      // cycle (and which approval mode to render — "with_reason" requires a
+      // reason on reject; default is just two buttons).
+      sourceNodeType: railNodes.type,
+      sourceNodeConfig: railNodes.config,
       loopBackInitiatorName: user.name,
     })
     .from(cycles)
@@ -126,6 +133,7 @@ export async function getCycleForUser(orgId: string, userId: string, cycleId: st
     .innerJoin(railRuns, eq(railRuns.id, cycles.railRunId))
     .innerJoin(rails, eq(rails.id, railRuns.railId))
     .innerJoin(particles, eq(particles.id, railRuns.particleId))
+    .innerJoin(railNodes, eq(railNodes.id, cycles.railNodeId))
     // Optional join: only present when the cycle is a loop-back. Used by the UI
     // to show "Re-do requested by NAME" without a second round-trip.
     .leftJoin(user, eq(user.id, cycles.loopBackInitiatedBy))

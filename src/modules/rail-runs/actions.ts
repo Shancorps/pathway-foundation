@@ -14,6 +14,7 @@ import {
   cancelRailRunInput,
   completeCycleInput,
   loopBackCycleInput,
+  rejectApprovalCycleInput,
   startCycleTimerInput,
   startRailInput,
   stopCycleTimerInput,
@@ -183,7 +184,10 @@ async function advanceRun(
     await completeRun(ctx, run, true)
     return { nextCycleId: null, runFinished: true, endReached: true, childRunId: null }
   }
-  if (next.type === "task") {
+  if (next.type === "task" || next.type === "approval") {
+    // Approval issues a cycle just like a Task — it just renders different
+    // affordances on /my-actions/[id]. Approve completes via completeCycle
+    // (this same advance path); Reject calls rejectApprovalCycle.
     const cycleId = await issueCycleForNode(ctx, run.id, next)
     return { nextCycleId: cycleId, runFinished: false, endReached: false, childRunId: null }
   }
@@ -765,6 +769,89 @@ export const loopBackCycle = orgAction
     revalidatePath(MY_ACTIONS_PATH)
     revalidatePath(`${MY_ACTIONS_PATH}/${cycle.id}`)
     return { id: newCycleId, targetCycleId: target.id }
+  })
+
+/**
+ * Reject an Approval cycle. Resolves the cycle as outcome="rejected" and
+ * follows the source rail_node's onRejection path. v1 supports
+ * onRejection: "end" only — the run terminates. loop_back-on-reject and
+ * branch-on-reject are follow-ups.
+ */
+export const rejectApprovalCycle = orgAction
+  .metadata({ actionName: "rail_runs.approval_rejected" })
+  .inputSchema(rejectApprovalCycleInput)
+  .action(async ({ parsedInput, ctx }) => {
+    const cycle = await loadCycleForUser(ctx, parsedInput.cycleId)
+    // Confirm the source node is an approval. If the cycle came from a
+    // regular task, the user is hitting the wrong action.
+    const [sourceNode] = await ctx.db
+      .select()
+      .from(railNodes)
+      .where(eq(railNodes.id, cycle.railNodeId))
+      .limit(1)
+    if (sourceNode?.type !== "approval") {
+      throw new ActionError("VALIDATION", "This cycle is not from an Approval node")
+    }
+    const config = sourceNode.config
+    if (config.kind !== "approval") {
+      throw new ActionError("VALIDATION", "Approval node is missing config")
+    }
+    if (config.mode === "with_reason" && !parsedInput.reason?.trim()) {
+      throw new ActionError("VALIDATION", "A reason is required to reject this approval")
+    }
+    let timeSpentMinutes = cycle.timeSpentMinutes
+    if (cycle.timerStartedAt) {
+      const elapsedMs = Date.now() - cycle.timerStartedAt.getTime()
+      timeSpentMinutes += Math.max(0, Math.round(elapsedMs / 60000))
+    }
+    const now = new Date()
+    await ctx.db
+      .update(cycles)
+      .set({
+        completedAt: now,
+        completedBy: ctx.session.user.id,
+        timerStartedAt: null,
+        timerStartedBy: null,
+        timeSpentMinutes,
+        outcome: "rejected",
+        outcomeReason: parsedInput.reason ?? null,
+        updatedAt: now,
+      })
+      .where(eq(cycles.id, cycle.id))
+
+    const [run] = await ctx.db
+      .select()
+      .from(railRuns)
+      .where(eq(railRuns.id, cycle.railRunId))
+      .limit(1)
+    if (!run) throw new ActionError("NOT_FOUND", "Rail run not found")
+
+    // v1: onRejection always treated as "end". loop_back / branch handling
+    // ships when their UX is wired.
+    await completeRun(ctx, run, true)
+
+    await audit(
+      {
+        db: ctx.db,
+        organizationId: ctx.activeOrg.id,
+        actorUserId: ctx.session.user.id,
+        ipAddress: ctx.ipAddress,
+        userAgent: ctx.userAgent,
+      },
+      "rail_runs.approval_rejected",
+      {
+        resourceType: "cycle",
+        resourceId: cycle.id,
+        metadata: {
+          runId: run.id,
+          reason: parsedInput.reason ?? null,
+          onRejection: config.onRejection,
+        },
+      },
+    )
+    revalidatePath(MY_ACTIONS_PATH)
+    revalidatePath(`${MY_ACTIONS_PATH}/${cycle.id}`)
+    return { id: cycle.id, runFinished: true }
   })
 
 export const cancelRailRun = orgAction

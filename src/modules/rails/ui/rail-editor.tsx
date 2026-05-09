@@ -26,6 +26,7 @@ import {
   updateRail,
 } from "../actions"
 import type { Rail, RailNode } from "../schema"
+import { ApprovalDialog } from "./approval-dialog"
 import { RailCanvas, type RailRef } from "./rail-canvas"
 import { RailPalette } from "./rail-palette"
 import { SubFlowDialog } from "./sub-flow-dialog"
@@ -63,6 +64,7 @@ export function RailEditor({
   const [showAddTask, setShowAddTask] = useState(false)
   const [editingNode, setEditingNode] = useState<RailNode | null>(null)
   const [editingSubFlow, setEditingSubFlow] = useState<RailNode | null>(null)
+  const [editingApproval, setEditingApproval] = useState<RailNode | null>(null)
   const [showSettings, setShowSettings] = useState(false)
 
   // Client-side UI lock — DEFAULT LOCKED so a freshly opened rail is safe
@@ -179,12 +181,14 @@ export function RailEditor({
                 setEditingSubFlow(node)
                 return
               }
+              if (node.type === "approval") {
+                setEditingApproval(node)
+                return
+              }
               if (node.type === "task") {
                 setEditingNode(node)
                 return
               }
-              // Future types: approval / statistic — open type-specific
-              // dialogs once those land.
             }}
             onDelete={(node) => {
               void handleDeleteNode(node)
@@ -197,7 +201,7 @@ export function RailEditor({
                 setShowAddTask(true)
                 return
               }
-              if (paletteId === "end" || paletteId === "sub_flow") {
+              if (paletteId === "end" || paletteId === "sub_flow" || paletteId === "approval") {
                 void addStructuralNode({ railId: rail.id, type: paletteId }).then((result) => {
                   if (result.serverError) alert(result.serverError)
                   else notifyEditSaved()
@@ -258,6 +262,17 @@ export function RailEditor({
           }}
           node={editingSubFlow}
           otherRails={otherRails}
+          onSaved={notifyEditSaved}
+        />
+      )}
+      {editingApproval && (
+        <ApprovalDialog
+          open
+          onOpenChange={(open) => {
+            if (!open) setEditingApproval(null)
+          }}
+          node={editingApproval}
+          posts={posts}
           onSaved={notifyEditSaved}
         />
       )}

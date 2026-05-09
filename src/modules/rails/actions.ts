@@ -28,6 +28,7 @@ import {
   unpublishRailInput,
   updateNodeInput,
   updateRailInput,
+  updateApprovalConfigInput,
   updateSubFlowConfigInput,
 } from "./types"
 
@@ -339,12 +340,23 @@ export const addStructuralNode = orgAction
       .from(railNodes)
       .where(and(eq(railNodes.railId, rail.id), isNull(railNodes.deletedAt)))
     const nextPosition = (maxRow?.maxPosition ?? 0) + 1
-    const defaultNames: Record<string, string> = { end: "End", sub_flow: "Sub-Flow" }
+    const defaultNames: Record<string, string> = {
+      end: "End",
+      sub_flow: "Sub-Flow",
+      approval: "Approval",
+    }
     // Per-type default config so the dialog has somewhere to read from.
     const defaultConfig =
       parsedInput.type === "sub_flow"
         ? ({ kind: "sub_flow", targetRailId: null, waitForCompletion: true } as const)
-        : ({ kind: "none" } as const)
+        : parsedInput.type === "approval"
+          ? ({
+              kind: "approval",
+              mode: "approve_reject",
+              onRejection: "end",
+              loopBackToNodeId: null,
+            } as const)
+          : ({ kind: "none" } as const)
     const id = createId()
     await ctx.db.insert(railNodes).values({
       id,
@@ -434,6 +446,58 @@ export const updateSubFlowConfig = orgAction
           railId: node.railId,
           targetRailId: parsedInput.targetRailId,
           waitForCompletion: parsedInput.waitForCompletion,
+        },
+      },
+    )
+    revalidatePath(`${RAILS_PATH}/${node.railId}`)
+    return { id: node.id }
+  })
+
+/** Update an Approval node — approver post + onRejection path. */
+export const updateApprovalConfig = orgAction
+  .metadata({ actionName: "rails.approval_updated" })
+  .inputSchema(updateApprovalConfigInput)
+  .action(async ({ parsedInput, ctx }) => {
+    const node = await loadNode(ctx, parsedInput.id)
+    if (node.type !== "approval") {
+      throw new ActionError("VALIDATION", "Node is not an Approval")
+    }
+    if (parsedInput.approverPostId) {
+      await assertPostInOrg(ctx, parsedInput.approverPostId)
+    }
+    await ctx.db
+      .update(railNodes)
+      .set({
+        name: parsedInput.name ?? node.name,
+        description: parsedInput.description ?? node.description,
+        postId: parsedInput.approverPostId,
+        config: {
+          kind: "approval",
+          mode: parsedInput.mode,
+          onRejection: parsedInput.onRejection,
+          loopBackToNodeId: parsedInput.loopBackToNodeId ?? null,
+        },
+        updatedAt: new Date(),
+        updatedBy: ctx.session.user.id,
+      })
+      .where(eq(railNodes.id, node.id))
+    await audit(
+      {
+        db: ctx.db,
+        organizationId: ctx.activeOrg.id,
+        actorUserId: ctx.session.user.id,
+        ipAddress: ctx.ipAddress,
+        userAgent: ctx.userAgent,
+      },
+      "rails.approval_updated",
+      {
+        resourceType: "rail_node",
+        resourceId: node.id,
+        metadata: {
+          railId: node.railId,
+          approverPostId: parsedInput.approverPostId,
+          mode: parsedInput.mode,
+          onRejection: parsedInput.onRejection,
         },
       },
     )
@@ -625,7 +689,7 @@ export const publishRail = orgAction
     // Block publishing rails that reference node types whose runtime hasn't
     // shipped yet — would produce a "Unsupported node type at runtime" error
     // mid-run otherwise.
-    const supportedTypes = ["trigger", "task", "end", "sub_flow"]
+    const supportedTypes = ["trigger", "task", "end", "sub_flow", "approval"]
     const unsupported = nodes.find((n) => !supportedTypes.includes(n.type))
     if (unsupported) {
       throw new ActionError(
@@ -641,6 +705,14 @@ export const publishRail = orgAction
       throw new ActionError(
         "VALIDATION",
         `Sub-Flow "${incompleteSubFlow.name}" has no target rail. Click it on the canvas to pick one.`,
+      )
+    }
+    // Approval nodes need an approver post (re-uses rail_node.postId column).
+    const approvalNoPost = nodes.find((n) => n.type === "approval" && !n.postId)
+    if (approvalNoPost) {
+      throw new ActionError(
+        "VALIDATION",
+        `Approval "${approvalNoPost.name}" has no approver. Pick a Post to receive the decision.`,
       )
     }
     const missingPost = tasks.find((t) => !t.postId)

@@ -46,12 +46,13 @@ export const addTaskNodeInput = z.object({
 })
 
 /**
- * Add a structural node (End / Sub-Flow today; Approval as that type ships).
- * Auto-resolving nodes don't take a Post. Defaults name from the type.
+ * Add a structural node (End / Sub-Flow / Approval). Approval ends up
+ * needing a Post (the approver) — set via the edit dialog after drop;
+ * default name comes from the type.
  */
 export const addStructuralNodeInput = z.object({
   railId: z.string(),
-  type: z.enum(["end", "sub_flow"]),
+  type: z.enum(["end", "sub_flow", "approval"]),
   name: z.string().min(1).max(200).optional(),
 })
 
@@ -61,6 +62,19 @@ export const updateSubFlowConfigInput = z.object({
   name: z.string().min(1).max(200).optional(),
   targetRailId: z.string().nullable(),
   waitForCompletion: z.boolean(),
+})
+
+/** Edit an Approval node's approver post + onRejection path. */
+export const updateApprovalConfigInput = z.object({
+  id: z.string(),
+  name: z.string().min(1).max(200).optional(),
+  description: z.string().max(2000).nullable().optional(),
+  approverPostId: z.string().nullable(),
+  mode: z.enum(["approve_reject", "with_reason"]),
+  onRejection: z.enum(["end"]),
+  // Loop-back rejection requires picking a target node id; deferred until the
+  // cycle-side reject UX is wired.
+  loopBackToNodeId: z.string().nullable().optional(),
 })
 
 export const updateNodeInput = z.object({

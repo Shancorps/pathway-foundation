@@ -96,10 +96,10 @@ const ACTION_GROUP: PaletteNode[] = [
   {
     id: "approval",
     label: "Approval",
-    hint: "Request approval",
+    hint: "Request approve / reject",
     icon: CircleDot,
-    iconColor: "#5A7A92",
-    enabled: false,
+    iconColor: "#1F4E36",
+    enabled: true,
   },
   {
     id: "statistic",

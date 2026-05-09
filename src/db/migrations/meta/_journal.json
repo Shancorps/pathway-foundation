@@ -134,6 +134,13 @@
       "when": 1778357890305,
       "tag": "0018_round_night_thrasher",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1778358570065,
+      "tag": "0019_bizarre_zodiak",
+      "breakpoints": true
     }
   ]
 }

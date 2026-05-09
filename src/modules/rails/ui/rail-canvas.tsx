@@ -23,6 +23,7 @@ import {
 import {
   ArrowDownToLine,
   ArrowRightToLine,
+  CheckCheck,
   CheckSquare,
   Clock,
   Link as LinkIcon,
@@ -505,9 +506,18 @@ function RailNodeView({ data, selected }: NodeProps<Node<CanvasNodeData>>) {
   const isEnd = node.type === "end"
   const isTask = node.type === "task"
   const isSubFlow = node.type === "sub_flow"
+  const isApproval = node.type === "approval"
   // Color & icon by type. Future types (statistic, approval) get their own
   // accents when their runtime ships.
-  const accentColor = isTrigger ? "#E8711A" : isEnd ? "#B83229" : isSubFlow ? "#5B527A" : "#2A3D52"
+  const accentColor = isTrigger
+    ? "#E8711A"
+    : isEnd
+      ? "#B83229"
+      : isSubFlow
+        ? "#5B527A"
+        : isApproval
+          ? "#1F4E36"
+          : "#2A3D52"
   const checklistCount = Array.isArray(node.checklistItems) ? node.checklistItems.length : 0
   const toolsCount = Array.isArray(node.toolsLinks) ? node.toolsLinks.length : 0
   const hasIdeal = node.idealMinutes != null && node.idealMinutes > 0
@@ -557,6 +567,13 @@ function RailNodeView({ data, selected }: NodeProps<Node<CanvasNodeData>>) {
               style={{ color: "#5B527A" }}
               aria-hidden
             />
+          ) : isApproval ? (
+            <CheckCheck
+              className="size-3.5 shrink-0"
+              strokeWidth={2}
+              style={{ color: "#1F4E36" }}
+              aria-hidden
+            />
           ) : (
             <span
               aria-hidden
@@ -592,7 +609,7 @@ function RailNodeView({ data, selected }: NodeProps<Node<CanvasNodeData>>) {
         </div>
 
         <div className="mt-1.5 flex items-center justify-between gap-3">
-          {isTask ? (
+          {isTask || isApproval ? (
             <div className="flex min-w-0 items-center gap-1">
               <MapPin
                 className="size-3 shrink-0"
@@ -611,7 +628,7 @@ function RailNodeView({ data, selected }: NodeProps<Node<CanvasNodeData>>) {
                   textTransform: "uppercase",
                 }}
               >
-                {postTitle ?? "No terminal"}
+                {postTitle ?? (isApproval ? "No approver" : "No terminal")}
                 {postVacant && " · vacant"}
               </p>
             </div>

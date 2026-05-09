@@ -136,6 +136,11 @@ export const cycles = pgTable(
     completedBy: text("completed_by").references(() => user.id, { onDelete: "set null" }),
     cancelledAt: timestamp("cancelled_at", { withTimezone: true }),
     cancelledBy: text("cancelled_by").references(() => user.id, { onDelete: "set null" }),
+    // Approval-cycle outcome. Null on regular Task cycles. "approved" advances
+    // the run normally; "rejected" follows the source rail_node's onRejection
+    // path (today: terminate the run; loop-back-on-reject is a follow-up).
+    outcome: text("outcome"),
+    outcomeReason: text("outcome_reason"),
     // Loop-back metadata. When non-null, this cycle is a re-do of an earlier
     // cycle in the same run, sent back by a downstream holder who picked the
     // target step + a written reason. Completing a loop-back cycle does NOT
