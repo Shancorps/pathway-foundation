@@ -3,6 +3,7 @@ import { db } from "@/lib/db"
 import { verifyCronAuth } from "@/modules/jobs/cron-auth"
 import { items } from "@/modules/items/schema"
 import { files } from "@/modules/files/schema"
+import { manifests } from "@/modules/manifests/schema"
 import { orgContainers, posts } from "@/modules/org-structure/schema"
 import { particleTypes, particles } from "@/modules/particles/schema"
 import { railNodes, rails } from "@/modules/rails/schema"
@@ -237,6 +238,38 @@ export async function GET(request: Request) {
     }
   }
 
+  // -------- Manifests --------
+  // Manifests must be purged AFTER rails and rail_runs (rail_manifests /
+  // rail_run_manifests have FK ON DELETE RESTRICT against manifests). The
+  // join rows themselves cascade-delete when their parent rail / rail_run
+  // is hard-deleted, so we don't enumerate them here. Per-row try/catch
+  // mirrors the rails / particle_types pattern: if a stray join row still
+  // references a manifest, leave it for the next run.
+  const manifestRows = await db
+    .select({ id: manifests.id, organizationId: manifests.organizationId })
+    .from(manifests)
+    .where(and(isNotNull(manifests.deletedAt), lt(manifests.deletedAt, cutoff)))
+    .limit(BATCH_LIMIT)
+
+  const manifestOrgCounts = new Map<string, number>()
+  for (const r of manifestRows) {
+    manifestOrgCounts.set(r.organizationId, (manifestOrgCounts.get(r.organizationId) ?? 0) + 1)
+  }
+  for (const [orgId, count] of manifestOrgCounts) {
+    await audit({ db, organizationId: orgId, actorUserId: null }, "purge.manifests", {
+      metadata: { count, retentionDays: RETENTION_DAYS },
+    })
+  }
+  let manifestsDeleted = 0
+  for (const r of manifestRows) {
+    try {
+      await db.delete(manifests).where(inArray(manifests.id, [r.id]))
+      manifestsDeleted += 1
+    } catch (e) {
+      log.warn({ err: e, id: r.id }, "[purge] manifests delete deferred (likely FK)")
+    }
+  }
+
   // -------- Particles --------
   // Particles must be purged BEFORE particle_types (FK ON DELETE RESTRICT).
   const particleRows = await db
@@ -387,6 +420,7 @@ export async function GET(request: Request) {
       rails: railsDeleted,
       cycles: cycleRows.length,
       railRuns: runsDeleted,
+      manifests: manifestsDeleted,
       dataPoints: dataPointRows.length,
       statistics: statisticsDeleted,
     },
@@ -403,6 +437,7 @@ export async function GET(request: Request) {
       railRows.length === BATCH_LIMIT ||
       cycleRows.length === BATCH_LIMIT ||
       runRows.length === BATCH_LIMIT ||
+      manifestRows.length === BATCH_LIMIT ||
       dataPointRows.length === BATCH_LIMIT ||
       statisticRows.length === BATCH_LIMIT,
   })
