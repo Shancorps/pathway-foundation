@@ -1,6 +1,7 @@
 import { notFound, redirect } from "next/navigation"
 import { PageShell } from "@/components/ui/page-shell"
 import { TitleBlock } from "@/components/ui/title-block"
+import { hasPermission } from "@/modules/auth/permissions"
 import { getSession } from "@/modules/auth/session"
 import { getManifestForOrg } from "@/modules/manifests/queries"
 import { ManifestBuilder } from "@/modules/manifests/ui/manifest-builder"
@@ -15,6 +16,9 @@ export default async function ManifestBuilderPage({ params }: Props) {
   if (!session?.user) redirect("/sign-in")
   const orgId = session.session.activeOrganizationId
   if (!orgId) redirect("/onboarding/create-organization")
+
+  const canBuild = await hasPermission(orgId, session.user.id, "canBuildManifests")
+  if (!canBuild) redirect("/dashboard")
 
   const manifest = await getManifestForOrg(orgId, manifestId)
   if (!manifest) notFound()
