@@ -21,10 +21,14 @@ instances so they vanish from the UI together; the cron drains them later.
 
 ## Field types (V1)
 
-7 types: `text`, `text_area`, `number`, `date`, `select`, `phone`, `email`. More
-can be added (multi-select, file upload, address, related-particle, post,
-currency) without a schema change — extend the `particleFieldTypes` enum and the
-`validateAndCoerceData` switch in `actions.ts`.
+11 types: `text`, `text_area`, `number`, `date`, `select`, `phone`, `email`,
+`yes_no`, `currency`, `multi_select`, `url`. The kernel catalog lives in
+`src/lib/field-types.ts` and is shared with manifests; particles deliberately
+exclude `file_upload` (use the files module separately) and `particle_ref`
+(`parent_particle_id` is the structured way to reference a parent). More can be
+added without a schema change — extend `particleFieldTypes` and add a matching
+case to the `validateAndCoerceData` switch in `actions.ts` (the exhaustiveness
+check at the end of the switch will refuse to compile until you do).
 
 ## Validation
 

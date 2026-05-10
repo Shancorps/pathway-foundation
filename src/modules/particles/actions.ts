@@ -82,6 +82,58 @@ function validateAndCoerceData(
         out[field.key] = str
         break
       }
+      case "yes_no": {
+        let bool: boolean
+        if (value === true || value === false) {
+          bool = value
+        } else if (value === 1 || value === 0) {
+          bool = value === 1
+        } else if (typeof value === "string") {
+          if (value === "true" || value === "1") bool = true
+          else if (value === "false" || value === "0") bool = false
+          else throw new ActionError("VALIDATION", `Invalid yes/no value for field ${field.key}`)
+        } else {
+          throw new ActionError("VALIDATION", `Invalid yes/no value for field ${field.key}`)
+        }
+        out[field.key] = bool
+        break
+      }
+      case "currency": {
+        const num = typeof value === "number" ? value : Number(asString(value))
+        if (!Number.isFinite(num)) {
+          throw new ActionError("VALIDATION", `${field.label} must be a number`)
+        }
+        out[field.key] = num
+        break
+      }
+      case "multi_select": {
+        if (!Array.isArray(value)) {
+          throw new ActionError("VALIDATION", `${field.label} must be a list`)
+        }
+        const allowed = field.options ?? []
+        const filtered = value.filter(
+          (v): v is string => typeof v === "string" && allowed.includes(v),
+        )
+        out[field.key] = filtered
+        break
+      }
+      case "url": {
+        const str = asString(value)
+        try {
+          new URL(str)
+        } catch {
+          throw new ActionError("VALIDATION", `Invalid URL for field ${field.key}`)
+        }
+        out[field.key] = str
+        break
+      }
+      default: {
+        // Compile-time exhaustiveness check. If a new field type is added to
+        // particleFieldTypes without a case here, this line fails to compile.
+        const _exhaustive: never = field.type
+        void _exhaustive
+        throw new ActionError("VALIDATION", `Unhandled particle field type for ${field.key}`)
+      }
     }
   }
   return out
