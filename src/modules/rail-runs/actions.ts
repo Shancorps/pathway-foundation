@@ -6,6 +6,7 @@ import { createId } from "@paralleldrive/cuid2"
 import { ActionError, orgAction } from "@/lib/safe-action"
 import { audit } from "@/modules/audit/audit"
 import { user } from "@/modules/auth/schema"
+import { ensureRailRunManifestRows } from "@/modules/manifests/queries"
 import { postAssignments, posts } from "@/modules/org-structure/schema"
 import { particles } from "@/modules/particles/schema"
 import { railNodes, rails } from "@/modules/rails/schema"
@@ -228,6 +229,9 @@ async function fireSubFlow(
     parentRunId: parentRun.id,
     parentAtNodeId: subFlowNode.id,
   })
+  // Seed manifest rows for the child run. Idempotent — covers the case where
+  // the sub-flow target rail has manifests attached.
+  await ensureRailRunManifestRows(childRunId)
   // Walk the child from position 0 (its trigger) so any non-task first node
   // (Approval / Sub-Flow / End) is honored — same advance logic as the
   // top-level startRail.
@@ -372,6 +376,9 @@ export const startRail = orgAction
       status: "running",
       startedBy: ctx.session.user.id,
     })
+    // Seed manifest rows for the new run so the cycle UI can render them
+    // immediately. Idempotent — re-callable if a manifest is attached later.
+    await ensureRailRunManifestRows(runId)
     const [run] = await ctx.db.select().from(railRuns).where(eq(railRuns.id, runId)).limit(1)
     if (!run) throw new ActionError("NOT_FOUND", "Rail run could not be loaded after insert")
     const advance = await advanceRun(ctx, run, 0)
