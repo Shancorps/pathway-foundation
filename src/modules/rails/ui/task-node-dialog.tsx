@@ -23,8 +23,11 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
+import { setNodeRequiredFields } from "@/modules/manifests/actions"
+import type { Manifest } from "@/modules/manifests/schema"
+import { RequiredFieldsConfig } from "@/modules/manifests/ui/required-fields-config"
 import { addTaskNode, updateNode } from "../actions"
-import type { RailNode } from "../schema"
+import type { RailNode, RailNodeRequiredManifestField } from "../schema"
 
 export interface PostOption {
   id: string
@@ -60,6 +63,7 @@ export function TaskNodeDialog({
   railId,
   posts,
   initial,
+  attachedManifests = [],
   onSaved,
 }: {
   open: boolean
@@ -68,6 +72,12 @@ export function TaskNodeDialog({
   railId: string
   posts: PostOption[]
   initial?: RailNode
+  /**
+   * Manifests currently attached to the parent rail. Drives the
+   * required-fields config section. Empty array means the section renders an
+   * "Attach a manifest first" hint.
+   */
+  attachedManifests?: Manifest[]
   /**
    * Fires after the action succeeds and the dialog closes. The parent uses
    * this to decide whether to surface the "push to in-progress runs"
@@ -98,6 +108,9 @@ export function TaskNodeDialog({
           .map((t) => ({ id: t.id, label: t.label, url: t.url }))
       : [],
   )
+  const [requiredFields, setRequiredFields] = useState<RailNodeRequiredManifestField[]>(
+    initial?.requiredManifestFieldSlugs ?? [],
+  )
   const [submitting, setSubmitting] = useState(false)
 
   function resetForm() {
@@ -107,6 +120,7 @@ export function TaskNodeDialog({
     setChecklist([])
     setIdealMinutesText("")
     setTools([])
+    setRequiredFields([])
   }
 
   function updateTool(idx: number, patch: Partial<ToolsLinkDraftItem>) {
@@ -219,11 +233,42 @@ export function TaskNodeDialog({
             toolsLinks: cleanedTools,
             idealMinutes: hasIdealInput ? parsedIdeal : null,
           })
-    setSubmitting(false)
     if (result.serverError) {
+      setSubmitting(false)
       alert(result.serverError)
       return
     }
+
+    // Persist required-manifest-fields. The dedicated action lets us reuse
+    // the same wiring for both add (just-created node id) and edit (initial.id).
+    // Skip the call when the user hasn't touched the section in edit mode and
+    // there are no fields to set in add mode — saves a no-op write + audit row.
+    const targetNodeId = mode === "add" ? result.data?.id : (initial?.id ?? "")
+    const initialRequired = initial?.requiredManifestFieldSlugs ?? []
+    const requiredChanged =
+      requiredFields.length !== initialRequired.length ||
+      requiredFields.some(
+        (r) =>
+          !initialRequired.some(
+            (i) => i.manifestId === r.manifestId && i.fieldSlug === r.fieldSlug,
+          ),
+      )
+    const shouldSaveRequired =
+      targetNodeId &&
+      ((mode === "add" && requiredFields.length > 0) || (mode === "edit" && requiredChanged))
+    if (shouldSaveRequired && targetNodeId) {
+      const reqResult = await setNodeRequiredFields({
+        railNodeId: targetNodeId,
+        required: requiredFields,
+      })
+      if (reqResult.serverError) {
+        setSubmitting(false)
+        alert(reqResult.serverError)
+        return
+      }
+    }
+
+    setSubmitting(false)
     if (mode === "add") resetForm()
     onOpenChange(false)
     if (onSaved) onSaved()
@@ -476,6 +521,12 @@ export function TaskNodeDialog({
               </ul>
             )}
           </div>
+
+          <RequiredFieldsConfig
+            attachedManifests={attachedManifests}
+            value={requiredFields}
+            onChange={setRequiredFields}
+          />
 
           <DialogFooter>
             <BlueprintButton

@@ -84,6 +84,9 @@ export function RailEditor({
   const [editingApproval, setEditingApproval] = useState<RailNode | null>(null)
   const [showSettings, setShowSettings] = useState(false)
   const [showManifests, setShowManifests] = useState(false)
+  // Templates only — Task / Approval node dialogs need just the manifest defs
+  // (with their fields) to render the required-fields config section.
+  const attachedManifestTemplates = attachedManifests.map((row) => row.manifest)
 
   // Client-side UI lock — DEFAULT LOCKED so a freshly opened rail is safe
   // from accidental edits regardless of publish state. Click the lock icon
@@ -272,6 +275,7 @@ export function RailEditor({
         mode="add"
         railId={rail.id}
         posts={posts}
+        attachedManifests={attachedManifestTemplates}
         onSaved={notifyEditSaved}
       />
       {editingNode && (
@@ -284,6 +288,7 @@ export function RailEditor({
           railId={rail.id}
           posts={posts}
           initial={editingNode}
+          attachedManifests={attachedManifestTemplates}
           onSaved={notifyEditSaved}
         />
       )}
@@ -306,6 +311,7 @@ export function RailEditor({
           }}
           node={editingApproval}
           posts={posts}
+          attachedManifests={attachedManifestTemplates}
           onSaved={notifyEditSaved}
         />
       )}

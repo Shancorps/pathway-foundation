@@ -21,8 +21,11 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
+import { setNodeRequiredFields } from "@/modules/manifests/actions"
+import type { Manifest } from "@/modules/manifests/schema"
+import { RequiredFieldsConfig } from "@/modules/manifests/ui/required-fields-config"
 import { updateApprovalConfig } from "../actions"
-import type { RailNode } from "../schema"
+import type { RailNode, RailNodeRequiredManifestField } from "../schema"
 import type { PostOption } from "./task-node-dialog"
 
 export function ApprovalDialog({
@@ -30,12 +33,18 @@ export function ApprovalDialog({
   onOpenChange,
   node,
   posts,
+  attachedManifests = [],
   onSaved,
 }: {
   open: boolean
   onOpenChange: (open: boolean) => void
   node: RailNode
   posts: PostOption[]
+  /**
+   * Manifests currently attached to the parent rail. Drives the
+   * required-fields config section.
+   */
+  attachedManifests?: Manifest[]
   onSaved?: () => void
 }) {
   const router = useRouter()
@@ -45,6 +54,9 @@ export function ApprovalDialog({
   const [approverPostId, setApproverPostId] = useState(node.postId ?? "")
   const [mode, setMode] = useState<"approve_reject" | "with_reason">(
     initialConfig?.mode ?? "approve_reject",
+  )
+  const [requiredFields, setRequiredFields] = useState<RailNodeRequiredManifestField[]>(
+    node.requiredManifestFieldSlugs,
   )
   const [submitting, setSubmitting] = useState(false)
 
@@ -59,11 +71,36 @@ export function ApprovalDialog({
       mode,
       onRejection: "end",
     })
-    setSubmitting(false)
     if (result.serverError) {
+      setSubmitting(false)
       alert(result.serverError)
       return
     }
+
+    // Persist required-manifest-fields if changed. Skip the no-op when the
+    // user didn't touch the section.
+    const initialRequired = node.requiredManifestFieldSlugs
+    const requiredChanged =
+      requiredFields.length !== initialRequired.length ||
+      requiredFields.some(
+        (r) =>
+          !initialRequired.some(
+            (i) => i.manifestId === r.manifestId && i.fieldSlug === r.fieldSlug,
+          ),
+      )
+    if (requiredChanged) {
+      const reqResult = await setNodeRequiredFields({
+        railNodeId: node.id,
+        required: requiredFields,
+      })
+      if (reqResult.serverError) {
+        setSubmitting(false)
+        alert(reqResult.serverError)
+        return
+      }
+    }
+
+    setSubmitting(false)
     onOpenChange(false)
     if (onSaved) onSaved()
     else router.refresh()
@@ -178,6 +215,12 @@ export function ApprovalDialog({
               Loop-back and branch-on-rejection options ship in a follow-up.
             </p>
           </div>
+
+          <RequiredFieldsConfig
+            attachedManifests={attachedManifests}
+            value={requiredFields}
+            onChange={setRequiredFields}
+          />
 
           <DialogFooter>
             <BlueprintButton
