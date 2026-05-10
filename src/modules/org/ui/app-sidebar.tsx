@@ -8,6 +8,7 @@ import {
   Calendar,
   CheckSquare,
   ChevronDown,
+  ClipboardList,
   LayoutDashboard,
   ListChecks,
   LogOut,
@@ -77,6 +78,7 @@ const NAV_GROUPS: NavGroup[] = [
     label: "Admin",
     items: [
       { href: "/rails", label: "Rail Management", icon: Route },
+      { href: "/admin/manifest-management", label: "Manifest Management", icon: ClipboardList },
       { href: "/items", label: "Items", icon: ListChecks },
       { href: "/settings/account", label: "Settings", icon: Settings },
     ],
