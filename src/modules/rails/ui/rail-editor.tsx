@@ -3,7 +3,15 @@
 import { useEffect, useState } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { AlertTriangle, ArrowLeft, Lock, Settings as SettingsIcon, Unlock, X } from "lucide-react"
+import {
+  AlertTriangle,
+  ArrowLeft,
+  FileText,
+  Lock,
+  Settings as SettingsIcon,
+  Unlock,
+  X,
+} from "lucide-react"
 import { BlueprintButton } from "@/components/ui/blueprint-button"
 import {
   Dialog,
@@ -16,6 +24,11 @@ import {
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
+import type { Manifest } from "@/modules/manifests/schema"
+import {
+  RailManifestTab,
+  type RailManifestAttachment,
+} from "@/modules/manifests/ui/rail-manifest-tab"
 import {
   addStructuralNode,
   deleteNode,
@@ -51,6 +64,8 @@ export function RailEditor({
   particleTypeName,
   runningRunCount,
   otherRails,
+  attachedManifests,
+  allManifests,
 }: {
   rail: Rail
   nodes: RailNode[]
@@ -58,6 +73,8 @@ export function RailEditor({
   particleTypeName: string | null
   runningRunCount: number
   otherRails: RailRef[]
+  attachedManifests: RailManifestAttachment[]
+  allManifests: Manifest[]
 }) {
   const router = useRouter()
   const isPublished = rail.status === "published"
@@ -66,6 +83,7 @@ export function RailEditor({
   const [editingSubFlow, setEditingSubFlow] = useState<RailNode | null>(null)
   const [editingApproval, setEditingApproval] = useState<RailNode | null>(null)
   const [showSettings, setShowSettings] = useState(false)
+  const [showManifests, setShowManifests] = useState(false)
 
   // Client-side UI lock — DEFAULT LOCKED so a freshly opened rail is safe
   // from accidental edits regardless of publish state. Click the lock icon
@@ -149,11 +167,15 @@ export function RailEditor({
         particleTypeName={particleTypeName}
         isPublished={isPublished}
         locked={locked}
+        manifestCount={attachedManifests.length}
         onToggleLock={() => {
           setLocked(!locked)
         }}
         onOpenSettings={() => {
           setShowSettings(true)
+        }}
+        onOpenManifests={() => {
+          setShowManifests(true)
         }}
         onPublish={() => {
           void handlePublish()
@@ -233,6 +255,17 @@ export function RailEditor({
         />
       )}
 
+      <RailManifestsDialog
+        open={showManifests}
+        onClose={() => {
+          setShowManifests(false)
+        }}
+        railId={rail.id}
+        attached={attachedManifests}
+        allManifests={allManifests}
+        disabled={editsDisabled}
+      />
+
       <TaskNodeDialog
         open={showAddTask}
         onOpenChange={setShowAddTask}
@@ -298,8 +331,10 @@ function TopBar({
   particleTypeName,
   isPublished,
   locked,
+  manifestCount,
   onToggleLock,
   onOpenSettings,
+  onOpenManifests,
   onPublish,
   onUnpublish,
 }: {
@@ -307,8 +342,10 @@ function TopBar({
   particleTypeName: string | null
   isPublished: boolean
   locked: boolean
+  manifestCount: number
   onToggleLock: () => void
   onOpenSettings: () => void
+  onOpenManifests: () => void
   onPublish: () => void
   onUnpublish: () => void
 }) {
@@ -430,6 +467,42 @@ function TopBar({
           <Lock className="size-3.5" strokeWidth={2} aria-hidden />
         ) : (
           <Unlock className="size-3.5" strokeWidth={2} aria-hidden />
+        )}
+      </button>
+
+      <button
+        type="button"
+        onClick={onOpenManifests}
+        aria-label={`Manifests (${String(manifestCount)} attached)`}
+        title={`Manifests · ${String(manifestCount)} attached`}
+        className="relative grid h-7 place-items-center px-2 text-xs transition-colors hover:bg-[var(--bp-surface-card-queued)]"
+        style={{
+          border: "1px solid #D4D4D4",
+          fontFamily: "var(--font-mono)",
+          fontSize: 10,
+          fontWeight: 600,
+          letterSpacing: "0.16em",
+          color: "var(--bp-text-primary)",
+          textTransform: "uppercase",
+        }}
+      >
+        <FileText className="mr-1 size-3.5" strokeWidth={2} aria-hidden />
+        Manifests
+        {manifestCount > 0 && (
+          <span
+            className="ml-1.5 grid size-4 place-items-center"
+            style={{
+              backgroundColor: "var(--bp-accent-particle, #1A6FE3)",
+              color: "var(--bp-surface-card)",
+              fontFamily: "var(--font-mono)",
+              fontSize: 9,
+              fontWeight: 700,
+              letterSpacing: 0,
+              borderRadius: 2,
+            }}
+          >
+            {String(manifestCount)}
+          </span>
         )}
       </button>
 
@@ -696,6 +769,47 @@ function PushUpdateConfirm({
             {submitting ? "Pushing..." : "Yes, push to in-progress"}
           </BlueprintButton>
         </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+function RailManifestsDialog({
+  open,
+  onClose,
+  railId,
+  attached,
+  allManifests,
+  disabled,
+}: {
+  open: boolean
+  onClose: () => void
+  railId: string
+  attached: RailManifestAttachment[]
+  allManifests: Manifest[]
+  disabled: boolean
+}) {
+  return (
+    <Dialog
+      open={open}
+      onOpenChange={(next) => {
+        if (!next) onClose()
+      }}
+    >
+      <DialogContent className="max-w-2xl">
+        <DialogHeader>
+          <DialogTitle>Manifests</DialogTitle>
+          <DialogDescription>
+            The data this rail collects. Manifests attached here become available on every cycle of
+            every run; mark fields as required-to-advance inside individual Task or Approval steps.
+          </DialogDescription>
+        </DialogHeader>
+        <RailManifestTab
+          railId={railId}
+          attached={attached}
+          allManifests={allManifests}
+          disabled={disabled}
+        />
       </DialogContent>
     </Dialog>
   )

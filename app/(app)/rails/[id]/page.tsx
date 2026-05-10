@@ -1,5 +1,6 @@
 import { notFound, redirect } from "next/navigation"
 import { getSession } from "@/modules/auth/session"
+import { getRailManifests, listManifestsForOrg } from "@/modules/manifests/queries"
 import { listContainersForOrg, listPostsForOrg } from "@/modules/org-structure/queries"
 import { getParticleType } from "@/modules/particles/queries"
 import { countRunningRunsForRail, getRailWithNodes, listRailsForOrg } from "@/modules/rails/queries"
@@ -15,12 +16,22 @@ export default async function RailEditPage({ params }: { params: Promise<{ id: s
   const railWithNodes = await getRailWithNodes(orgId, id)
   if (!railWithNodes) notFound()
 
-  const [posts, containers, particleType, runningRunCount, allRails] = await Promise.all([
+  const [
+    posts,
+    containers,
+    particleType,
+    runningRunCount,
+    allRails,
+    attachedManifests,
+    allManifests,
+  ] = await Promise.all([
     listPostsForOrg(orgId),
     listContainersForOrg(orgId),
     getParticleType(orgId, railWithNodes.rail.particleTypeId),
     countRunningRunsForRail(orgId, railWithNodes.rail.id),
     listRailsForOrg(orgId),
+    getRailManifests(orgId, railWithNodes.rail.id),
+    listManifestsForOrg(orgId),
   ])
   const containerById = new Map(containers.map((c) => [c.id, c.name]))
   const otherRails = allRails
@@ -36,6 +47,8 @@ export default async function RailEditPage({ params }: { params: Promise<{ id: s
       particleTypeName={particleType?.name ?? null}
       runningRunCount={runningRunCount}
       otherRails={otherRails}
+      attachedManifests={attachedManifests}
+      allManifests={allManifests}
       posts={posts.map((p) => ({
         id: p.id,
         title: p.title,
