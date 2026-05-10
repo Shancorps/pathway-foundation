@@ -133,7 +133,7 @@ Migration safety: existing particle data is untouched. The migration adds the ne
 
 ### 3.5 Required-to-advance (rails-side)
 
-Required-to-advance is not a manifest schema concern. Each Task node in `rails.nodes` JSONB gains a `requiredManifestFieldSlugs: string[]` config (optional, default `[]`). The advance logic in `src/modules/rail-runs/actions.ts` checks these slugs against the `rail_run_manifests.data` for the relevant manifest at advance time.
+Required-to-advance is not a manifest schema concern. The `rail_nodes` table (normalized, not JSONB) gains a new top-level JSONB column `required_manifest_field_slugs jsonb not null default '[]'` of shape `Array<{ manifestId: string; fieldSlug: string }>`. It applies to Task and Approval nodes; ignored on other node types. The advance logic in `src/modules/rail-runs/actions.ts` checks these against the `rail_run_manifests.data` for the relevant manifest at advance time. Top-level rather than inside `config` because — like `checklistItems` and `toolsLinks` — it applies to multiple node types and benefits from being uniformly addressable.
 
 ### 3.6 Detach semantics
 
@@ -313,7 +313,7 @@ Per-module list updates (PostToolUse hook reminds about these on schema edits):
 
 Updates to other modules:
 
-- `src/modules/rails/schema.ts` — Task node config gains `requiredManifestFieldSlugs: string[]`
+- `src/modules/rails/schema.ts` — `rail_nodes` table gains `required_manifest_field_slugs jsonb` column (Array<{ manifestId, fieldSlug }>)
 - `src/modules/rail-runs/actions.ts` — advance logic checks the slugs
 - `src/modules/rails/ui/rail-palette.tsx` — Manifest node remains "Soon" (still blocked on Initialize/Manifest node features)
 - `src/lib/field-types.ts` — new shared kernel; `src/modules/particles/schema.ts` updated to import from it
