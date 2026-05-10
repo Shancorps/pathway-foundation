@@ -129,6 +129,9 @@ export async function getCycleForUser(orgId: string, userId: string, cycleId: st
       // reason on reject; default is just two buttons).
       sourceNodeType: railNodes.type,
       sourceNodeConfig: railNodes.config,
+      // Per-node required manifest fields — drives the red asterisk on the
+      // cycle's Manifest panel and is checked again on Mark Complete.
+      sourceNodeRequiredManifestFieldSlugs: railNodes.requiredManifestFieldSlugs,
       loopBackInitiatorName: user.name,
     })
     .from(cycles)

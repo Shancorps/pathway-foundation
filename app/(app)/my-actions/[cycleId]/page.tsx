@@ -3,6 +3,8 @@ import { notFound, redirect } from "next/navigation"
 import { ArrowLeft } from "lucide-react"
 import { PageShell } from "@/components/ui/page-shell"
 import { getSession } from "@/modules/auth/session"
+import { ensureRailRunManifestRows, getRailRunManifests } from "@/modules/manifests/queries"
+import { CycleManifestPanel } from "@/modules/manifests/ui/cycle-manifest-panel"
 import { getCycleForUser, listLoopBackTargetsForCycle } from "@/modules/rail-runs/queries"
 import { CycleDetail } from "@/modules/rail-runs/ui/cycle-detail"
 
@@ -20,6 +22,12 @@ export default async function CycleDetailPage({
   const row = await getCycleForUser(orgId, session.user.id, cycleId)
   if (!row) notFound()
   const loopBackTargets = await listLoopBackTargetsForCycle(orgId, session.user.id, cycleId)
+
+  // Manifests: lazy-ensure run rows exist (covers manifests attached after
+  // the run started), then load with templates joined for one-shot render.
+  await ensureRailRunManifestRows(row.cycle.railRunId)
+  const manifestRows = await getRailRunManifests(orgId, row.cycle.railRunId)
+  const requiredForCycle = row.sourceNodeRequiredManifestFieldSlugs
 
   return (
     <PageShell>
@@ -52,6 +60,14 @@ export default async function CycleDetailPage({
         sourceNodeType={row.sourceNodeType}
         approvalMode={row.sourceNodeConfig.kind === "approval" ? row.sourceNodeConfig.mode : null}
       />
+
+      <div className="mt-6">
+        <CycleManifestPanel
+          railRunId={row.cycle.railRunId}
+          rows={manifestRows}
+          requiredForCycle={requiredForCycle}
+        />
+      </div>
     </PageShell>
   )
 }
