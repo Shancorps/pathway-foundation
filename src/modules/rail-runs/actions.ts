@@ -7,6 +7,7 @@ import { ActionError, orgAction } from "@/lib/safe-action"
 import { audit } from "@/modules/audit/audit"
 import { user } from "@/modules/auth/schema"
 import { ensureRailRunManifestRows } from "@/modules/manifests/queries"
+import { railRunManifests } from "@/modules/manifests/schema"
 import { postAssignments, posts } from "@/modules/org-structure/schema"
 import { particles } from "@/modules/particles/schema"
 import { railNodes, rails } from "@/modules/rails/schema"
@@ -551,6 +552,41 @@ export const completeCycle = orgAction
         throw new ActionError(
           "CONFLICT",
           "An active loop-back is still open. Wait for it to close before completing.",
+        )
+      }
+    }
+
+    // Required manifest fields gate: load the source rail_node and confirm
+    // every (manifest, slug) it requires is filled in for this run. Stale
+    // refs (manifest detached, field removed) are silently skipped — only
+    // currently-attached fields gate the advance.
+    const [sourceNode] = await ctx.db
+      .select({ requiredManifestFieldSlugs: railNodes.requiredManifestFieldSlugs })
+      .from(railNodes)
+      .where(eq(railNodes.id, cycle.railNodeId))
+      .limit(1)
+    const requirements = sourceNode?.requiredManifestFieldSlugs ?? []
+    if (requirements.length > 0) {
+      // Lazy-ensure rows exist for any manifest attached after the run started.
+      await ensureRailRunManifestRows(cycle.railRunId)
+      const runRows = await ctx.db
+        .select()
+        .from(railRunManifests)
+        .where(eq(railRunManifests.railRunId, cycle.railRunId))
+      const dataByManifest = new Map(runRows.map((r) => [r.manifestId, r.data]))
+      const missing: typeof requirements = []
+      for (const req of requirements) {
+        const data = dataByManifest.get(req.manifestId)
+        if (!data) continue // stale ref — manifest no longer attached, skip
+        const v = data[req.fieldSlug]
+        const empty =
+          v === undefined || v === null || v === "" || (Array.isArray(v) && v.length === 0)
+        if (empty) missing.push(req)
+      }
+      if (missing.length > 0) {
+        throw new ActionError(
+          "VALIDATION",
+          `Fill required manifest fields to advance: ${missing.map((m) => m.fieldSlug).join(", ")}.`,
         )
       }
     }
