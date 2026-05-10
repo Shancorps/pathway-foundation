@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { useState } from "react"
-import { Button } from "@/components/ui/button"
+import { BlueprintButton } from "@/components/ui/blueprint-button"
 import { Input } from "@/components/ui/input"
 import type { Manifest } from "../schema"
 import { CreateManifestModal } from "./create-manifest-modal"
@@ -25,6 +25,7 @@ export function ManifestList({ manifests }: Props) {
     <div className="space-y-4">
       <div className="flex items-center gap-2">
         <Input
+          aria-label="Search manifests"
           placeholder="Search manifests..."
           value={query}
           onChange={(e) => {
@@ -33,13 +34,15 @@ export function ManifestList({ manifests }: Props) {
           className="max-w-md"
         />
         <div className="ml-auto">
-          <Button
+          <BlueprintButton
+            variant="primary"
+            particle
             onClick={() => {
               setOpen(true)
             }}
           >
-            + New Manifest
-          </Button>
+            New Manifest
+          </BlueprintButton>
         </div>
       </div>
 
