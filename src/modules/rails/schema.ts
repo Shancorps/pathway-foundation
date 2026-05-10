@@ -94,6 +94,24 @@ export interface RailNodeToolsLink {
   position: number
 }
 
+/**
+ * Per-node required-manifest-field reference. Used by Task and Approval nodes
+ * to gate cycle advance: the cycle cannot complete until every entry's
+ * `fieldSlug` has a non-empty value in the rail_run_manifests row for the
+ * referenced `manifestId`.
+ *
+ * Stored top-level (not in `config`) because it applies to multiple node
+ * types and benefits from being uniformly addressable, like checklistItems
+ * and toolsLinks.
+ *
+ * Stale entries (manifest no longer attached, or field removed from the
+ * manifest) are silently ignored at advance time — see spec §5.4.
+ */
+export interface RailNodeRequiredManifestField {
+  manifestId: string
+  fieldSlug: string
+}
+
 export const rails = pgTable(
   "rails",
   {
@@ -144,6 +162,14 @@ export const railNodes = pgTable(
     // SOP/Tool deep-links shown on the cycle detail. Snapshotted onto each
     // Cycle when issued so editing the rail later doesn't mutate live work.
     toolsLinks: jsonb("tools_links").$type<RailNodeToolsLink[]>().notNull().default([]),
+    // Manifest fields that must be filled before this node's Cycle can
+    // advance. Top-level (not in config) because Task and Approval both use
+    // it. Stale refs (manifest detached, field removed) are ignored at
+    // advance time — see spec §5.4.
+    requiredManifestFieldSlugs: jsonb("required_manifest_field_slugs")
+      .$type<RailNodeRequiredManifestField[]>()
+      .notNull()
+      .default([]),
     // Target time to complete this Cycle, in minutes. Snapshotted onto each
     // Cycle when issued, then displayed alongside actual elapsed time.
     idealMinutes: integer("ideal_minutes"),
