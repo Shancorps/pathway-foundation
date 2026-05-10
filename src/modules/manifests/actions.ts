@@ -5,6 +5,7 @@ import { and, eq, isNull, sql } from "drizzle-orm"
 import { createId } from "@paralleldrive/cuid2"
 import { ActionError, orgAction } from "@/lib/safe-action"
 import { audit } from "@/modules/audit/audit"
+import { hasPermission } from "@/modules/auth/permissions"
 import { railNodes, rails } from "@/modules/rails/schema"
 import { railRuns } from "@/modules/rail-runs/schema"
 import { manifests, railManifests, railRunManifests } from "./schema"
@@ -24,6 +25,10 @@ export const createManifest = orgAction
   .metadata({ actionName: "manifests.create" })
   .inputSchema(createManifestInput)
   .action(async ({ parsedInput, ctx }) => {
+    const allowed = await hasPermission(ctx.activeOrg.id, ctx.session.user.id, "canBuildManifests")
+    if (!allowed) {
+      throw new ActionError("FORBIDDEN", "You don't have permission to build manifests.")
+    }
     const id = createId()
     await ctx.db.insert(manifests).values({
       id,
@@ -54,6 +59,10 @@ export const updateManifest = orgAction
   .metadata({ actionName: "manifests.update" })
   .inputSchema(updateManifestInput)
   .action(async ({ parsedInput, ctx }) => {
+    const allowed = await hasPermission(ctx.activeOrg.id, ctx.session.user.id, "canBuildManifests")
+    if (!allowed) {
+      throw new ActionError("FORBIDDEN", "You don't have permission to build manifests.")
+    }
     const { id, fields, ...rest } = parsedInput
 
     let addedKeys: string[] = []
@@ -201,6 +210,10 @@ export const deleteManifest = orgAction
   .metadata({ actionName: "manifests.delete" })
   .inputSchema(deleteManifestInput)
   .action(async ({ parsedInput, ctx }) => {
+    const allowed = await hasPermission(ctx.activeOrg.id, ctx.session.user.id, "canBuildManifests")
+    if (!allowed) {
+      throw new ActionError("FORBIDDEN", "You don't have permission to build manifests.")
+    }
     // Hard-refusal if any rail uses this manifest. Action layer surfaces
     // the dependent rail names; the user must detach first.
     const inUse = await getRailsUsingManifest(ctx.activeOrg.id, parsedInput.id)
