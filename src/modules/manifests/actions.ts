@@ -5,7 +5,7 @@ import { and, eq, isNull, sql } from "drizzle-orm"
 import { createId } from "@paralleldrive/cuid2"
 import { ActionError, orgAction } from "@/lib/safe-action"
 import { audit } from "@/modules/audit/audit"
-import { railNodes } from "@/modules/rails/schema"
+import { railNodes, rails } from "@/modules/rails/schema"
 import { railRuns } from "@/modules/rail-runs/schema"
 import { manifests, railManifests, railRunManifests } from "./schema"
 import { ensureRailRunManifestRows, getRailsUsingManifest } from "./queries"
@@ -56,6 +56,9 @@ export const updateManifest = orgAction
   .action(async ({ parsedInput, ctx }) => {
     const { id, fields, ...rest } = parsedInput
 
+    let addedKeys: string[] = []
+    let removedKeys: string[] = []
+
     // If fields are being updated, refuse when there are in-flight runs
     // referencing this manifest. Detached manifests with surviving rail_run_manifests
     // rows still count as "in flight" — covered by the same query.
@@ -67,9 +70,9 @@ export const updateManifest = orgAction
         .where(
           and(
             eq(railRunManifests.manifestId, id),
-            // Only block on runs that haven't finished. Adjust the predicate
-            // if rail_runs uses a different "active" signal.
-            isNull(railRuns.completedAt),
+            // Only block on actively-running runs. Cancelled runs have
+            // completedAt = null but are no longer in flight.
+            eq(railRuns.status, "running"),
           ),
         )
       const count = inFlight[0]?.count ?? 0
@@ -91,7 +94,8 @@ export const updateManifest = orgAction
         .limit(1)
       const oldKeys = new Set((existing?.fields ?? []).map((f) => f.key))
       const newKeys = new Set(fields.map((f) => f.key))
-      const removedKeys = [...oldKeys].filter((k) => !newKeys.has(k))
+      removedKeys = [...oldKeys].filter((k) => !newKeys.has(k))
+      addedKeys = [...newKeys].filter((k) => !oldKeys.has(k))
 
       if (removedKeys.length > 0) {
         // Check rail_nodes.requiredManifestFieldSlugs (JSONB array of {manifestId, fieldSlug})
@@ -182,7 +186,8 @@ export const updateManifest = orgAction
         resourceType: "manifest",
         resourceId: id,
         metadata: {
-          changedFieldKeys: fields !== undefined ? fields.map((f) => f.key) : undefined,
+          addedKeys: fields !== undefined ? addedKeys : undefined,
+          removedKeys: fields !== undefined ? removedKeys : undefined,
           name: rest.name,
         },
       },
@@ -241,6 +246,37 @@ export const attachManifestToRail = orgAction
   .metadata({ actionName: "manifests.attach_to_rail" })
   .inputSchema(attachManifestInput)
   .action(async ({ parsedInput, ctx }) => {
+    // Org-scope verification: both the rail and the manifest must belong to
+    // the active org. Don't disclose existence on mismatch — return NOT_FOUND.
+    const [railRow] = await ctx.db
+      .select({ id: rails.id })
+      .from(rails)
+      .where(
+        and(
+          eq(rails.id, parsedInput.railId),
+          eq(rails.organizationId, ctx.activeOrg.id),
+          isNull(rails.deletedAt),
+        ),
+      )
+      .limit(1)
+    if (!railRow) {
+      throw new ActionError("NOT_FOUND", "Rail not found")
+    }
+    const [manifestRow] = await ctx.db
+      .select({ id: manifests.id })
+      .from(manifests)
+      .where(
+        and(
+          eq(manifests.id, parsedInput.manifestId),
+          eq(manifests.organizationId, ctx.activeOrg.id),
+          isNull(manifests.deletedAt),
+        ),
+      )
+      .limit(1)
+    if (!manifestRow) {
+      throw new ActionError("NOT_FOUND", "Manifest not found")
+    }
+
     // Determine next position
     const [maxRow] = await ctx.db
       .select({ max: sql<number>`coalesce(max(${railManifests.position}), -1)::int` })
@@ -284,6 +320,37 @@ export const detachManifestFromRail = orgAction
   .metadata({ actionName: "manifests.detach_from_rail" })
   .inputSchema(detachManifestInput)
   .action(async ({ parsedInput, ctx }) => {
+    // Org-scope verification: both the rail and the manifest must belong to
+    // the active org before we mutate the join row.
+    const [railRow] = await ctx.db
+      .select({ id: rails.id })
+      .from(rails)
+      .where(
+        and(
+          eq(rails.id, parsedInput.railId),
+          eq(rails.organizationId, ctx.activeOrg.id),
+          isNull(rails.deletedAt),
+        ),
+      )
+      .limit(1)
+    if (!railRow) {
+      throw new ActionError("NOT_FOUND", "Rail not found")
+    }
+    const [manifestRow] = await ctx.db
+      .select({ id: manifests.id })
+      .from(manifests)
+      .where(
+        and(
+          eq(manifests.id, parsedInput.manifestId),
+          eq(manifests.organizationId, ctx.activeOrg.id),
+          isNull(manifests.deletedAt),
+        ),
+      )
+      .limit(1)
+    if (!manifestRow) {
+      throw new ActionError("NOT_FOUND", "Manifest not found")
+    }
+
     await ctx.db
       .delete(railManifests)
       .where(
@@ -319,6 +386,25 @@ export const reorderRailManifests = orgAction
   .metadata({ actionName: "manifests.reorder_rail_manifests" })
   .inputSchema(reorderRailManifestsInput)
   .action(async ({ parsedInput, ctx }) => {
+    // Org-scope verification: confirm the rail belongs to the active org.
+    // Once that's true, the rail_manifests rows under it are implicitly
+    // org-scoped (rails.organization_id is the source of truth) — so the
+    // transaction body only needs to filter on railId+manifestId.
+    const [railRow] = await ctx.db
+      .select({ id: rails.id })
+      .from(rails)
+      .where(
+        and(
+          eq(rails.id, parsedInput.railId),
+          eq(rails.organizationId, ctx.activeOrg.id),
+          isNull(rails.deletedAt),
+        ),
+      )
+      .limit(1)
+    if (!railRow) {
+      throw new ActionError("NOT_FOUND", "Rail not found")
+    }
+
     await ctx.db.transaction(async (tx) => {
       for (let i = 0; i < parsedInput.manifestIds.length; i++) {
         const manifestId = parsedInput.manifestIds[i]
@@ -334,6 +420,25 @@ export const reorderRailManifests = orgAction
           )
       }
     })
+
+    await audit(
+      {
+        db: ctx.db,
+        organizationId: ctx.activeOrg.id,
+        actorUserId: ctx.session.user.id,
+        ipAddress: ctx.ipAddress,
+        userAgent: ctx.userAgent,
+      },
+      "manifests.reorder_rail_manifests",
+      {
+        resourceType: "rail",
+        resourceId: parsedInput.railId,
+        metadata: {
+          railId: parsedInput.railId,
+          manifestIds: parsedInput.manifestIds,
+        },
+      },
+    )
     revalidatePath(`/admin/rail-management/${parsedInput.railId}`)
     return { railId: parsedInput.railId }
   })
@@ -342,6 +447,40 @@ export const updateRunManifestData = orgAction
   .metadata({ actionName: "manifests.update_run_data" })
   .inputSchema(updateRunManifestDataInput)
   .action(async ({ parsedInput, ctx }) => {
+    // Org-scope verification: confirm the rail run belongs (via its rail) to
+    // the active org, and the manifest does too. Without this, a user from
+    // org A could pass a rail-run id from org B and ensureRailRunManifestRows
+    // would happily create rows.
+    const [runRow] = await ctx.db
+      .select({ id: railRuns.id })
+      .from(railRuns)
+      .innerJoin(rails, eq(rails.id, railRuns.railId))
+      .where(
+        and(
+          eq(railRuns.id, parsedInput.railRunId),
+          eq(rails.organizationId, ctx.activeOrg.id),
+          isNull(railRuns.deletedAt),
+        ),
+      )
+      .limit(1)
+    if (!runRow) {
+      throw new ActionError("NOT_FOUND", "Rail run not found")
+    }
+    const [manifestRow] = await ctx.db
+      .select({ id: manifests.id })
+      .from(manifests)
+      .where(
+        and(
+          eq(manifests.id, parsedInput.manifestId),
+          eq(manifests.organizationId, ctx.activeOrg.id),
+          isNull(manifests.deletedAt),
+        ),
+      )
+      .limit(1)
+    if (!manifestRow) {
+      throw new ActionError("NOT_FOUND", "Manifest not found")
+    }
+
     // Lazy-ensure the row exists (covers manifests attached after the run started).
     await ensureRailRunManifestRows(parsedInput.railRunId)
 
@@ -426,6 +565,25 @@ export const setNodeRequiredFields = orgAction
     if (!updatedNode) {
       throw new ActionError("NOT_FOUND", "Rail node not found")
     }
+
+    await audit(
+      {
+        db: ctx.db,
+        organizationId: ctx.activeOrg.id,
+        actorUserId: ctx.session.user.id,
+        ipAddress: ctx.ipAddress,
+        userAgent: ctx.userAgent,
+      },
+      "manifests.set_node_required_fields",
+      {
+        resourceType: "rail_node",
+        resourceId: parsedInput.railNodeId,
+        metadata: {
+          railNodeId: parsedInput.railNodeId,
+          required: parsedInput.required,
+        },
+      },
+    )
     revalidatePath(`/admin/rail-management/${updatedNode.railId}`)
     return { railNodeId: parsedInput.railNodeId }
   })
