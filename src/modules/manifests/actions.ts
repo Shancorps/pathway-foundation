@@ -107,6 +107,15 @@ export const updateManifest = orgAction
       addedKeys = [...newKeys].filter((k) => !oldKeys.has(k))
 
       if (removedKeys.length > 0) {
+        // Build a Postgres text[] array literal from removedKeys. Drizzle's
+        // sql tagged template binds a single-element JS string array as a
+        // scalar text, which Postgres then rejects with "malformed array
+        // literal" when used inside any(...). Encoding to a literal and
+        // casting with ::text[] sidesteps that ambiguity.
+        const removedKeysArr = `{${removedKeys
+          .map((k) => `"${k.replace(/\\/g, "\\\\").replace(/"/g, '\\"')}"`)
+          .join(",")}}`
+
         // Check rail_nodes.requiredManifestFieldSlugs (JSONB array of {manifestId, fieldSlug})
         // Use a JSONB containment query — Postgres can match on any element matching {manifestId: id, fieldSlug: <removed>}
         const requiringNodes = await ctx.db.execute<{
@@ -123,7 +132,7 @@ export const updateManifest = orgAction
           where rn.organization_id = ${ctx.activeOrg.id}
             and rn.deleted_at is null
             and elem->>'manifestId' = ${id}
-            and elem->>'fieldSlug' = any(${removedKeys})
+            and elem->>'fieldSlug' = any(${removedKeysArr}::text[])
         `)
         if (requiringNodes.rows.length > 0) {
           const slugs = [...new Set(requiringNodes.rows.map((r) => r.field_slug))].join(", ")
@@ -145,7 +154,7 @@ export const updateManifest = orgAction
           where rn.organization_id = ${ctx.activeOrg.id}
             and rn.deleted_at is null
             and rn.type = 'statistic'
-            and rn.config->>'manifestField' = any(${removedKeys})
+            and rn.config->>'manifestField' = any(${removedKeysArr}::text[])
         `)
         if (statNodes.rows.length > 0) {
           const slugs = [...new Set(statNodes.rows.map((r) => r.field_slug))].join(", ")
