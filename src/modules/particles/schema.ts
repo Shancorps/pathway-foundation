@@ -8,23 +8,12 @@ import {
   text,
   timestamp,
 } from "drizzle-orm/pg-core"
+import { type ParticleFieldType, particleFieldTypes } from "@/lib/field-types"
 import { organization, user } from "@/modules/auth/schema"
 
-/**
- * The 7 field types the kernel supports. More can be added later (multi-select,
- * file upload, address, related-particle, post, currency) without a schema change —
- * just extend this enum and the validator.
- */
-export const particleFieldTypes = [
-  "text",
-  "text_area",
-  "number",
-  "date",
-  "select",
-  "phone",
-  "email",
-] as const
-export type ParticleFieldType = (typeof particleFieldTypes)[number]
+// Re-export for backwards compat with any local consumers.
+export { particleFieldTypes }
+export type { ParticleFieldType }
 
 /**
  * One field definition stored in the particle_types.fields jsonb column.

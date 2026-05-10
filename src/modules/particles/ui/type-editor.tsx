@@ -47,6 +47,10 @@ const TYPE_LABELS: Record<ParticleFieldType, string> = {
   select: "Select",
   phone: "Phone",
   email: "Email",
+  yes_no: "Yes / No",
+  currency: "Currency",
+  multi_select: "Multi-select",
+  url: "URL",
 }
 
 function slugify(input: string): string {
