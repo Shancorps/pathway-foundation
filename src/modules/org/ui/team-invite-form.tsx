@@ -21,7 +21,7 @@ const INPUT_STYLE: React.CSSProperties = {
   fontSize: 14,
   color: "var(--bp-text-primary)",
   border: "1px solid #D4D4D4",
-  backgroundColor: "#fff",
+  backgroundColor: "var(--bp-surface-card)",
   padding: "8px 12px",
   width: "100%",
 }

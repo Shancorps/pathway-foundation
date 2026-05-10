@@ -87,7 +87,7 @@ export function MyActionsList({
           </p>
           <Link
             href="/organization/structure"
-            className="mt-7 inline-flex items-center gap-2 border border-[var(--bp-border-graphite)] bg-white px-5 py-2.5 transition-colors hover:bg-[var(--bp-surface-card-queued)]"
+            className="mt-7 inline-flex items-center gap-2 border border-[var(--bp-border-graphite)] bg-[var(--bp-surface-card)] px-5 py-2.5 transition-colors hover:bg-[var(--bp-surface-card-queued)]"
             style={{
               fontFamily: "var(--font-mono)",
               fontSize: 10,
@@ -176,7 +176,7 @@ function FilterChip({
         "inline-flex items-center gap-2.5 px-3.5 py-2 transition-colors",
         active
           ? "border border-[var(--bp-accent-orange)] bg-[var(--bp-accent-orange)] text-white"
-          : "border border-[var(--bp-border-strong)] bg-white text-[var(--bp-text-primary)] hover:border-[var(--bp-border-graphite)]",
+          : "border border-[var(--bp-border-strong)] bg-[var(--bp-surface-card)] text-[var(--bp-text-primary)] hover:border-[var(--bp-border-graphite)]",
       )}
       style={{
         fontFamily: "var(--font-mono)",
@@ -333,7 +333,7 @@ function CycleStatusBadge({ cycle, state }: { cycle: CycleRow; state: RegCardSta
           fontWeight: 600,
           letterSpacing: "0.2em",
           textTransform: "uppercase",
-          color: state === "active" ? "#fff" : badgeColor,
+          color: state === "active" ? "var(--bp-surface-card)" : badgeColor,
           backgroundColor: state === "active" ? "var(--bp-accent-orange)" : "transparent",
           border: `1px solid ${badgeColor}`,
         }}
@@ -384,7 +384,7 @@ function LoopBackCycleTag() {
         fontSize: 9,
         fontWeight: 600,
         letterSpacing: "0.18em",
-        color: "#fff",
+        color: "var(--bp-surface-card)",
         backgroundColor: "var(--bp-accent-orange)",
         textTransform: "uppercase",
       }}
@@ -427,7 +427,7 @@ function ApprovalCycleTag() {
         fontSize: 9,
         fontWeight: 600,
         letterSpacing: "0.18em",
-        color: "#fff",
+        color: "var(--bp-surface-card)",
         backgroundColor: "var(--bp-accent-success)",
         textTransform: "uppercase",
       }}

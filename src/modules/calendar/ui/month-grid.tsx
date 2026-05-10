@@ -60,7 +60,9 @@ export function MonthGrid({ window, events }: { window: MonthWindow; events: Cal
               style={{
                 borderRight: idx % 7 === 6 ? "none" : "1px solid #E4E4E4",
                 borderBottom: idx >= 35 ? "none" : "1px solid #E4E4E4",
-                backgroundColor: cell.isCurrentMonth ? "#fff" : "var(--bp-surface-card-queued)",
+                backgroundColor: cell.isCurrentMonth
+                  ? "var(--bp-surface-card)"
+                  : "var(--bp-surface-card-queued)",
               }}
             >
               <div className="flex items-center justify-between">
@@ -73,7 +75,7 @@ export function MonthGrid({ window, events }: { window: MonthWindow; events: Cal
                     letterSpacing: isToday ? "0" : "0.06em",
                     color: cell.isCurrentMonth
                       ? isToday
-                        ? "#fff"
+                        ? "var(--bp-surface-card)"
                         : "var(--bp-text-primary)"
                       : "var(--bp-text-disabled)",
                     backgroundColor: isToday ? "var(--bp-accent-orange)" : "transparent",

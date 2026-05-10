@@ -139,7 +139,7 @@ export function RailPalette({ disabled = false }: { disabled?: boolean }) {
       style={{
         width: 200,
         borderRight: "1px solid #0F0F0F",
-        backgroundColor: "#fff",
+        backgroundColor: "var(--bp-surface-card)",
       }}
     >
       <div className="px-4 py-3" style={{ borderBottom: "1px solid #E4E4E4" }}>
@@ -232,7 +232,7 @@ function PaletteCard({ node, disabled }: { node: PaletteNode; disabled: boolean 
       className="flex items-center gap-2 px-2.5 py-2 transition-colors"
       style={{
         border: "1px solid #D4D4D4",
-        backgroundColor: draggable ? "#fff" : "var(--bp-surface-card-queued)",
+        backgroundColor: draggable ? "var(--bp-surface-card)" : "var(--bp-surface-card-queued)",
         cursor: draggable ? "grab" : "not-allowed",
         opacity: draggable ? 1 : 0.55,
       }}

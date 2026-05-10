@@ -111,12 +111,14 @@
  * - Steel and accents shift lighter for legibility on dark surfaces.
  */
 .dark {
+  color-scheme: dark;
+
   /* Shadcn token bridge (used by Tailwind utility classes + shadcn) */
-  --color-background: #0e1014;
+  --color-background: #06080b;
   --color-foreground: #e5e7eb;
-  --color-muted: #14171c;
+  --color-muted: #0d1015;
   --color-muted-foreground: #9ca3af;
-  --color-card: #14171c;
+  --color-card: #0f1217;
   --color-card-foreground: #e5e7eb;
   --color-popover: #14171c;
   --color-popover-foreground: #e5e7eb;
@@ -124,33 +126,35 @@
   --color-primary-foreground: #ffffff;
   --color-secondary: #5a7a92;
   --color-secondary-foreground: #e5e7eb;
-  --color-accent: #1a1e24;
+  --color-accent: #161a20;
   --color-accent-foreground: #e5e7eb;
   --color-destructive: #d04535;
   --color-destructive-foreground: #ffffff;
-  --color-border: #232830;
-  --color-border-strong: #353a44;
-  --color-input: #353a44;
+  --color-border: #1d2128;
+  --color-border-strong: #2c3038;
+  --color-input: #2c3038;
   --color-ring: #e8711a;
 
-  /* Blueprint tokens (used directly by inline-styled screens) */
-  --bp-surface-page: #0e1014;
-  --bp-surface-card: #14171c;
-  --bp-surface-card-active: #1f1814; /* warm-tinted dark for active */
-  --bp-surface-card-queued: #14171c;
-  --bp-surface-inset: #0a0c10; /* recessed: darker than page */
-  --bp-surface-raised: #1a1e24;
-  --bp-surface-grid: #1a1e24; /* faint grid lines on dark */
+  /* Blueprint tokens (used directly by inline-styled screens).
+   * Layering (lightest on top, see comment): page < card-queued < card < raised.
+   * inset is darker than page (recessed wells). */
+  --bp-surface-page: #06080b; /* the drawing paper — deeper than v1 */
+  --bp-surface-card: #0f1217;
+  --bp-surface-card-active: #1a1410; /* warm-tinted dark for active */
+  --bp-surface-card-queued: #0d1015;
+  --bp-surface-inset: #03050a; /* recessed: darker than page */
+  --bp-surface-raised: #14171c; /* dialog / popover — lifts above card */
+  --bp-surface-grid: #161a20; /* faint grid lines on dark */
 
-  --bp-text-primary: #e5e7eb;
+  --bp-text-primary: #e5e7eb; /* off-white, not stark white — easier on eyes */
   --bp-text-secondary: #b8bcc4;
-  --bp-text-muted: #9ca3af;
-  --bp-text-disabled: #6b7280;
+  --bp-text-muted: #8b919c;
+  --bp-text-disabled: #5d6573;
   --bp-text-on-accent: #ffffff;
 
-  --bp-border-default: #232830;
-  --bp-border-strong: #353a44;
-  --bp-border-graphite: #b8bcc4; /* flips: in dark, the "graphite frame" is the light line */
+  --bp-border-default: #1d2128; /* hairline default — quieter on the deeper page */
+  --bp-border-strong: #2c3038;
+  --bp-border-graphite: #c8ccd3; /* flips: in dark, the "graphite frame" is the light line */
 
   --bp-accent-orange: #e8711a;
   --bp-accent-orange-tint: #2a1d12; /* warm dark tint instead of cream */
@@ -218,11 +222,6 @@
     letter-spacing: 0.005em;
     -webkit-font-smoothing: antialiased;
     text-rendering: optimizeLegibility;
-  }
-
-  /* Sentinel: legacy .dark class is now a no-op. The spec is single-look. */
-  .dark {
-    color-scheme: light;
   }
 }
 

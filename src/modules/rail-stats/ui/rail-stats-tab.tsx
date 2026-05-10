@@ -126,7 +126,7 @@ export async function RailStatsTab({
                     <tr
                       key={r.railId}
                       style={{ borderTop: "1px solid #E4E4E4" }}
-                      className="hover:bg-white/60"
+                      className="hover:bg-[var(--bp-surface-card-active)]/60"
                     >
                       <Td align="left">
                         <span
@@ -283,7 +283,7 @@ export async function RailStatsTab({
                   <li key={r.id} style={{ borderBottom: "1px solid #E4E4E4" }}>
                     <Link
                       href={buildLoopBackHref(active ? null : r.id)}
-                      className="flex items-start gap-3 px-4 py-3 transition-colors hover:bg-white"
+                      className="flex items-start gap-3 px-4 py-3 transition-colors hover:bg-[var(--bp-surface-card-active)]"
                       style={
                         active ? { backgroundColor: "var(--bp-surface-card-active)" } : undefined
                       }
@@ -459,7 +459,7 @@ function ResolutionPill({ resolution }: { resolution: "open" | "completed" | "ca
         letterSpacing: "0.18em",
         textTransform: "uppercase",
         padding: "3px 8px",
-        color: filled ? "#fff" : color,
+        color: filled ? "var(--bp-surface-card)" : color,
         backgroundColor: filled ? color : "transparent",
         border: `1px solid ${color}`,
       }}

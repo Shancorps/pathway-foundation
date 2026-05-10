@@ -34,19 +34,23 @@ export default async function RailsPage() {
               fontSize: 11,
               fontWeight: 500,
               letterSpacing: "0.16em",
-              color: "#666",
+              color: "var(--bp-text-secondary)",
               textTransform: "uppercase",
             }}
           >
             <div>
-              <span style={{ color: "#AAA" }}>Defined</span>{" "}
-              <span style={{ color: "#0F0F0F" }}>·</span>{" "}
-              <span style={{ color: "#0F0F0F", fontWeight: 600 }}>{String(rails.length)}</span>
+              <span style={{ color: "var(--bp-text-disabled)" }}>Defined</span>{" "}
+              <span style={{ color: "var(--bp-text-primary)" }}>·</span>{" "}
+              <span style={{ color: "var(--bp-text-primary)", fontWeight: 600 }}>
+                {String(rails.length)}
+              </span>
             </div>
             <div>
-              <span style={{ color: "#AAA" }}>Published</span>{" "}
-              <span style={{ color: "#0F0F0F" }}>·</span>{" "}
-              <span style={{ color: "#E8711A", fontWeight: 600 }}>{String(publishedCount)}</span>
+              <span style={{ color: "var(--bp-text-disabled)" }}>Published</span>{" "}
+              <span style={{ color: "var(--bp-text-primary)" }}>·</span>{" "}
+              <span style={{ color: "var(--bp-accent-orange)", fontWeight: 600 }}>
+                {String(publishedCount)}
+              </span>
             </div>
           </div>
         }

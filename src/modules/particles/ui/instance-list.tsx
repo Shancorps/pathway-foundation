@@ -52,7 +52,7 @@ export function InstanceList({
               fontSize: 11,
               fontWeight: 600,
               letterSpacing: "0.18em",
-              color: "#888",
+              color: "var(--bp-text-muted)",
               textTransform: "uppercase",
             }}
           >
@@ -63,7 +63,7 @@ export function InstanceList({
             style={{
               fontFamily: "var(--font-sans)",
               fontSize: 14,
-              color: "#444",
+              color: "var(--bp-text-secondary)",
               lineHeight: 1.55,
             }}
           >
@@ -105,7 +105,7 @@ export function InstanceList({
                   borderTop: i === 0 ? undefined : "1px solid #E4E4E4",
                   backgroundColor: "transparent",
                 }}
-                className="hover:bg-[#FAFAFA]"
+                className="hover:bg-[var(--bp-surface-card-queued)]"
               >
                 <Td>
                   <Link
@@ -115,7 +115,7 @@ export function InstanceList({
                       fontFamily: "var(--font-sans)",
                       fontSize: 14,
                       fontWeight: 500,
-                      color: "#0F0F0F",
+                      color: "var(--bp-text-primary)",
                     }}
                   >
                     {p.name}
@@ -131,7 +131,7 @@ export function InstanceList({
                   <button
                     type="button"
                     onClick={() => void handleDelete(p.id, p.name)}
-                    className="grid place-items-center border border-transparent p-1.5 hover:border-[#E4E4E4] hover:bg-white"
+                    className="grid place-items-center border border-transparent p-1.5 hover:border-[var(--bp-border-default)] hover:bg-[var(--bp-surface-card-active)]"
                   >
                     <Trash2 className="size-3.5" strokeWidth={1.5} />
                   </button>
@@ -154,7 +154,7 @@ function Th({ children, align = "left" }: { children: React.ReactNode; align?: "
         fontSize: 9,
         fontWeight: 600,
         letterSpacing: "0.2em",
-        color: "#888",
+        color: "var(--bp-text-muted)",
         textTransform: "uppercase",
       }}
     >
@@ -178,7 +178,7 @@ function Td({
       style={{
         fontFamily: muted ? "var(--font-mono)" : "var(--font-sans)",
         fontSize: muted ? 11 : 14,
-        color: muted ? "#666" : "#0F0F0F",
+        color: muted ? "var(--bp-text-secondary)" : "var(--bp-text-primary)",
         letterSpacing: muted ? "0.06em" : undefined,
       }}
     >

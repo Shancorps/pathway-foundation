@@ -39,7 +39,7 @@ export default async function ItemsPage() {
                 fontSize: 11,
                 fontWeight: 600,
                 letterSpacing: "0.18em",
-                color: "#888",
+                color: "var(--bp-text-muted)",
                 textTransform: "uppercase",
               }}
             >
@@ -50,7 +50,7 @@ export default async function ItemsPage() {
               style={{
                 fontFamily: "var(--font-sans)",
                 fontSize: 14,
-                color: "#444",
+                color: "var(--bp-text-secondary)",
                 lineHeight: 1.55,
               }}
             >
@@ -70,7 +70,7 @@ export default async function ItemsPage() {
                             fontFamily: "var(--font-sans)",
                             fontSize: 14,
                             fontWeight: 600,
-                            color: "#0F0F0F",
+                            color: "var(--bp-text-primary)",
                           }}
                         >
                           {item.name}
@@ -82,7 +82,7 @@ export default async function ItemsPage() {
                             fontSize: 9,
                             fontWeight: 500,
                             letterSpacing: "0.18em",
-                            color: "#888",
+                            color: "var(--bp-text-muted)",
                             textTransform: "uppercase",
                           }}
                         >
@@ -94,7 +94,7 @@ export default async function ItemsPage() {
                         style={{
                           fontFamily: "var(--font-mono)",
                           fontSize: 10,
-                          color: "#AAA",
+                          color: "var(--bp-text-disabled)",
                           letterSpacing: "0.1em",
                         }}
                       >

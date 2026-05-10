@@ -107,7 +107,7 @@ export function TeamMembersList({
                         letterSpacing: "0.14em",
                         color: "var(--bp-text-primary)",
                         border: "1px solid #D4D4D4",
-                        backgroundColor: "#fff",
+                        backgroundColor: "var(--bp-surface-card)",
                         textTransform: "uppercase",
                         padding: "4px 8px",
                       }}
@@ -161,7 +161,7 @@ function RoleTag({ role }: { role: string }) {
         fontWeight: 600,
         letterSpacing: "0.2em",
         textTransform: "uppercase",
-        color: filled ? "#fff" : color,
+        color: filled ? "var(--bp-surface-card)" : color,
         backgroundColor: filled ? color : "transparent",
         border: `1px solid ${color}`,
       }}

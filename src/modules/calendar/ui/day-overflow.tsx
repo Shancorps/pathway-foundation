@@ -41,7 +41,7 @@ export function DayOverflow({ events }: { events: CalendarEvent[] }) {
             className="fixed inset-0 z-40 cursor-default bg-transparent"
           />
           <div
-            className="absolute left-0 z-50 mt-1 w-[260px] bg-white p-2 shadow-[0_2px_0_#0F0F0F]"
+            className="absolute left-0 z-50 mt-1 w-[260px] bg-[var(--bp-surface-card)] p-2 shadow-[0_2px_0_var(--bp-border-graphite)]"
             style={{ border: "1px solid #0F0F0F" }}
           >
             <ul className="space-y-1">

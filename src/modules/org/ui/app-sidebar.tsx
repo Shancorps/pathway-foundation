@@ -225,7 +225,7 @@ function NavSections() {
   const pathname = usePathname()
 
   return (
-    <nav className="flex-1 overflow-y-auto py-4">
+    <nav className="min-h-0 flex-1 overflow-y-auto py-4">
       {NAV_GROUPS.map((group, idx) => (
         <div key={group.label} className={cn(idx > 0 && "mt-6")}>
           {/* Group header with mono caps + small rule line */}
@@ -325,7 +325,7 @@ function UserBlock({ user }: { user: SidebarUser }) {
             aria-hidden
           >
             <span
-              className="text-[9px] font-semibold tracking-wider text-[#8BAABF]"
+              className="text-[9px] font-semibold tracking-wider text-[var(--bp-accent-steel-soft)]"
               style={{ fontFamily: "var(--font-mono)" }}
             >
               {initials}
@@ -334,10 +334,12 @@ function UserBlock({ user }: { user: SidebarUser }) {
             <span className="absolute -top-0.5 -right-0.5 size-[6px] bg-[var(--color-particle-orange)]" />
           </div>
           <div className="min-w-0 flex-1">
-            <p className="truncate text-[12px] font-medium text-[var(--color-graphite)]">
+            <p className="truncate text-[12px] font-medium text-[var(--bp-text-primary)]">
               {user.name}
             </p>
-            {user.role && <p className="font-label truncate text-[#888888]">{user.role}</p>}
+            {user.role && (
+              <p className="font-label truncate text-[var(--bp-text-muted)]">{user.role}</p>
+            )}
           </div>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" side="top" className="min-w-[14rem]">

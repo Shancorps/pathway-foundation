@@ -364,7 +364,7 @@ function StatisticFormDialog({
                 className={
                   active
                     ? "border border-[var(--bp-accent-orange)] bg-[var(--bp-accent-orange)] text-white"
-                    : "border border-[var(--bp-border-strong)] bg-white text-[var(--bp-text-primary)] hover:border-[var(--bp-border-graphite)]"
+                    : "border border-[var(--bp-border-strong)] bg-[var(--bp-surface-card)] text-[var(--bp-text-primary)] hover:border-[var(--bp-border-graphite)]"
                 }
                 style={{
                   fontFamily: "var(--font-mono)",
@@ -396,7 +396,7 @@ function StatisticFormDialog({
                   className={
                     active
                       ? "border border-[var(--bp-accent-orange)] bg-[var(--bp-accent-orange)] text-white"
-                      : "border border-[var(--bp-border-strong)] bg-white text-[var(--bp-text-primary)] hover:border-[var(--bp-border-graphite)]"
+                      : "border border-[var(--bp-border-strong)] bg-[var(--bp-surface-card)] text-[var(--bp-text-primary)] hover:border-[var(--bp-border-graphite)]"
                   }
                   style={{
                     fontFamily: "var(--font-mono)",
@@ -642,7 +642,10 @@ function DialogShell({
       aria-modal="true"
       aria-label={title}
     >
-      <div className="w-full max-w-[560px] bg-white" style={{ border: "1px solid #0F0F0F" }}>
+      <div
+        className="w-full max-w-[560px] bg-[var(--bp-surface-card)]"
+        style={{ border: "1px solid #0F0F0F" }}
+      >
         <div className="flex items-start justify-between gap-4 border-b border-[var(--bp-border-default)] px-6 py-4">
           <div>
             <p

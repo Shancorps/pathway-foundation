@@ -57,7 +57,7 @@ export function TypesIndex({ types }: { types: ParticleTypeRow[] }) {
                 fontSize: 11,
                 fontWeight: 600,
                 letterSpacing: "0.18em",
-                color: "#888",
+                color: "var(--bp-text-muted)",
                 textTransform: "uppercase",
               }}
             >
@@ -68,7 +68,7 @@ export function TypesIndex({ types }: { types: ParticleTypeRow[] }) {
               style={{
                 fontFamily: "var(--font-sans)",
                 fontSize: 14,
-                color: "#444",
+                color: "var(--bp-text-secondary)",
                 lineHeight: 1.55,
               }}
             >
@@ -131,7 +131,7 @@ function TypeRow({ type }: { type: ParticleTypeRow }) {
                 fontFamily: "var(--font-sans)",
                 fontSize: 16,
                 fontWeight: 600,
-                color: "#0F0F0F",
+                color: "var(--bp-text-primary)",
                 lineHeight: 1.25,
                 letterSpacing: "-0.005em",
               }}
@@ -144,7 +144,7 @@ function TypeRow({ type }: { type: ParticleTypeRow }) {
                 style={{
                   fontFamily: "var(--font-sans)",
                   fontSize: 14,
-                  color: "#666",
+                  color: "var(--bp-text-secondary)",
                   lineHeight: 1.4,
                 }}
               >
@@ -157,7 +157,7 @@ function TypeRow({ type }: { type: ParticleTypeRow }) {
                 fontFamily: "var(--font-mono)",
                 fontSize: 10,
                 fontWeight: 500,
-                color: "#5A7A92",
+                color: "var(--bp-accent-steel-soft)",
                 letterSpacing: "0.14em",
                 textTransform: "uppercase",
               }}
@@ -165,7 +165,7 @@ function TypeRow({ type }: { type: ParticleTypeRow }) {
               <span>
                 {String(type.fieldCount)} field{type.fieldCount === 1 ? "" : "s"}
               </span>
-              <span style={{ color: "#CCC" }}>·</span>
+              <span style={{ color: "var(--bp-text-disabled)" }}>·</span>
               <span>
                 {String(type.instanceCount)} instance{type.instanceCount === 1 ? "" : "s"}
               </span>
@@ -173,19 +173,23 @@ function TypeRow({ type }: { type: ParticleTypeRow }) {
           </div>
 
           <div className="flex shrink-0 gap-1">
-            <Link
-              href={`/particles/${type.id}/edit`}
+            <button
+              type="button"
               onClick={(e) => {
+                e.preventDefault()
                 e.stopPropagation()
+                router.push(`/particles/${type.id}/edit`)
               }}
-              className="grid place-items-center border border-transparent p-1.5 hover:border-[#E4E4E4] hover:bg-white"
+              aria-label={`Edit ${type.name}`}
+              className="grid place-items-center border border-transparent p-1.5 hover:border-[var(--bp-border-default)] hover:bg-[var(--bp-surface-card-active)]"
             >
               <Settings className="size-3.5" strokeWidth={1.5} />
-            </Link>
+            </button>
             <button
               type="button"
               onClick={handleDelete}
-              className="grid place-items-center border border-transparent p-1.5 hover:border-[#E4E4E4] hover:bg-white"
+              aria-label={`Delete ${type.name}`}
+              className="grid place-items-center border border-transparent p-1.5 hover:border-[var(--bp-border-default)] hover:bg-[var(--bp-surface-card-active)]"
             >
               <Trash2 className="size-3.5" strokeWidth={1.5} />
             </button>

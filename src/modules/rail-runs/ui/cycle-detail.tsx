@@ -330,7 +330,7 @@ export function CycleDetail({
                       href={link.url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex items-center justify-between gap-4 py-3 transition-colors hover:bg-white"
+                      className="flex items-center justify-between gap-4 py-3 transition-colors hover:bg-[var(--bp-surface-card-active)]"
                     >
                       <div className="min-w-0 flex-1">
                         <p
@@ -508,7 +508,10 @@ function RejectApprovalDialog({
       aria-modal="true"
       aria-labelledby="reject-approval-title"
     >
-      <div className="w-full max-w-[480px] bg-white" style={{ border: "1px solid #0F0F0F" }}>
+      <div
+        className="w-full max-w-[480px] bg-[var(--bp-surface-card)]"
+        style={{ border: "1px solid #0F0F0F" }}
+      >
         <div className="flex items-start justify-between gap-4 border-b border-[var(--bp-border-default)] px-6 py-4">
           <div>
             <p
@@ -741,7 +744,10 @@ function LoopBackDialog({
       aria-modal="true"
       aria-labelledby="loop-back-dialog-title"
     >
-      <div className="w-full max-w-[560px] bg-white" style={{ border: "1px solid #0F0F0F" }}>
+      <div
+        className="w-full max-w-[560px] bg-[var(--bp-surface-card)]"
+        style={{ border: "1px solid #0F0F0F" }}
+      >
         <div className="flex items-start justify-between gap-4 border-b border-[var(--bp-border-default)] px-6 py-4">
           <div>
             <p
@@ -972,7 +978,7 @@ function TimerPanel({
 
   return (
     <RegCard state={cycle.timerStartedAt ? "active" : "queued"} className="space-y-4">
-      <div className="grid grid-cols-1 gap-px overflow-hidden bg-[#E4E4E4] md:grid-cols-3">
+      <div className="grid grid-cols-1 gap-px overflow-hidden bg-[var(--bp-border-default)] md:grid-cols-3">
         <Stat label="In your inbox" value={formatMinutes(issuedMinutes)} variant="muted" />
         <Stat
           label="Active work"
@@ -1021,7 +1027,7 @@ function Stat({
         ? "var(--bp-accent-orange)"
         : "var(--bp-text-primary)"
   return (
-    <div className="bg-white px-5 py-4">
+    <div className="bg-[var(--bp-surface-card)] px-5 py-4">
       <p
         className="flex items-center gap-2"
         style={{

@@ -138,7 +138,7 @@ export function ParticleForm({ type, initial, parentCandidates }: FormProps) {
           }}
         />
       ))}
-      <div className="flex justify-end gap-2 border-t border-[#E4E4E4] pt-6">
+      <div className="flex justify-end gap-2 border-t border-[var(--bp-border-default)] pt-6">
         <BlueprintButton
           type="button"
           variant="ghost"

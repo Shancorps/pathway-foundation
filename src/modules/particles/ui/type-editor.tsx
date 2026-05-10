@@ -137,7 +137,7 @@ export function TypeEditor({ type }: { type: ParticleType }) {
                 style={{
                   fontFamily: "var(--font-sans)",
                   fontSize: 12,
-                  color: "#666",
+                  color: "var(--bp-text-secondary)",
                   lineHeight: 1.5,
                 }}
               >
@@ -197,7 +197,7 @@ export function TypeEditor({ type }: { type: ParticleType }) {
                 fontSize: 11,
                 fontWeight: 600,
                 letterSpacing: "0.18em",
-                color: "#888",
+                color: "var(--bp-text-muted)",
                 textTransform: "uppercase",
               }}
             >
@@ -208,7 +208,7 @@ export function TypeEditor({ type }: { type: ParticleType }) {
               style={{
                 fontFamily: "var(--font-sans)",
                 fontSize: 14,
-                color: "#444",
+                color: "var(--bp-text-secondary)",
                 lineHeight: 1.55,
               }}
             >
@@ -228,7 +228,7 @@ export function TypeEditor({ type }: { type: ParticleType }) {
                         onClick={() => void move(idx, -1)}
                         disabled={idx === 0}
                         aria-label="Move up"
-                        className="grid place-items-center border border-transparent p-1 hover:border-[#E4E4E4] hover:bg-white disabled:opacity-30"
+                        className="grid place-items-center border border-transparent p-1 hover:border-[var(--bp-border-default)] hover:bg-[var(--bp-surface-card-active)] disabled:opacity-30"
                       >
                         <ArrowUp className="size-3" strokeWidth={1.5} />
                       </button>
@@ -237,7 +237,7 @@ export function TypeEditor({ type }: { type: ParticleType }) {
                         onClick={() => void move(idx, 1)}
                         disabled={idx === type.fields.length - 1}
                         aria-label="Move down"
-                        className="grid place-items-center border border-transparent p-1 hover:border-[#E4E4E4] hover:bg-white disabled:opacity-30"
+                        className="grid place-items-center border border-transparent p-1 hover:border-[var(--bp-border-default)] hover:bg-[var(--bp-surface-card-active)] disabled:opacity-30"
                       >
                         <ArrowDown className="size-3" strokeWidth={1.5} />
                       </button>
@@ -249,7 +249,7 @@ export function TypeEditor({ type }: { type: ParticleType }) {
                             fontFamily: "var(--font-sans)",
                             fontSize: 14,
                             fontWeight: 600,
-                            color: "#0F0F0F",
+                            color: "var(--bp-text-primary)",
                           }}
                         >
                           {field.label}
@@ -262,7 +262,7 @@ export function TypeEditor({ type }: { type: ParticleType }) {
                         style={{
                           fontFamily: "var(--font-mono)",
                           fontSize: 10,
-                          color: "#888",
+                          color: "var(--bp-text-muted)",
                           letterSpacing: "0.08em",
                         }}
                       >
@@ -278,7 +278,7 @@ export function TypeEditor({ type }: { type: ParticleType }) {
                         onClick={() => {
                           setEditingField(field)
                         }}
-                        className="grid place-items-center border border-transparent p-1.5 hover:border-[#E4E4E4] hover:bg-white"
+                        className="grid place-items-center border border-transparent p-1.5 hover:border-[var(--bp-border-default)] hover:bg-[var(--bp-surface-card-active)]"
                         aria-label="Edit field"
                       >
                         <Pencil className="size-3.5" strokeWidth={1.5} />
@@ -286,7 +286,7 @@ export function TypeEditor({ type }: { type: ParticleType }) {
                       <button
                         type="button"
                         onClick={() => void handleDeleteField(field.key)}
-                        className="grid place-items-center border border-transparent p-1.5 hover:border-[#E4E4E4] hover:bg-white"
+                        className="grid place-items-center border border-transparent p-1.5 hover:border-[var(--bp-border-default)] hover:bg-[var(--bp-surface-card-active)]"
                         aria-label="Delete field"
                       >
                         <Trash2 className="size-3.5" strokeWidth={1.5} />
@@ -332,7 +332,7 @@ function FieldTypePill({ label }: { label: string }) {
         fontSize: 8,
         fontWeight: 600,
         letterSpacing: "0.18em",
-        color: "#5A7A92",
+        color: "var(--bp-accent-steel-soft)",
         border: "1px solid #5A7A92",
         textTransform: "uppercase",
       }}
@@ -351,7 +351,7 @@ function RequiredPill() {
         fontSize: 8,
         fontWeight: 600,
         letterSpacing: "0.18em",
-        color: "#E8711A",
+        color: "var(--bp-accent-orange)",
         border: "1px solid #E8711A",
         textTransform: "uppercase",
       }}
@@ -481,7 +481,7 @@ function FieldDialog({
               style={{
                 fontFamily: "var(--font-mono)",
                 fontSize: 10,
-                color: "#888",
+                color: "var(--bp-text-muted)",
                 letterSpacing: "0.06em",
               }}
             >

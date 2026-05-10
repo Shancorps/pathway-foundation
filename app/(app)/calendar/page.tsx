@@ -99,13 +99,13 @@ export default async function CalendarPage({
             <Link
               href={prevHref}
               aria-label="Previous month"
-              className="inline-flex items-center justify-center border border-[var(--bp-border-graphite)] bg-white p-2 transition-colors hover:bg-[var(--bp-surface-card-queued)]"
+              className="inline-flex items-center justify-center border border-[var(--bp-border-graphite)] bg-[var(--bp-surface-card)] p-2 transition-colors hover:bg-[var(--bp-surface-card-queued)]"
             >
               <ChevronLeft className="size-3.5" strokeWidth={2} />
             </Link>
             <Link
               href={todayHref}
-              className="inline-flex items-center justify-center border border-[var(--bp-border-graphite)] bg-white px-4 py-2 transition-colors hover:bg-[var(--bp-surface-card-queued)]"
+              className="inline-flex items-center justify-center border border-[var(--bp-border-graphite)] bg-[var(--bp-surface-card)] px-4 py-2 transition-colors hover:bg-[var(--bp-surface-card-queued)]"
               style={{
                 fontFamily: "var(--font-mono)",
                 fontSize: 10,
@@ -120,7 +120,7 @@ export default async function CalendarPage({
             <Link
               href={nextHref}
               aria-label="Next month"
-              className="inline-flex items-center justify-center border border-[var(--bp-border-graphite)] bg-white p-2 transition-colors hover:bg-[var(--bp-surface-card-queued)]"
+              className="inline-flex items-center justify-center border border-[var(--bp-border-graphite)] bg-[var(--bp-surface-card)] p-2 transition-colors hover:bg-[var(--bp-surface-card-queued)]"
             >
               <ChevronRight className="size-3.5" strokeWidth={2} />
             </Link>

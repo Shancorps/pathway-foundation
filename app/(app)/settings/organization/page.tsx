@@ -37,7 +37,7 @@ export default async function OrganizationSettingsPage() {
             <li>
               <Link
                 href="/settings/organization/audit"
-                className="flex items-center gap-3 px-4 py-3 transition-colors hover:bg-[#FAFAFA]"
+                className="flex items-center gap-3 px-4 py-3 transition-colors hover:bg-[var(--bp-surface-card-queued)]"
               >
                 <Activity
                   className="size-4 text-[var(--color-muted-foreground)]"
@@ -56,7 +56,7 @@ export default async function OrganizationSettingsPage() {
             <li>
               <Link
                 href="/settings/organization/danger"
-                className="flex items-center gap-3 px-4 py-3 transition-colors hover:bg-[#FAFAFA]"
+                className="flex items-center gap-3 px-4 py-3 transition-colors hover:bg-[var(--bp-surface-card-queued)]"
               >
                 <Trash2
                   className="size-4 text-[var(--color-muted-foreground)]"

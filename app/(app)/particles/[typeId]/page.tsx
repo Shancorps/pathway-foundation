@@ -42,7 +42,7 @@ export default async function ParticleInstanceListPage({
       <div className="mb-6">
         <Link
           href="/particles"
-          className="inline-flex items-center gap-2 text-[#888] transition-colors hover:text-[#0F0F0F]"
+          className="inline-flex items-center gap-2 text-[var(--bp-text-muted)] transition-colors hover:text-[var(--bp-text-primary)]"
           style={{
             fontFamily: "var(--font-mono)",
             fontSize: 10,
@@ -68,13 +68,15 @@ export default async function ParticleInstanceListPage({
               fontSize: 11,
               fontWeight: 500,
               letterSpacing: "0.16em",
-              color: "#666",
+              color: "var(--bp-text-secondary)",
               textTransform: "uppercase",
             }}
           >
-            <span style={{ color: "#AAA" }}>Instances</span>{" "}
-            <span style={{ color: "#0F0F0F" }}>·</span>{" "}
-            <span style={{ color: "#0F0F0F", fontWeight: 600 }}>{String(instances.length)}</span>
+            <span style={{ color: "var(--bp-text-disabled)" }}>Instances</span>{" "}
+            <span style={{ color: "var(--bp-text-primary)" }}>·</span>{" "}
+            <span style={{ color: "var(--bp-text-primary)", fontWeight: 600 }}>
+              {String(instances.length)}
+            </span>
           </div>
         }
         action={

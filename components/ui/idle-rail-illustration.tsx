@@ -32,8 +32,8 @@ export function IdleRailIllustration({ width = 480 }: { width?: number }) {
           />
         </pattern>
         <radialGradient id="iri-fade" cx="50%" cy="55%" r="55%">
-          <stop offset="0%" stopColor="#fff" stopOpacity="0" />
-          <stop offset="100%" stopColor="#fff" stopOpacity="1" />
+          <stop offset="0%" stopColor="var(--bp-surface-card)" stopOpacity="0" />
+          <stop offset="100%" stopColor="var(--bp-surface-card)" stopOpacity="1" />
         </radialGradient>
         <mask id="iri-fade-mask">
           <rect width={W} height={H} fill="white" />

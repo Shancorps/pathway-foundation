@@ -118,7 +118,7 @@ export default async function AuditLogPage({
                   className={
                     active
                       ? "border border-[var(--bp-accent-orange)] bg-[var(--bp-accent-orange)] text-white"
-                      : "border border-[var(--bp-border-strong)] bg-white text-[var(--bp-text-primary)] hover:border-[var(--bp-border-graphite)]"
+                      : "border border-[var(--bp-border-strong)] bg-[var(--bp-surface-card)] text-[var(--bp-text-primary)] hover:border-[var(--bp-border-graphite)]"
                   }
                   style={{
                     fontFamily: "var(--font-mono)",
@@ -165,7 +165,7 @@ export default async function AuditLogPage({
             <div className="flex gap-2">
               <button
                 type="submit"
-                className="border border-[var(--bp-border-graphite)] bg-[var(--bp-accent-orange)] px-4 py-2 text-white transition-colors hover:bg-[#D6610F]"
+                className="border border-[var(--bp-border-graphite)] bg-[var(--bp-accent-orange)] px-4 py-2 text-white transition-colors hover:opacity-90"
                 style={{
                   fontFamily: "var(--font-mono)",
                   fontSize: 10,
@@ -179,7 +179,7 @@ export default async function AuditLogPage({
               {hasFilter && (
                 <Link
                   href="/settings/organization/audit"
-                  className="border border-[var(--bp-border-strong)] bg-white px-4 py-2 transition-colors hover:border-[var(--bp-border-graphite)]"
+                  className="border border-[var(--bp-border-strong)] bg-[var(--bp-surface-card)] px-4 py-2 transition-colors hover:border-[var(--bp-border-graphite)]"
                   style={{
                     fontFamily: "var(--font-mono)",
                     fontSize: 10,
@@ -302,7 +302,7 @@ function PaginatorLink({
     return (
       <span
         aria-disabled
-        className="inline-flex cursor-not-allowed items-center justify-center border border-[var(--bp-border-strong)] bg-white p-2 opacity-40"
+        className="inline-flex cursor-not-allowed items-center justify-center border border-[var(--bp-border-strong)] bg-[var(--bp-surface-card)] p-2 opacity-40"
         aria-label={ariaLabel}
       >
         {children}
@@ -313,7 +313,7 @@ function PaginatorLink({
     <Link
       href={href}
       aria-label={ariaLabel}
-      className="inline-flex items-center justify-center border border-[var(--bp-border-graphite)] bg-white p-2 transition-colors hover:bg-[var(--bp-surface-card-queued)]"
+      className="inline-flex items-center justify-center border border-[var(--bp-border-graphite)] bg-[var(--bp-surface-card)] p-2 transition-colors hover:bg-[var(--bp-surface-card-queued)]"
     >
       {children}
     </Link>

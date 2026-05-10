@@ -316,7 +316,7 @@ function ContainerNode({
           <button
             type="button"
             onClick={handleDelete}
-            className="grid place-items-center border border-transparent p-1.5 hover:border-[#E4E4E4] hover:bg-white"
+            className="grid place-items-center border border-transparent p-1.5 hover:border-[var(--bp-border-default)] hover:bg-[var(--bp-surface-card-active)]"
             aria-label="Delete container"
           >
             <Trash2 className="size-3.5" strokeWidth={1.5} />
@@ -325,7 +325,7 @@ function ContainerNode({
       </div>
 
       {(children.length > 0 || localPosts.length > 0) && (
-        <div className="mt-4 space-y-3 border-l border-[#E4E4E4] pl-5">
+        <div className="mt-4 space-y-3 border-l border-[var(--bp-border-default)] pl-5">
           {localPosts.map((post) => (
             <PostNode key={post.id} post={post} members={members} />
           ))}
@@ -381,12 +381,15 @@ function PostNode({ post, members }: { post: SerializablePost; members: Member[]
   const isVacant = post.assignedUsers.length === 0
 
   return (
-    <div className="bg-white p-3" style={{ border: "1px solid #E4E4E4" }}>
+    <div className="bg-[var(--bp-surface-card)] p-3" style={{ border: "1px solid #E4E4E4" }}>
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
             {post.isAreaManager && (
-              <Star className="size-3 fill-[#E8711A] text-[#E8711A]" strokeWidth={1.5} />
+              <Star
+                className="size-3 fill-[var(--bp-accent-orange)] text-[var(--bp-accent-orange)]"
+                strokeWidth={1.5}
+              />
             )}
             <span
               className="px-1.5 py-0.5"
@@ -446,7 +449,7 @@ function PostNode({ post, members }: { post: SerializablePost; members: Member[]
                   <button
                     type="button"
                     onClick={() => void handleUnassign(u.id)}
-                    className="text-[#888] hover:text-[#E8711A]"
+                    className="text-[var(--bp-text-muted)] hover:text-[var(--bp-accent-orange)]"
                     aria-label={`Remove ${u.name || u.email}`}
                   >
                     <X className="size-3" strokeWidth={2} />
@@ -463,7 +466,7 @@ function PostNode({ post, members }: { post: SerializablePost; members: Member[]
               setShowAssign(true)
             }}
             disabled={availableMembers.length === 0}
-            className="grid place-items-center border border-transparent p-1.5 hover:border-[#E4E4E4] disabled:opacity-30"
+            className="grid place-items-center border border-transparent p-1.5 hover:border-[var(--bp-border-default)] disabled:opacity-30"
             title={
               availableMembers.length === 0
                 ? "Every team member is already assigned"
@@ -475,7 +478,7 @@ function PostNode({ post, members }: { post: SerializablePost; members: Member[]
           <button
             type="button"
             onClick={handleDelete}
-            className="grid place-items-center border border-transparent p-1.5 hover:border-[#E4E4E4]"
+            className="grid place-items-center border border-transparent p-1.5 hover:border-[var(--bp-border-default)]"
             aria-label="Delete post"
           >
             <Trash2 className="size-3.5" strokeWidth={1.5} />

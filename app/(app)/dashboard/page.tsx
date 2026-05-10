@@ -42,7 +42,7 @@ export default async function DashboardPage() {
               fontSize: 11,
               fontWeight: 500,
               letterSpacing: "0.16em",
-              color: "#666",
+              color: "var(--bp-text-secondary)",
               textTransform: "uppercase",
             }}
           >
@@ -130,7 +130,7 @@ function StatusTile({
             fontSize: 9,
             fontWeight: 600,
             letterSpacing: "0.2em",
-            color: "#888",
+            color: "var(--bp-text-muted)",
             textTransform: "uppercase",
           }}
         >
@@ -142,7 +142,7 @@ function StatusTile({
             fontFamily: "var(--font-sans)",
             fontSize: 36,
             fontWeight: 600,
-            color: accent ? "#E8711A" : "#0F0F0F",
+            color: accent ? "var(--bp-accent-orange)" : "var(--bp-text-primary)",
             lineHeight: 1,
             letterSpacing: "-0.02em",
           }}
@@ -176,7 +176,7 @@ function RouteCard({
                 fontSize: 9,
                 fontWeight: 600,
                 letterSpacing: "0.2em",
-                color: "#888",
+                color: "var(--bp-text-muted)",
                 textTransform: "uppercase",
               }}
             >
@@ -188,7 +188,7 @@ function RouteCard({
                 fontFamily: "var(--font-sans)",
                 fontSize: 18,
                 fontWeight: 600,
-                color: "#0F0F0F",
+                color: "var(--bp-text-primary)",
                 lineHeight: 1.2,
               }}
             >
@@ -199,7 +199,7 @@ function RouteCard({
               style={{
                 fontFamily: "var(--font-sans)",
                 fontSize: 13,
-                color: "#666",
+                color: "var(--bp-text-secondary)",
                 lineHeight: 1.5,
               }}
             >
@@ -211,7 +211,7 @@ function RouteCard({
             style={{
               fontFamily: "var(--font-mono)",
               fontSize: 14,
-              color: "#AAA",
+              color: "var(--bp-text-disabled)",
             }}
           >
             →

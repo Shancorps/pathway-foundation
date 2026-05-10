@@ -130,7 +130,7 @@ function CycleRow({ cycle }: { cycle: RunTimelineCycle }) {
     <Link href={`/my-actions/${cycle.id}`} className="block">
       <RegCard
         state={isOpen ? "active" : "queued"}
-        className="!px-5 !py-4 transition-colors hover:bg-white"
+        className="!px-5 !py-4 transition-colors hover:bg-[var(--bp-surface-card-active)]"
       >
         <div className="flex items-start gap-4">
           <PositionBadge n={cycle.position} state={isOpen ? "active" : "queued"} />
@@ -235,8 +235,8 @@ function PositionBadge({ n, state }: { n: number; state: "active" | "queued" }) 
       style={{
         width: 32,
         height: 32,
-        backgroundColor: state === "active" ? "var(--bp-text-primary)" : "#fff",
-        color: state === "active" ? "#fff" : "var(--bp-text-primary)",
+        backgroundColor: state === "active" ? "var(--bp-text-primary)" : "var(--bp-surface-card)",
+        color: state === "active" ? "var(--bp-surface-card)" : "var(--bp-text-primary)",
         border: "1px solid #0F0F0F",
         fontFamily: "var(--font-mono)",
         fontSize: 12,
@@ -251,7 +251,7 @@ function PositionBadge({ n, state }: { n: number; state: "active" | "queued" }) 
 
 function RunStat({ label, value }: { label: string; value: string }) {
   return (
-    <div className="bg-white px-5 py-4">
+    <div className="bg-[var(--bp-surface-card)] px-5 py-4">
       <p
         style={{
           fontFamily: "var(--font-mono)",
@@ -349,7 +349,7 @@ function RunStatusPill({ status }: { status: "running" | "completed" | "cancelle
         fontWeight: 600,
         letterSpacing: "0.2em",
         textTransform: "uppercase",
-        color: config.filled ? "#fff" : config.color,
+        color: config.filled ? "var(--bp-surface-card)" : config.color,
         backgroundColor: config.filled ? config.color : "transparent",
         border: `1px solid ${config.color}`,
       }}
@@ -369,7 +369,7 @@ function LoopBackTag() {
         fontSize: 9,
         fontWeight: 600,
         letterSpacing: "0.18em",
-        color: "#fff",
+        color: "var(--bp-surface-card)",
         backgroundColor: "var(--bp-accent-orange)",
         textTransform: "uppercase",
       }}

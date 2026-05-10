@@ -9,7 +9,10 @@ export function StatTile({ data, href }: { data: StatTileData; href: string }) {
   const color = STAT_COLORS[stat.color]
   return (
     <Link href={href} className="block">
-      <RegCard state="queued" className="!px-5 !py-5 transition-colors hover:bg-white">
+      <RegCard
+        state="queued"
+        className="!px-5 !py-5 transition-colors hover:bg-[var(--bp-surface-card-active)]"
+      >
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0 flex-1">
             <p
@@ -81,7 +84,7 @@ export function AddTilePlaceholder({ href }: { href: string }) {
     <Link href={href} className="block">
       <RegCard
         state="new"
-        className="grid h-full place-items-center px-5 py-10 transition-colors hover:bg-white"
+        className="grid h-full place-items-center px-5 py-10 transition-colors hover:bg-[var(--bp-surface-card-active)]"
       >
         <div className="text-center">
           <p

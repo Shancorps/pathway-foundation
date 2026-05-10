@@ -28,7 +28,7 @@ export function EventTileWrapper({
     <div
       className="flex items-stretch"
       style={{
-        backgroundColor: faded ? "var(--bp-surface-card-queued)" : "#fff",
+        backgroundColor: faded ? "var(--bp-surface-card-queued)" : "var(--bp-surface-card)",
         border: `1px solid ${faded ? "var(--bp-border-default)" : color}`,
         opacity: faded ? 0.85 : 1,
       }}

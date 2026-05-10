@@ -338,7 +338,7 @@ export function TaskNodeDialog({
                         }}
                         disabled={idx === 0}
                         aria-label="Move up"
-                        className="grid place-items-center border border-transparent p-1 hover:border-[var(--bp-border-default)] hover:bg-white disabled:opacity-30"
+                        className="grid place-items-center border border-transparent p-1 hover:border-[var(--bp-border-default)] hover:bg-[var(--bp-surface-card-active)] disabled:opacity-30"
                       >
                         <ArrowUp className="size-3" strokeWidth={1.5} />
                       </button>
@@ -349,7 +349,7 @@ export function TaskNodeDialog({
                         }}
                         disabled={idx === checklist.length - 1}
                         aria-label="Move down"
-                        className="grid place-items-center border border-transparent p-1 hover:border-[var(--bp-border-default)] hover:bg-white disabled:opacity-30"
+                        className="grid place-items-center border border-transparent p-1 hover:border-[var(--bp-border-default)] hover:bg-[var(--bp-surface-card-active)] disabled:opacity-30"
                       >
                         <ArrowDown className="size-3" strokeWidth={1.5} />
                       </button>
@@ -379,7 +379,7 @@ export function TaskNodeDialog({
                         deleteItem(idx)
                       }}
                       aria-label="Remove item"
-                      className="grid place-items-center border border-transparent p-1.5 hover:border-[var(--bp-border-default)] hover:bg-white"
+                      className="grid place-items-center border border-transparent p-1.5 hover:border-[var(--bp-border-default)] hover:bg-[var(--bp-surface-card-active)]"
                     >
                       <Trash2 className="size-3.5" strokeWidth={1.5} />
                     </button>
@@ -411,7 +411,7 @@ export function TaskNodeDialog({
                   fontFamily: "var(--font-mono)",
                   fontSize: 9,
                   letterSpacing: "0.16em",
-                  color: "#888",
+                  color: "var(--bp-text-muted)",
                   textTransform: "uppercase",
                 }}
               >
@@ -429,7 +429,7 @@ export function TaskNodeDialog({
                         }}
                         disabled={idx === 0}
                         aria-label="Move up"
-                        className="grid place-items-center border border-transparent p-1 hover:border-[var(--bp-border-default)] hover:bg-white disabled:opacity-30"
+                        className="grid place-items-center border border-transparent p-1 hover:border-[var(--bp-border-default)] hover:bg-[var(--bp-surface-card-active)] disabled:opacity-30"
                       >
                         <ArrowUp className="size-3" strokeWidth={1.5} />
                       </button>
@@ -440,7 +440,7 @@ export function TaskNodeDialog({
                         }}
                         disabled={idx === tools.length - 1}
                         aria-label="Move down"
-                        className="grid place-items-center border border-transparent p-1 hover:border-[var(--bp-border-default)] hover:bg-white disabled:opacity-30"
+                        className="grid place-items-center border border-transparent p-1 hover:border-[var(--bp-border-default)] hover:bg-[var(--bp-surface-card-active)] disabled:opacity-30"
                       >
                         <ArrowDown className="size-3" strokeWidth={1.5} />
                       </button>
@@ -467,7 +467,7 @@ export function TaskNodeDialog({
                         deleteTool(idx)
                       }}
                       aria-label="Remove link"
-                      className="grid place-items-center border border-transparent p-1.5 hover:border-[var(--bp-border-default)] hover:bg-white"
+                      className="grid place-items-center border border-transparent p-1.5 hover:border-[var(--bp-border-default)] hover:bg-[var(--bp-surface-card-active)]"
                     >
                       <Trash2 className="size-3.5" strokeWidth={1.5} />
                     </button>

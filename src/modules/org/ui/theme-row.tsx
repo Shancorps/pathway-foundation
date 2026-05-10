@@ -49,7 +49,7 @@ export function ThemeRow() {
               }}
               className={
                 active
-                  ? "border border-[#E8711A] bg-[#E8711A] text-white"
+                  ? "border border-[var(--bp-accent-orange)] bg-[var(--bp-accent-orange)] text-white"
                   : "border border-[var(--color-border-strong)] bg-[var(--color-card)] text-[var(--color-foreground)] hover:border-[var(--color-foreground)]"
               }
               style={{

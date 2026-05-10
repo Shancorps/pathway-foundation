@@ -30,13 +30,15 @@ export default async function ParticlesPage() {
               fontSize: 11,
               fontWeight: 500,
               letterSpacing: "0.16em",
-              color: "#666",
+              color: "var(--bp-text-secondary)",
               textTransform: "uppercase",
             }}
           >
-            <span style={{ color: "#AAA" }}>Defined</span>{" "}
-            <span style={{ color: "#0F0F0F" }}>·</span>{" "}
-            <span style={{ color: "#0F0F0F", fontWeight: 600 }}>{String(types.length)}</span>
+            <span style={{ color: "var(--bp-text-disabled)" }}>Defined</span>{" "}
+            <span style={{ color: "var(--bp-text-primary)" }}>·</span>{" "}
+            <span style={{ color: "var(--bp-text-primary)", fontWeight: 600 }}>
+              {String(types.length)}
+            </span>
           </div>
         }
       />

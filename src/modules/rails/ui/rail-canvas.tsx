@@ -484,7 +484,7 @@ function LayoutBtn({
       className={
         active
           ? "border border-[var(--bp-accent-orange)] bg-[var(--bp-accent-orange)] text-white"
-          : "border border-[var(--bp-border-strong)] bg-white text-[var(--bp-text-primary)] hover:border-[var(--bp-border-graphite)]"
+          : "border border-[var(--bp-border-strong)] bg-[var(--bp-surface-card)] text-[var(--bp-text-primary)] hover:border-[var(--bp-border-graphite)]"
       }
       style={{
         padding: "6px 8px",
@@ -693,7 +693,7 @@ function RailNodeView({ data, selected }: NodeProps<Node<CanvasNodeData>>) {
             onDelete(node)
           }}
           aria-label={`Delete ${node.name}`}
-          className="nodrag absolute -top-2 -right-2 grid size-5 place-items-center bg-white transition-colors hover:bg-[var(--bp-accent-orange-hover)]"
+          className="nodrag absolute -top-2 -right-2 grid size-5 place-items-center bg-[var(--bp-surface-card)] transition-colors hover:bg-[var(--bp-accent-orange-hover)]"
           style={{ border: "1px solid #0F0F0F" }}
         >
           <X className="size-3" strokeWidth={2.25} aria-hidden />
@@ -737,7 +737,7 @@ function TrailingAddNode({ data }: NodeProps<Node<TrailingAddData>>) {
       // `nodrag nopan` tells xyflow to ignore drag/pan starts on this element.
       // Stopping pointerdown propagation prevents xyflow's selection handler
       // from swallowing the click before it reaches onClick.
-      className="nodrag nopan grid size-11 place-items-center bg-white transition-colors hover:bg-[var(--bp-surface-card-active)]"
+      className="nodrag nopan grid size-11 place-items-center bg-[var(--bp-surface-card)] transition-colors hover:bg-[var(--bp-surface-card-active)]"
       onPointerDown={(e) => {
         e.stopPropagation()
       }}
@@ -814,7 +814,7 @@ function AddEdge({
               e.currentTarget.style.backgroundColor = "var(--bp-surface-card-active)"
             }}
             onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = "#fff"
+              e.currentTarget.style.backgroundColor = "var(--bp-surface-card)"
             }}
           >
             <Plus className="size-3" strokeWidth={2.5} aria-hidden />

@@ -83,7 +83,7 @@ export function RailsList({
               fontSize: 11,
               fontWeight: 600,
               letterSpacing: "0.18em",
-              color: "#888",
+              color: "var(--bp-text-muted)",
               textTransform: "uppercase",
             }}
           >
@@ -94,7 +94,7 @@ export function RailsList({
             style={{
               fontFamily: "var(--font-sans)",
               fontSize: 14,
-              color: "#444",
+              color: "var(--bp-text-secondary)",
               lineHeight: 1.55,
             }}
           >
@@ -116,7 +116,7 @@ export function RailsList({
                 fontSize: 11,
                 fontWeight: 600,
                 letterSpacing: "0.18em",
-                color: "#888",
+                color: "var(--bp-text-muted)",
                 textTransform: "uppercase",
               }}
             >
@@ -127,7 +127,7 @@ export function RailsList({
               style={{
                 fontFamily: "var(--font-sans)",
                 fontSize: 14,
-                color: "#444",
+                color: "var(--bp-text-secondary)",
                 lineHeight: 1.55,
               }}
             >
@@ -188,7 +188,7 @@ function RailRowItem({ rail, particles }: { rail: RailRow; particles: ParticleOp
                   fontFamily: "var(--font-sans)",
                   fontSize: 16,
                   fontWeight: 600,
-                  color: "#0F0F0F",
+                  color: "var(--bp-text-primary)",
                   lineHeight: 1.25,
                 }}
               >
@@ -201,7 +201,7 @@ function RailRowItem({ rail, particles }: { rail: RailRow; particles: ParticleOp
                     fontFamily: "var(--font-mono)",
                     fontSize: 10,
                     fontWeight: 500,
-                    color: "#5A7A92",
+                    color: "var(--bp-accent-steel-soft)",
                     letterSpacing: "0.14em",
                     textTransform: "uppercase",
                   }}
@@ -215,7 +215,7 @@ function RailRowItem({ rail, particles }: { rail: RailRow; particles: ParticleOp
                   style={{
                     fontFamily: "var(--font-sans)",
                     fontSize: 14,
-                    color: "#666",
+                    color: "var(--bp-text-secondary)",
                     lineHeight: 1.4,
                   }}
                 >
@@ -250,7 +250,7 @@ function RailRowItem({ rail, particles }: { rail: RailRow; particles: ParticleOp
               <button
                 type="button"
                 onClick={handleDelete}
-                className="grid place-items-center border border-transparent p-1.5 hover:border-[#E4E4E4] hover:bg-white"
+                className="grid place-items-center border border-transparent p-1.5 hover:border-[var(--bp-border-default)] hover:bg-[var(--bp-surface-card-active)]"
                 aria-label="Delete rail"
               >
                 <Trash2 className="size-3.5" strokeWidth={1.5} />
@@ -270,7 +270,7 @@ function RailRowItem({ rail, particles }: { rail: RailRow; particles: ParticleOp
 }
 
 function StatusPill({ published }: { published: boolean }) {
-  const color = published ? "#E8711A" : "#888"
+  const color = published ? "var(--bp-accent-orange)" : "var(--bp-text-muted)"
   return (
     <span
       className="px-2 py-0.5"
@@ -280,8 +280,8 @@ function StatusPill({ published }: { published: boolean }) {
         fontWeight: 600,
         letterSpacing: "0.2em",
         textTransform: "uppercase",
-        color: published ? "#fff" : color,
-        backgroundColor: published ? "#E8711A" : "transparent",
+        color: published ? "var(--bp-surface-card)" : color,
+        backgroundColor: published ? "var(--bp-accent-orange)" : "transparent",
         border: `1px solid ${color}`,
       }}
     >
@@ -344,8 +344,12 @@ function RunRailDialog({
         </DialogHeader>
         {particles.length === 0 ? (
           <div
-            className="border border-dashed border-[#D4D4D4] p-4 text-center"
-            style={{ fontFamily: "var(--font-sans)", fontSize: 13, color: "#666" }}
+            className="border border-dashed border-[var(--bp-border-strong)] p-4 text-center"
+            style={{
+              fontFamily: "var(--font-sans)",
+              fontSize: 13,
+              color: "var(--bp-text-secondary)",
+            }}
           >
             No {rail.particleTypeName ?? "Particle"}s yet.
             <Link href="/particles" className="ml-1 underline">

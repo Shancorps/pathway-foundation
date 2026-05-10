@@ -422,7 +422,7 @@ function TopBar({
         className="grid size-7 place-items-center transition-colors"
         style={{
           border: `1px solid ${locked ? "var(--bp-accent-orange)" : "var(--bp-border-strong)"}`,
-          backgroundColor: locked ? "var(--bp-surface-card-active)" : "#fff",
+          backgroundColor: locked ? "var(--bp-surface-card-active)" : "var(--bp-surface-card)",
           color: locked ? "var(--bp-accent-orange)" : "var(--bp-text-primary)",
         }}
       >
@@ -468,7 +468,7 @@ function StatusPill({ isPublished }: { isPublished: boolean }) {
         fontWeight: 600,
         letterSpacing: "0.2em",
         textTransform: "uppercase",
-        color: isPublished ? "#fff" : color,
+        color: isPublished ? "var(--bp-surface-card)" : color,
         backgroundColor: isPublished ? color : "transparent",
         border: `1px solid ${color}`,
       }}

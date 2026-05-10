@@ -33,7 +33,7 @@ export function RangePicker({
             className={
               active
                 ? "border border-[var(--bp-accent-orange)] bg-[var(--bp-accent-orange)] text-white"
-                : "border border-[var(--bp-border-strong)] bg-white text-[var(--bp-text-primary)] hover:border-[var(--bp-border-graphite)]"
+                : "border border-[var(--bp-border-strong)] bg-[var(--bp-surface-card)] text-[var(--bp-text-primary)] hover:border-[var(--bp-border-graphite)]"
             }
             style={{
               fontFamily: "var(--font-mono)",
