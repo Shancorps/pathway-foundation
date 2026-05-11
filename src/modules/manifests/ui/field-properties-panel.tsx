@@ -1,6 +1,7 @@
 "use client"
 
 import { X } from "lucide-react"
+import { useState } from "react"
 import type { ManifestFieldDef } from "../schema"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -15,6 +16,16 @@ interface Props {
 }
 
 export function FieldPropertiesPanel({ field, updateField, onClose }: Props) {
+  // Raw text for the Options textarea (select / multi_select).
+  // We keep raw text local so Enter / trailing newlines are preserved while
+  // typing — the canonical `options` array still gets filtered (no empties)
+  // on every change. Without this, pressing Enter would briefly create
+  // ["foo", ""], filter to ["foo"], then re-render the textarea as "foo"
+  // — the newline appears to vanish.
+  // The component is remounted (key={field.key} in the parent) when the
+  // user clicks a different field, so this state always reflects the
+  // current field's options.
+  const [optionsRaw, setOptionsRaw] = useState(() => (field.options ?? []).join("\n"))
   return (
     <div className="overflow-y-auto border-l p-4">
       <div className="mb-4 flex items-center justify-between">
@@ -84,8 +95,9 @@ export function FieldPropertiesPanel({ field, updateField, onClose }: Props) {
           <div>
             <Label>Options (one per line)</Label>
             <Textarea
-              value={(field.options ?? []).join("\n")}
+              value={optionsRaw}
               onChange={(e) => {
+                setOptionsRaw(e.target.value)
                 updateField((f) => ({
                   ...f,
                   options: e.target.value

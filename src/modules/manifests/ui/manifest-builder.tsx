@@ -126,6 +126,7 @@ export function ManifestBuilder({ manifest }: Props) {
         />
         {selected ? (
           <FieldPropertiesPanel
+            key={selected.key}
             field={selected}
             updateField={updateField}
             onClose={() => {
