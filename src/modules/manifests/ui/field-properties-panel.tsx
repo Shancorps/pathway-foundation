@@ -48,6 +48,106 @@ export function FieldPropertiesPanel({ field, updateField, onClose }: Props) {
           </p>
         </div>
 
+        {/* Per-type extras — shown right after Label/Slug so they're prominent. */}
+        {field.type === "number" && (
+          <>
+            <div>
+              <Label>Min</Label>
+              <Input
+                type="number"
+                value={field.min ?? ""}
+                onChange={(e) => {
+                  updateField((f) => ({
+                    ...f,
+                    min: e.target.value === "" ? undefined : Number(e.target.value),
+                  }))
+                }}
+              />
+            </div>
+            <div>
+              <Label>Max</Label>
+              <Input
+                type="number"
+                value={field.max ?? ""}
+                onChange={(e) => {
+                  updateField((f) => ({
+                    ...f,
+                    max: e.target.value === "" ? undefined : Number(e.target.value),
+                  }))
+                }}
+              />
+            </div>
+          </>
+        )}
+
+        {(field.type === "select" || field.type === "multi_select") && (
+          <div>
+            <Label>Options (one per line)</Label>
+            <Textarea
+              value={(field.options ?? []).join("\n")}
+              onChange={(e) => {
+                updateField((f) => ({
+                  ...f,
+                  options: e.target.value
+                    .split("\n")
+                    .map((o) => o.trim())
+                    .filter(Boolean),
+                }))
+              }}
+              placeholder={"Option 1\nOption 2\nOption 3"}
+              rows={5}
+            />
+            <p className="text-muted-foreground mt-1 text-xs">
+              One choice per line. These show up as the dropdown / checkbox options when filling
+              this field at runtime.
+            </p>
+          </div>
+        )}
+
+        {field.type === "currency" && (
+          <div>
+            <Label>Currency code</Label>
+            <Input
+              value={field.currency ?? ""}
+              placeholder="USD"
+              onChange={(e) => {
+                updateField((f) => ({ ...f, currency: e.target.value || undefined }))
+              }}
+            />
+          </div>
+        )}
+
+        {field.type === "file_upload" && (
+          <div className="flex items-center justify-between">
+            <Label htmlFor="multi-file-toggle">Allow multiple files</Label>
+            <Switch
+              id="multi-file-toggle"
+              checked={field.fileMultiple ?? false}
+              onCheckedChange={(v) => {
+                updateField((f) => ({ ...f, fileMultiple: v }))
+              }}
+            />
+          </div>
+        )}
+
+        {field.type === "particle_ref" && (
+          <div>
+            <Label>Allowed particle types (IDs, comma-separated; empty = any)</Label>
+            <Input
+              value={(field.particleTypeIds ?? []).join(", ")}
+              onChange={(e) => {
+                updateField((f) => ({
+                  ...f,
+                  particleTypeIds: e.target.value
+                    .split(",")
+                    .map((s) => s.trim())
+                    .filter(Boolean),
+                }))
+              }}
+            />
+          </div>
+        )}
+
         <div>
           <Label>Placeholder</Label>
           <Input
@@ -102,100 +202,6 @@ export function FieldPropertiesPanel({ field, updateField, onClose }: Props) {
             }}
           />
         </div>
-
-        {/* Per-type extras */}
-        {field.type === "number" && (
-          <>
-            <div>
-              <Label>Min</Label>
-              <Input
-                type="number"
-                value={field.min ?? ""}
-                onChange={(e) => {
-                  updateField((f) => ({
-                    ...f,
-                    min: e.target.value === "" ? undefined : Number(e.target.value),
-                  }))
-                }}
-              />
-            </div>
-            <div>
-              <Label>Max</Label>
-              <Input
-                type="number"
-                value={field.max ?? ""}
-                onChange={(e) => {
-                  updateField((f) => ({
-                    ...f,
-                    max: e.target.value === "" ? undefined : Number(e.target.value),
-                  }))
-                }}
-              />
-            </div>
-          </>
-        )}
-
-        {(field.type === "select" || field.type === "multi_select") && (
-          <div>
-            <Label>Options (one per line)</Label>
-            <Textarea
-              value={(field.options ?? []).join("\n")}
-              onChange={(e) => {
-                updateField((f) => ({
-                  ...f,
-                  options: e.target.value
-                    .split("\n")
-                    .map((o) => o.trim())
-                    .filter(Boolean),
-                }))
-              }}
-            />
-          </div>
-        )}
-
-        {field.type === "currency" && (
-          <div>
-            <Label>Currency code</Label>
-            <Input
-              value={field.currency ?? ""}
-              placeholder="USD"
-              onChange={(e) => {
-                updateField((f) => ({ ...f, currency: e.target.value || undefined }))
-              }}
-            />
-          </div>
-        )}
-
-        {field.type === "file_upload" && (
-          <div className="flex items-center justify-between">
-            <Label htmlFor="multi-file-toggle">Allow multiple files</Label>
-            <Switch
-              id="multi-file-toggle"
-              checked={field.fileMultiple ?? false}
-              onCheckedChange={(v) => {
-                updateField((f) => ({ ...f, fileMultiple: v }))
-              }}
-            />
-          </div>
-        )}
-
-        {field.type === "particle_ref" && (
-          <div>
-            <Label>Allowed particle types (IDs, comma-separated; empty = any)</Label>
-            <Input
-              value={(field.particleTypeIds ?? []).join(", ")}
-              onChange={(e) => {
-                updateField((f) => ({
-                  ...f,
-                  particleTypeIds: e.target.value
-                    .split(",")
-                    .map((s) => s.trim())
-                    .filter(Boolean),
-                }))
-              }}
-            />
-          </div>
-        )}
       </div>
     </div>
   )

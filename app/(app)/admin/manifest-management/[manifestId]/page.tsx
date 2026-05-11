@@ -1,6 +1,4 @@
 import { notFound, redirect } from "next/navigation"
-import { PageShell } from "@/components/ui/page-shell"
-import { TitleBlock } from "@/components/ui/title-block"
 import { hasPermission } from "@/modules/auth/permissions"
 import { getSession } from "@/modules/auth/session"
 import { getManifestForOrg } from "@/modules/manifests/queries"
@@ -23,16 +21,8 @@ export default async function ManifestBuilderPage({ params }: Props) {
   const manifest = await getManifestForOrg(orgId, manifestId)
   if (!manifest) notFound()
 
-  return (
-    <PageShell>
-      <TitleBlock
-        coordinate="05 / Admin · Manifest Management"
-        title={manifest.name}
-        subtitle={manifest.description ?? "Define the fields collected by this manifest template."}
-      />
-      <div className="mt-6">
-        <ManifestBuilder manifest={manifest} />
-      </div>
-    </PageShell>
-  )
+  // No PageShell — the manifest builder is a 3-column builder surface that
+  // benefits from the full viewport width (palette + canvas + properties),
+  // same as the rail builder.
+  return <ManifestBuilder manifest={manifest} />
 }

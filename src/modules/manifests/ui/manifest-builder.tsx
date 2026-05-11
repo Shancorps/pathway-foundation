@@ -77,7 +77,7 @@ export function ManifestBuilder({ manifest }: Props) {
   }
 
   return (
-    <div className="flex h-[calc(100vh-12rem)] min-h-[36rem] flex-col rounded-lg border bg-[var(--bp-surface-card)]">
+    <div className="flex h-[calc(100vh-3.5rem)] min-h-[36rem] flex-col bg-[var(--bp-surface-card)]">
       {/* Top bar */}
       <div className="flex items-center gap-3 border-b p-3">
         <Button variant="ghost" size="icon" onClick={handleBack} aria-label="Back to manifests">
