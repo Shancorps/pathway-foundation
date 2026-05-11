@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache"
 import { and, asc, eq, gt, isNull, lt } from "drizzle-orm"
 import { createId } from "@paralleldrive/cuid2"
+import { z } from "zod"
 import { ActionError, orgAction } from "@/lib/safe-action"
 import { audit } from "@/modules/audit/audit"
 import { user } from "@/modules/auth/schema"
@@ -11,7 +12,7 @@ import { railRunManifests } from "@/modules/manifests/schema"
 import { postAssignments, posts } from "@/modules/org-structure/schema"
 import { particles } from "@/modules/particles/schema"
 import { railNodes, rails } from "@/modules/rails/schema"
-import { cycleVisibleToUserPredicate } from "./queries"
+import { cycleVisibleToUserPredicate, prepareStartRail } from "./queries"
 import { cycles, railRuns, type Cycle, type CycleChecklistItem } from "./schema"
 import {
   cancelRailRunInput,
@@ -331,6 +332,24 @@ function snapshotToolsLinks(
       position: item.position,
     }))
 }
+
+/**
+ * Server-action wrapper around `prepareStartRail`. The UI calls this from a
+ * client component (the Run button on the rails list) to ask whether the
+ * rail's Initialize node demands operator input. If yes, the caller opens the
+ * Start Rail modal with the returned requirements; if no, the caller invokes
+ * `startRail` directly for one-click start.
+ *
+ * Kept thin on purpose: it's a one-shot read with the same org-scoped auth as
+ * every other action, and lets the client branch without dragging the query
+ * function into a server component.
+ */
+export const prepareStart = orgAction
+  .metadata({ actionName: "rail_runs.prepare_start" })
+  .inputSchema(z.object({ railId: z.string(), particleId: z.string() }))
+  .action(async ({ parsedInput, ctx }) => {
+    return prepareStartRail(ctx.activeOrg.id, parsedInput.railId, parsedInput.particleId)
+  })
 
 export const startRail = orgAction
   .metadata({ actionName: "rail_runs.start" })

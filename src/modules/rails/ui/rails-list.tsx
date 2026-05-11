@@ -27,7 +27,8 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { createRail, deleteRail } from "../actions"
-import { startRail } from "@/modules/rail-runs/actions"
+import { prepareStart, startRail } from "@/modules/rail-runs/actions"
+import { StartRailModal, type StartRailRequirements } from "@/modules/rail-runs/ui/start-rail-modal"
 
 interface RailRow {
   id: string
@@ -304,11 +305,40 @@ function RunRailDialog({
   const router = useRouter()
   const [particleId, setParticleId] = useState("")
   const [submitting, setSubmitting] = useState(false)
+  // When the rail has an Initialize node, we hand off from the particle picker
+  // to the Start Rail modal: capture the requirements + the chosen particle,
+  // close this dialog, and open StartRailModal pre-loaded with both.
+  const [initState, setInitState] = useState<{
+    requirements: StartRailRequirements
+    particleId: string
+    particleName: string
+  } | null>(null)
 
   async function handleSubmit(e: React.SyntheticEvent) {
     e.preventDefault()
     if (!particleId) return
     setSubmitting(true)
+    // Ask whether the rail needs Initialize input first. The wrapper action
+    // shares orgAction auth with startRail, so a cross-org / missing rail
+    // surfaces the same generic error path.
+    const prep = await prepareStart({ railId: rail.id, particleId })
+    if (prep.serverError) {
+      setSubmitting(false)
+      alert(prep.serverError)
+      return
+    }
+    if (prep.data?.requiresInitialize) {
+      const particleName = particles.find((p) => p.id === particleId)?.name ?? "Particle"
+      setInitState({
+        requirements: prep.data.requirements,
+        particleId,
+        particleName,
+      })
+      setSubmitting(false)
+      onOpenChange(false)
+      return
+    }
+    // No Initialize — preserve today's one-click behavior verbatim.
     const result = await startRail({ railId: rail.id, particleId })
     setSubmitting(false)
     if (result.serverError) {
@@ -333,71 +363,92 @@ function RunRailDialog({
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Run &ldquo;{rail.name}&rdquo;</DialogTitle>
-          <DialogDescription>
-            Pick which {rail.particleTypeName ?? "Particle"} to send through this rail. The first
-            cycle will appear in the assigned Terminal&rsquo;s My Actions inbox.
-          </DialogDescription>
-        </DialogHeader>
-        {particles.length === 0 ? (
-          <div
-            className="border border-dashed border-[var(--bp-border-strong)] p-4 text-center"
-            style={{
-              fontFamily: "var(--font-sans)",
-              fontSize: 13,
-              color: "var(--bp-text-secondary)",
-            }}
-          >
-            No {rail.particleTypeName ?? "Particle"}s yet.
-            <Link href="/particles" className="ml-1 underline">
-              Create one
-            </Link>{" "}
-            first.
-          </div>
-        ) : (
-          <form onSubmit={handleSubmit} className="space-y-3">
-            <div>
-              <Label htmlFor="run-particle">Particle</Label>
-              <Select value={particleId} onValueChange={setParticleId}>
-                <SelectTrigger id="run-particle">
-                  <SelectValue placeholder={`Pick a ${rail.particleTypeName ?? "Particle"}`} />
-                </SelectTrigger>
-                <SelectContent>
-                  {particles.map((p) => (
-                    <SelectItem key={p.id} value={p.id}>
-                      {p.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+    <>
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Run &ldquo;{rail.name}&rdquo;</DialogTitle>
+            <DialogDescription>
+              Pick which {rail.particleTypeName ?? "Particle"} to send through this rail. The first
+              cycle will appear in the assigned Terminal&rsquo;s My Actions inbox.
+            </DialogDescription>
+          </DialogHeader>
+          {particles.length === 0 ? (
+            <div
+              className="border border-dashed border-[var(--bp-border-strong)] p-4 text-center"
+              style={{
+                fontFamily: "var(--font-sans)",
+                fontSize: 13,
+                color: "var(--bp-text-secondary)",
+              }}
+            >
+              No {rail.particleTypeName ?? "Particle"}s yet.
+              <Link href="/particles" className="ml-1 underline">
+                Create one
+              </Link>{" "}
+              first.
             </div>
-            <DialogFooter>
-              <BlueprintButton
-                type="button"
-                variant="ghost"
-                size="sm"
-                onClick={() => {
-                  onOpenChange(false)
-                }}
-              >
-                Cancel
-              </BlueprintButton>
-              <BlueprintButton
-                type="submit"
-                variant="primary"
-                size="sm"
-                disabled={submitting || !particleId}
-              >
-                {submitting ? "Starting..." : "Start Rail"}
-              </BlueprintButton>
-            </DialogFooter>
-          </form>
-        )}
-      </DialogContent>
-    </Dialog>
+          ) : (
+            <form onSubmit={handleSubmit} className="space-y-3">
+              <div>
+                <Label htmlFor="run-particle">Particle</Label>
+                <Select value={particleId} onValueChange={setParticleId}>
+                  <SelectTrigger id="run-particle">
+                    <SelectValue placeholder={`Pick a ${rail.particleTypeName ?? "Particle"}`} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {particles.map((p) => (
+                      <SelectItem key={p.id} value={p.id}>
+                        {p.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <DialogFooter>
+                <BlueprintButton
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    onOpenChange(false)
+                  }}
+                >
+                  Cancel
+                </BlueprintButton>
+                <BlueprintButton
+                  type="submit"
+                  variant="primary"
+                  size="sm"
+                  disabled={submitting || !particleId}
+                >
+                  {submitting ? "Starting..." : "Start Rail"}
+                </BlueprintButton>
+              </DialogFooter>
+            </form>
+          )}
+        </DialogContent>
+      </Dialog>
+      {initState && (
+        <StartRailModal
+          open
+          onOpenChange={(o) => {
+            if (!o) setInitState(null)
+          }}
+          railId={rail.id}
+          particleId={initState.particleId}
+          railName={rail.name}
+          particleName={initState.particleName}
+          requirements={initState.requirements}
+          onStarted={({ runId }) => {
+            setInitState(null)
+            setParticleId("")
+            router.push(`/runs/${runId}`)
+            router.refresh()
+          }}
+        />
+      )}
+    </>
   )
 }
 
