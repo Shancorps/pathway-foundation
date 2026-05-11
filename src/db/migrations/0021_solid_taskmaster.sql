@@ -1,0 +1,1 @@
+ALTER TABLE "rail_runs" ADD COLUMN "post_holder_assignments" jsonb DEFAULT '{}'::jsonb NOT NULL;
