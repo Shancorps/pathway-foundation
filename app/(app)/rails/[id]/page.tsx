@@ -57,6 +57,11 @@ export default async function RailEditPage({ params }: { params: Promise<{ id: s
           : null,
         vacant: p.assignedUsers.length === 0,
       }))}
+      postsWithHolders={posts.map((p) => ({
+        postId: p.id,
+        postTitle: p.title,
+        holders: p.assignedUsers.map((u) => ({ userId: u.id, userName: u.name })),
+      }))}
     />
   )
 }

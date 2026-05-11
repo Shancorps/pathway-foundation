@@ -40,6 +40,7 @@ import {
 } from "../actions"
 import type { Rail, RailNode } from "../schema"
 import { ApprovalDialog } from "./approval-dialog"
+import { InitializeNodeDialog, type RailPostHolders } from "./initialize-node-dialog"
 import { RailCanvas, type RailRef } from "./rail-canvas"
 import { RailPalette } from "./rail-palette"
 import { SubFlowDialog } from "./sub-flow-dialog"
@@ -61,6 +62,7 @@ export function RailEditor({
   rail,
   nodes,
   posts,
+  postsWithHolders,
   particleTypeName,
   runningRunCount,
   otherRails,
@@ -70,6 +72,12 @@ export function RailEditor({
   rail: Rail
   nodes: RailNode[]
   posts: PostOption[]
+  /**
+   * Posts in the org with their current holders. Used by the Initialize
+   * dialog to render the multi-holder Post preview (so the rail designer
+   * sees which Posts the operator will be asked to narrow at run-start).
+   */
+  postsWithHolders: RailPostHolders[]
   particleTypeName: string | null
   runningRunCount: number
   otherRails: RailRef[]
@@ -79,11 +87,21 @@ export function RailEditor({
   const router = useRouter()
   const isPublished = rail.status === "published"
   const [showAddTask, setShowAddTask] = useState(false)
+  const [showAddInitialize, setShowAddInitialize] = useState(false)
   const [editingNode, setEditingNode] = useState<RailNode | null>(null)
   const [editingSubFlow, setEditingSubFlow] = useState<RailNode | null>(null)
   const [editingApproval, setEditingApproval] = useState<RailNode | null>(null)
+  const [editingInitialize, setEditingInitialize] = useState<RailNode | null>(null)
   const [showSettings, setShowSettings] = useState(false)
   const [showManifests, setShowManifests] = useState(false)
+  const hasInitialize = nodes.some((n) => n.type === "initialize")
+  // Limit the dialog's Post preview to Posts this rail's nodes actually
+  // reference. The Initialize designer cares about routing decisions, not the
+  // full org chart.
+  const railPostIds = new Set(nodes.map((n) => n.postId).filter((p): p is string => Boolean(p)))
+  const initializeRailPosts: RailPostHolders[] = postsWithHolders.filter((p) =>
+    railPostIds.has(p.postId),
+  )
   // Templates only — Task / Approval node dialogs need just the manifest defs
   // (with their fields) to render the required-fields config section.
   const attachedManifestTemplates = attachedManifests.map((row) => row.manifest)
@@ -191,7 +209,7 @@ export function RailEditor({
       {isPublished && runningRunCount > 0 && <PublishedEditingBanner runCount={runningRunCount} />}
 
       <div className="flex min-h-0 flex-1">
-        <RailPalette disabled={editsDisabled} />
+        <RailPalette disabled={editsDisabled} hasInitialize={hasInitialize} />
         <main className="min-w-0 flex-1">
           <RailCanvas
             railId={rail.id}
@@ -210,6 +228,10 @@ export function RailEditor({
                 setEditingApproval(node)
                 return
               }
+              if (node.type === "initialize") {
+                setEditingInitialize(node)
+                return
+              }
               if (node.type === "task") {
                 setEditingNode(node)
                 return
@@ -224,6 +246,15 @@ export function RailEditor({
             onPaletteDrop={(paletteId) => {
               if (paletteId === "task") {
                 setShowAddTask(true)
+                return
+              }
+              if (paletteId === "initialize") {
+                // The dialog gathers required-at-start fields before we
+                // create the node. addStructuralNode (called by the dialog's
+                // save) auto-snaps the new node to position 1 and shifts
+                // every other node down by one — keeps the drop free-form
+                // while enforcing the structural rule on the server.
+                setShowAddInitialize(true)
                 return
               }
               if (paletteId === "end" || paletteId === "sub_flow" || paletteId === "approval") {
@@ -312,6 +343,29 @@ export function RailEditor({
           node={editingApproval}
           posts={posts}
           attachedManifests={attachedManifestTemplates}
+          onSaved={notifyEditSaved}
+        />
+      )}
+      <InitializeNodeDialog
+        open={showAddInitialize}
+        onOpenChange={setShowAddInitialize}
+        mode="add"
+        railId={rail.id}
+        attachedManifests={attachedManifestTemplates}
+        allRailPosts={initializeRailPosts}
+        onSaved={notifyEditSaved}
+      />
+      {editingInitialize && (
+        <InitializeNodeDialog
+          open
+          onOpenChange={(open) => {
+            if (!open) setEditingInitialize(null)
+          }}
+          mode="edit"
+          railId={rail.id}
+          node={editingInitialize}
+          attachedManifests={attachedManifestTemplates}
+          allRailPosts={initializeRailPosts}
           onSaved={notifyEditSaved}
         />
       )}

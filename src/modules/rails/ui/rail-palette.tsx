@@ -64,7 +64,7 @@ const RAIL_GROUP: PaletteNode[] = [
     hint: "Set required fields",
     icon: Settings2,
     iconColor: "var(--bp-accent-purple)",
-    enabled: false,
+    enabled: true,
   },
   {
     id: "condition",
@@ -131,8 +131,17 @@ const ACTION_GROUP: PaletteNode[] = [
  * Left palette of rail-builder node types. Drag a card onto the canvas to add
  * the node. Only Trigger and Task are wired in v1 — the rest are placeholder
  * cards marked "soon" so the spec's full vocabulary is visible from day one.
+ *
+ * `hasInitialize` lets the caller report whether the rail already has an
+ * Initialize node so we can disable the tile (one-per-rail rule).
  */
-export function RailPalette({ disabled = false }: { disabled?: boolean }) {
+export function RailPalette({
+  disabled = false,
+  hasInitialize = false,
+}: {
+  disabled?: boolean
+  hasInitialize?: boolean
+}) {
   return (
     <aside
       className="flex h-full flex-col"
@@ -158,7 +167,12 @@ export function RailPalette({ disabled = false }: { disabled?: boolean }) {
       </div>
 
       <div className="flex-1 overflow-y-auto px-3 py-3">
-        <PaletteGroup label="Rail" nodes={RAIL_GROUP} disabled={disabled} />
+        <PaletteGroup
+          label="Rail"
+          nodes={RAIL_GROUP}
+          disabled={disabled}
+          hasInitialize={hasInitialize}
+        />
         <div className="h-3" />
         <PaletteGroup label="Action" nodes={ACTION_GROUP} disabled={disabled} />
       </div>
@@ -188,10 +202,12 @@ function PaletteGroup({
   label,
   nodes,
   disabled,
+  hasInitialize = false,
 }: {
   label: string
   nodes: PaletteNode[]
   disabled: boolean
+  hasInitialize?: boolean
 }) {
   return (
     <div>
@@ -211,7 +227,11 @@ function PaletteGroup({
       <ul className="space-y-1.5">
         {nodes.map((n) => (
           <li key={n.id}>
-            <PaletteCard node={n} disabled={disabled} />
+            <PaletteCard
+              node={n}
+              disabled={disabled}
+              alreadyExists={n.id === "initialize" && hasInitialize}
+            />
           </li>
         ))}
       </ul>
@@ -219,9 +239,24 @@ function PaletteGroup({
   )
 }
 
-function PaletteCard({ node, disabled }: { node: PaletteNode; disabled: boolean }) {
-  const draggable = node.enabled && !disabled
+function PaletteCard({
+  node,
+  disabled,
+  alreadyExists,
+}: {
+  node: PaletteNode
+  disabled: boolean
+  /** True when the rail already has a node of this type and the type is
+   * limited to one-per-rail (today: only Initialize). */
+  alreadyExists: boolean
+}) {
+  const draggable = node.enabled && !disabled && !alreadyExists
   const Icon = node.icon
+  const title = alreadyExists
+    ? "Only one Initialize per rail"
+    : draggable
+      ? `Drag onto canvas — ${node.hint}`
+      : "Coming soon"
   return (
     <div
       draggable={draggable}
@@ -236,7 +271,7 @@ function PaletteCard({ node, disabled }: { node: PaletteNode; disabled: boolean 
         cursor: draggable ? "grab" : "not-allowed",
         opacity: draggable ? 1 : 0.55,
       }}
-      title={draggable ? `Drag onto canvas — ${node.hint}` : "Coming soon"}
+      title={title}
     >
       <span
         aria-hidden
@@ -273,7 +308,7 @@ function PaletteCard({ node, disabled }: { node: PaletteNode; disabled: boolean 
             color: "var(--bp-text-muted)",
           }}
         >
-          {node.enabled ? node.hint : "Soon"}
+          {alreadyExists ? "Already added" : node.enabled ? node.hint : "Soon"}
         </p>
       </div>
     </div>
