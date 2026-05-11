@@ -179,6 +179,12 @@ async function advanceRun(
   if (next.type === "sub_flow") {
     return await fireSubFlow(ctx, run, next)
   }
+  if (next.type === "initialize") {
+    // Initialize is a start-time gate; all of its work happened in startRail
+    // before the run was inserted. At runtime it's transparent — just walk
+    // past it and resolve the next node.
+    return await advanceRun(ctx, run, next.position)
+  }
   throw new ActionError("VALIDATION", `Unsupported node type at runtime: ${next.type}`)
 }
 
@@ -362,12 +368,65 @@ export const startRail = orgAction
       )
     }
 
+    // Initialize gate. Load all nodes once (used here for validation and
+    // again indirectly by advanceRun) so we can check whether the rail has
+    // an Initialize node and validate the operator-supplied data against
+    // its declared requirements.
+    const allNodes = await ctx.db
+      .select()
+      .from(railNodes)
+      .where(and(eq(railNodes.railId, rail.id), isNull(railNodes.deletedAt)))
+      .orderBy(asc(railNodes.position))
+    const initializeNode = allNodes.find((n) => n.type === "initialize")
+    if (initializeNode) {
+      if (!parsedInput.initializeData) {
+        throw new ActionError("VALIDATION", "This rail requires Initialize data.")
+      }
+      const init = parsedInput.initializeData
+      // 1) Required manifest fields: every declared (manifest, slug) must be
+      //    non-empty in the supplied data.
+      const requiredSlugs =
+        initializeNode.config.kind === "initialize"
+          ? initializeNode.config.requiredManifestFieldSlugs
+          : []
+      for (const req of requiredSlugs) {
+        const data = init.manifestData[req.manifestId] ?? {}
+        const v = data[req.fieldSlug]
+        const empty =
+          v === undefined || v === null || v === "" || (Array.isArray(v) && v.length === 0)
+        if (empty) {
+          throw new ActionError("VALIDATION", `Required field not filled: ${req.fieldSlug}`)
+        }
+      }
+      // 2) Post-holder assignments: every multi-holder Post referenced by any
+      //    node on the rail must have a pick, and the assigned user must
+      //    currently hold the Post. Single-holder / empty Posts are skipped.
+      const postIdsOnRail = Array.from(
+        new Set(allNodes.map((n) => n.postId).filter((id): id is string => Boolean(id))),
+      )
+      for (const postId of postIdsOnRail) {
+        const holders = await ctx.db
+          .select({ userId: postAssignments.userId })
+          .from(postAssignments)
+          .where(eq(postAssignments.postId, postId))
+        if (holders.length <= 1) continue
+        const assigned = init.postHolderAssignments[postId]
+        if (!assigned) {
+          throw new ActionError("VALIDATION", `Pick a holder for post ${postId}`)
+        }
+        const ok = holders.some((h) => h.userId === assigned)
+        if (!ok) {
+          throw new ActionError("FORBIDDEN", `Assigned user does not hold post ${postId}`)
+        }
+      }
+    }
+
     // Create the run first; advanceRun walks from position 0 (the trigger),
-    // auto-resolving structural nodes (End, Sub-Flow) until it issues the
-    // first cycle (Task / Approval) — or terminates if the rail is just
-    // Trigger → End. Using advanceRun here closes the bug where Approval /
-    // Sub-Flow as the first step were silently skipped because the legacy
-    // findFirstTaskNode filtered to type === "task".
+    // auto-resolving structural nodes (End, Sub-Flow, Initialize) until it
+    // issues the first cycle (Task / Approval) — or terminates if the rail
+    // is just Trigger → End. Using advanceRun here closes the bug where
+    // Approval / Sub-Flow as the first step were silently skipped because
+    // the legacy findFirstTaskNode filtered to type === "task".
     const runId = createId()
     await ctx.db.insert(railRuns).values({
       id: runId,
@@ -376,10 +435,24 @@ export const startRail = orgAction
       particleId: particle.id,
       status: "running",
       startedBy: ctx.session.user.id,
+      postHolderAssignments: parsedInput.initializeData?.postHolderAssignments ?? {},
     })
     // Seed manifest rows for the new run so the cycle UI can render them
     // immediately. Idempotent — re-callable if a manifest is attached later.
     await ensureRailRunManifestRows(runId)
+    // Apply Initialize manifest data (when supplied) into the freshly-seeded
+    // rail_run_manifests rows. Each manifestId maps to its full data blob;
+    // missing manifests in the payload simply stay empty.
+    if (parsedInput.initializeData) {
+      for (const [manifestId, data] of Object.entries(parsedInput.initializeData.manifestData)) {
+        await ctx.db
+          .update(railRunManifests)
+          .set({ data, updatedAt: new Date(), updatedBy: ctx.session.user.id })
+          .where(
+            and(eq(railRunManifests.railRunId, runId), eq(railRunManifests.manifestId, manifestId)),
+          )
+      }
+    }
     const [run] = await ctx.db.select().from(railRuns).where(eq(railRuns.id, runId)).limit(1)
     if (!run) throw new ActionError("NOT_FOUND", "Rail run could not be loaded after insert")
     const advance = await advanceRun(ctx, run, 0)
@@ -433,6 +506,29 @@ export const startRail = orgAction
         },
       },
     )
+    // Separate audit row for the Initialize step, so the rail-run timeline
+    // can render it as a distinct entry and the operator can see exactly
+    // which fields + holder picks were captured at start.
+    if (parsedInput.initializeData) {
+      await audit(
+        {
+          db: ctx.db,
+          organizationId: ctx.activeOrg.id,
+          actorUserId: ctx.session.user.id,
+          ipAddress: ctx.ipAddress,
+          userAgent: ctx.userAgent,
+        },
+        "rail_runs.started_with_initialize",
+        {
+          resourceType: "rail_run",
+          resourceId: runId,
+          metadata: {
+            filledSlugs: parsedInput.initializeData.manifestData,
+            assignedPostHolders: parsedInput.initializeData.postHolderAssignments,
+          },
+        },
+      )
+    }
     revalidatePath(MY_ACTIONS_PATH)
     revalidatePath(RAILS_PATH)
     return {

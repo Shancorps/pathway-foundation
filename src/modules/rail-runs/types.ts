@@ -3,6 +3,19 @@ import { z } from "zod"
 export const startRailInput = z.object({
   railId: z.string(),
   particleId: z.string(),
+  // Set when the rail has an Initialize node — the operator's pre-flight
+  // answers. `postHolderAssignments` is Record<postId, userId> covering every
+  // multi-holder Post on the rail. `manifestData` is Record<manifestId,
+  // Record<fieldSlug, value>> covering every field the Initialize node
+  // declared as required-at-start. The action validates both and writes them
+  // into rail_runs.post_holder_assignments and rail_run_manifests.data inside
+  // the same start transaction.
+  initializeData: z
+    .object({
+      postHolderAssignments: z.record(z.string(), z.string()),
+      manifestData: z.record(z.string(), z.record(z.string(), z.unknown())),
+    })
+    .optional(),
 })
 
 export const cancelRailRunInput = z.object({
