@@ -813,6 +813,37 @@ export const publishRail = orgAction
         `Sub-Flow "${incompleteSubFlow.name}" has no target rail. Click it on the canvas to pick one.`,
       )
     }
+    // Sub-Flow auto-spawn can't fill an Initialize form, so a sub-flow node
+    // can't target a rail that has Initialize. V1 limitation; future work is
+    // a sub-flow ↔ child data-passing protocol (spec §9).
+    const subFlowTargetRailIds = nodes
+      .filter((n) => n.type === "sub_flow")
+      .map((n) => (n.config.kind === "sub_flow" ? n.config.targetRailId : null))
+      .filter((id): id is string => Boolean(id))
+    if (subFlowTargetRailIds.length > 0) {
+      const targetNodes = await ctx.db
+        .select({
+          railId: railNodes.railId,
+          targetName: rails.name,
+        })
+        .from(railNodes)
+        .innerJoin(rails, eq(rails.id, railNodes.railId))
+        .where(
+          and(
+            inArray(railNodes.railId, subFlowTargetRailIds),
+            eq(railNodes.organizationId, ctx.activeOrg.id),
+            eq(railNodes.type, "initialize"),
+            isNull(railNodes.deletedAt),
+          ),
+        )
+      const offending = targetNodes[0]
+      if (offending) {
+        throw new ActionError(
+          "VALIDATION",
+          `Sub-flow target rail '${offending.targetName}' has an Initialize node. Sub-flow auto-spawn can't fill the Initialize form. Remove Initialize from the target rail or pick a different target.`,
+        )
+      }
+    }
     // Approval nodes need an approver post (re-uses rail_node.postId column).
     const approvalNoPost = nodes.find((n) => n.type === "approval" && !n.postId)
     if (approvalNoPost) {
