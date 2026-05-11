@@ -55,6 +55,15 @@ export function ManifestBuilder({ manifest }: Props) {
   }
 
   function handleBack() {
+    // If a save is mid-flight, don't prompt — the changes are already in
+    // transit to the server. Navigating is safe; if the save fails the
+    // banner will surface on next edit. (Without this, the race between
+    // clicking Save and the server response means `dirty` is still true
+    // for ~50–200ms after click, and the prompt fires incorrectly.)
+    if (status === "executing") {
+      router.push("/admin/manifest-management")
+      return
+    }
     if (dirty && !confirm("You have unsaved changes. Discard them?")) return
     router.push("/admin/manifest-management")
   }
