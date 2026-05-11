@@ -3,7 +3,7 @@ import { PageShell } from "@/components/ui/page-shell"
 import { TitleBlock } from "@/components/ui/title-block"
 import { hasPermission } from "@/modules/auth/permissions"
 import { getSession } from "@/modules/auth/session"
-import { listManifestsForOrg } from "@/modules/manifests/queries"
+import { listManifestFoldersForOrg, listManifestsForOrg } from "@/modules/manifests/queries"
 import { ManifestList } from "@/modules/manifests/ui/manifest-list"
 
 export default async function ManifestManagementPage() {
@@ -15,7 +15,10 @@ export default async function ManifestManagementPage() {
   const canBuild = await hasPermission(orgId, session.user.id, "canBuildManifests")
   if (!canBuild) redirect("/dashboard")
 
-  const items = await listManifestsForOrg(orgId)
+  const [items, folders] = await Promise.all([
+    listManifestsForOrg(orgId),
+    listManifestFoldersForOrg(orgId),
+  ])
 
   return (
     <PageShell>
@@ -25,7 +28,7 @@ export default async function ManifestManagementPage() {
         subtitle="Capture structured team input. Manifest templates collect data on rails."
       />
       <div className="mt-10">
-        <ManifestList manifests={items} />
+        <ManifestList manifests={items} folders={folders} />
       </div>
     </PageShell>
   )

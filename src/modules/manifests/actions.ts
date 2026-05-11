@@ -8,15 +8,19 @@ import { audit } from "@/modules/audit/audit"
 import { hasPermission } from "@/modules/auth/permissions"
 import { railNodes, rails } from "@/modules/rails/schema"
 import { railRuns } from "@/modules/rail-runs/schema"
-import { manifests, railManifests, railRunManifests } from "./schema"
+import { manifestFolders, manifests, railManifests, railRunManifests } from "./schema"
 import { ensureRailRunManifestRows, getRailsUsingManifest } from "./queries"
 import {
   attachManifestInput,
+  createManifestFolderInput,
   createManifestInput,
+  deleteManifestFolderInput,
   deleteManifestInput,
   detachManifestInput,
+  moveManifestToFolderInput,
   reorderRailManifestsInput,
   setRequiredFieldsInput,
+  updateManifestFolderInput,
   updateManifestInput,
   updateRunManifestDataInput,
 } from "./types"
@@ -591,4 +595,182 @@ export const setNodeRequiredFields = orgAction
     )
     revalidatePath(`/admin/rail-management/${updatedNode.railId}`)
     return { railNodeId: parsedInput.railNodeId }
+  })
+
+// --- Folder actions ---
+
+export const createManifestFolder = orgAction
+  .metadata({ actionName: "manifests.create_folder" })
+  .inputSchema(createManifestFolderInput)
+  .action(async ({ parsedInput, ctx }) => {
+    const allowed = await hasPermission(ctx.activeOrg.id, ctx.session.user.id, "canBuildManifests")
+    if (!allowed) {
+      throw new ActionError("FORBIDDEN", "You don't have permission to build manifests.")
+    }
+    // Place the new folder at the end (max position + 1).
+    const [maxRow] = await ctx.db
+      .select({ max: sql<number>`coalesce(max(${manifestFolders.position}), -1)::int` })
+      .from(manifestFolders)
+      .where(eq(manifestFolders.organizationId, ctx.activeOrg.id))
+    const nextPos = (maxRow?.max ?? -1) + 1
+
+    const id = createId()
+    await ctx.db.insert(manifestFolders).values({
+      id,
+      organizationId: ctx.activeOrg.id,
+      name: parsedInput.name,
+      description: parsedInput.description,
+      position: nextPos,
+      createdBy: ctx.session.user.id,
+      updatedBy: ctx.session.user.id,
+    })
+    await audit(
+      {
+        db: ctx.db,
+        organizationId: ctx.activeOrg.id,
+        actorUserId: ctx.session.user.id,
+        ipAddress: ctx.ipAddress,
+        userAgent: ctx.userAgent,
+      },
+      "manifests.folder_created",
+      { resourceType: "manifest_folder", resourceId: id, metadata: { name: parsedInput.name } },
+    )
+    revalidatePath("/admin/manifest-management")
+    return { id }
+  })
+
+export const updateManifestFolder = orgAction
+  .metadata({ actionName: "manifests.update_folder" })
+  .inputSchema(updateManifestFolderInput)
+  .action(async ({ parsedInput, ctx }) => {
+    const allowed = await hasPermission(ctx.activeOrg.id, ctx.session.user.id, "canBuildManifests")
+    if (!allowed) {
+      throw new ActionError("FORBIDDEN", "You don't have permission to build manifests.")
+    }
+    const { id, ...rest } = parsedInput
+    const setExpr: Record<string, unknown> = {
+      updatedAt: new Date(),
+      updatedBy: ctx.session.user.id,
+    }
+    if (rest.name !== undefined) setExpr.name = rest.name
+    if (rest.description !== undefined) setExpr.description = rest.description
+
+    const result = await ctx.db
+      .update(manifestFolders)
+      .set(setExpr)
+      .where(and(eq(manifestFolders.id, id), eq(manifestFolders.organizationId, ctx.activeOrg.id)))
+      .returning({ id: manifestFolders.id })
+    if (result.length === 0) {
+      throw new ActionError("NOT_FOUND", "Folder not found")
+    }
+    await audit(
+      {
+        db: ctx.db,
+        organizationId: ctx.activeOrg.id,
+        actorUserId: ctx.session.user.id,
+        ipAddress: ctx.ipAddress,
+        userAgent: ctx.userAgent,
+      },
+      "manifests.folder_updated",
+      { resourceType: "manifest_folder", resourceId: id, metadata: rest },
+    )
+    revalidatePath("/admin/manifest-management")
+    return { id }
+  })
+
+export const deleteManifestFolder = orgAction
+  .metadata({ actionName: "manifests.delete_folder" })
+  .inputSchema(deleteManifestFolderInput)
+  .action(async ({ parsedInput, ctx }) => {
+    const allowed = await hasPermission(ctx.activeOrg.id, ctx.session.user.id, "canBuildManifests")
+    if (!allowed) {
+      throw new ActionError("FORBIDDEN", "You don't have permission to build manifests.")
+    }
+    // Manifests reference folder_id with ON DELETE SET NULL, so the cascade
+    // naturally moves them to the root. We just delete the folder row.
+    const result = await ctx.db
+      .delete(manifestFolders)
+      .where(
+        and(
+          eq(manifestFolders.id, parsedInput.id),
+          eq(manifestFolders.organizationId, ctx.activeOrg.id),
+        ),
+      )
+      .returning({ id: manifestFolders.id })
+    if (result.length === 0) {
+      throw new ActionError("NOT_FOUND", "Folder not found")
+    }
+    await audit(
+      {
+        db: ctx.db,
+        organizationId: ctx.activeOrg.id,
+        actorUserId: ctx.session.user.id,
+        ipAddress: ctx.ipAddress,
+        userAgent: ctx.userAgent,
+      },
+      "manifests.folder_deleted",
+      { resourceType: "manifest_folder", resourceId: parsedInput.id },
+    )
+    revalidatePath("/admin/manifest-management")
+    return { id: parsedInput.id }
+  })
+
+export const moveManifestToFolder = orgAction
+  .metadata({ actionName: "manifests.move_to_folder" })
+  .inputSchema(moveManifestToFolderInput)
+  .action(async ({ parsedInput, ctx }) => {
+    const allowed = await hasPermission(ctx.activeOrg.id, ctx.session.user.id, "canBuildManifests")
+    if (!allowed) {
+      throw new ActionError("FORBIDDEN", "You don't have permission to build manifests.")
+    }
+    // If a target folder was provided, verify it belongs to this org.
+    if (parsedInput.folderId !== null) {
+      const [f] = await ctx.db
+        .select({ id: manifestFolders.id })
+        .from(manifestFolders)
+        .where(
+          and(
+            eq(manifestFolders.id, parsedInput.folderId),
+            eq(manifestFolders.organizationId, ctx.activeOrg.id),
+          ),
+        )
+        .limit(1)
+      if (!f) throw new ActionError("NOT_FOUND", "Target folder not found")
+    }
+
+    const result = await ctx.db
+      .update(manifests)
+      .set({
+        folderId: parsedInput.folderId,
+        updatedAt: new Date(),
+        updatedBy: ctx.session.user.id,
+      })
+      .where(
+        and(
+          eq(manifests.id, parsedInput.manifestId),
+          eq(manifests.organizationId, ctx.activeOrg.id),
+          isNull(manifests.deletedAt),
+        ),
+      )
+      .returning({ id: manifests.id })
+    if (result.length === 0) {
+      throw new ActionError("NOT_FOUND", "Manifest not found")
+    }
+    await audit(
+      {
+        db: ctx.db,
+        organizationId: ctx.activeOrg.id,
+        actorUserId: ctx.session.user.id,
+        ipAddress: ctx.ipAddress,
+        userAgent: ctx.userAgent,
+      },
+      "manifests.moved_to_folder",
+      {
+        resourceType: "manifest",
+        resourceId: parsedInput.manifestId,
+        metadata: { folderId: parsedInput.folderId },
+      },
+    )
+    revalidatePath("/admin/manifest-management")
+    return { manifestId: parsedInput.manifestId }
   })

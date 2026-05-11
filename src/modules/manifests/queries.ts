@@ -4,7 +4,15 @@ import { and, asc, eq, isNull } from "drizzle-orm"
 import { db } from "@/lib/db"
 import { rails } from "@/modules/rails/schema"
 import { railRuns } from "@/modules/rail-runs/schema"
-import { manifests, railManifests, railRunManifests } from "./schema"
+import { manifestFolders, manifests, railManifests, railRunManifests } from "./schema"
+
+export async function listManifestFoldersForOrg(orgId: string) {
+  return db
+    .select()
+    .from(manifestFolders)
+    .where(eq(manifestFolders.organizationId, orgId))
+    .orderBy(asc(manifestFolders.position), asc(manifestFolders.name))
+}
 
 interface ListOptions {
   withDeleted?: boolean

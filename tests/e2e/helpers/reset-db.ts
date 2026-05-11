@@ -17,6 +17,7 @@ const TABLES_TO_TRUNCATE = [
   "rail_run_manifests",
   "rail_manifests",
   "manifests",
+  "manifest_folders",
   "rail_runs",
   "rail_nodes",
   "rails",

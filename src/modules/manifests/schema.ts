@@ -1,9 +1,44 @@
 import { sql } from "drizzle-orm"
-import { index, integer, jsonb, pgTable, text, timestamp, uniqueIndex } from "drizzle-orm/pg-core"
+import {
+  type AnyPgColumn,
+  index,
+  integer,
+  jsonb,
+  pgTable,
+  text,
+  timestamp,
+  uniqueIndex,
+} from "drizzle-orm/pg-core"
 import type { KernelFieldType } from "@/lib/field-types"
 import { organization, user } from "@/modules/auth/schema"
 import { rails } from "@/modules/rails/schema"
 import { railRuns } from "@/modules/rail-runs/schema"
+
+/**
+ * Single-level folders for organizing the manifest catalog. Org-wide
+ * (every admin sees the same folders). Folder deletion moves contained
+ * manifests back to the root (folder_id → null) — no second-choice prompt.
+ *
+ * Soft-delete on manifests doesn't cascade through folders; folders are
+ * orthogonal to the manifest's lifecycle.
+ */
+export const manifestFolders = pgTable(
+  "manifest_folders",
+  {
+    id: text("id").primaryKey(),
+    organizationId: text("organization_id")
+      .notNull()
+      .references(() => organization.id, { onDelete: "restrict" }),
+    name: text("name").notNull(),
+    description: text("description"),
+    position: integer("position").notNull().default(0),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+    createdBy: text("created_by").references(() => user.id, { onDelete: "set null" }),
+    updatedBy: text("updated_by").references(() => user.id, { onDelete: "set null" }),
+  },
+  (t) => [index("manifest_folders_org_idx").on(t.organizationId, t.position)],
+)
 
 /**
  * One field definition in a manifest template. Stored as an entry in the
@@ -45,6 +80,9 @@ export const manifests = pgTable(
       .references(() => organization.id, { onDelete: "restrict" }),
     name: text("name").notNull(),
     description: text("description"),
+    folderId: text("folder_id").references((): AnyPgColumn => manifestFolders.id, {
+      onDelete: "set null",
+    }),
     tags: text("tags")
       .array()
       .notNull()
@@ -122,6 +160,8 @@ export const railRunManifests = pgTable(
 
 export type Manifest = typeof manifests.$inferSelect
 export type NewManifest = typeof manifests.$inferInsert
+export type ManifestFolder = typeof manifestFolders.$inferSelect
+export type NewManifestFolder = typeof manifestFolders.$inferInsert
 export type RailManifest = typeof railManifests.$inferSelect
 export type NewRailManifest = typeof railManifests.$inferInsert
 export type RailRunManifest = typeof railRunManifests.$inferSelect

@@ -98,6 +98,24 @@ export const setRequiredFieldsInput = z.object({
   required: z.array(z.object({ manifestId: z.string(), fieldSlug: fieldKey })),
 })
 
+export const createManifestFolderInput = z.object({
+  name: z.string().min(1).max(100),
+  description: z.string().max(500).optional(),
+})
+
+export const updateManifestFolderInput = z.object({
+  id: z.string(),
+  name: z.string().min(1).max(100).optional(),
+  description: z.string().max(500).nullable().optional(),
+})
+
+export const deleteManifestFolderInput = z.object({ id: z.string() })
+
+export const moveManifestToFolderInput = z.object({
+  manifestId: z.string(),
+  folderId: z.string().nullable(), // null = move to root
+})
+
 export type CreateManifestInput = z.infer<typeof createManifestInput>
 export type UpdateManifestInput = z.infer<typeof updateManifestInput>
 export type AttachManifestInput = z.infer<typeof attachManifestInput>
