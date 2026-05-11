@@ -79,6 +79,15 @@ export const railRuns = pgTable(
       onDelete: "set null",
     }),
     parentAtNodeId: text("parent_at_node_id"),
+    // Per-run choice of a single Post holder, populated by an Initialize node
+    // at run-start. Record<postId, userId>. When a downstream Task/Approval
+    // node issues a cycle for a postId present here, the cycle is routed to
+    // the chosen single user instead of fanning out to every holder of that
+    // Post. Empty {} = default behavior (route to all holders).
+    postHolderAssignments: jsonb("post_holder_assignments")
+      .$type<Record<string, string>>()
+      .notNull()
+      .default({}),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
     deletedAt: timestamp("deleted_at", { withTimezone: true }),
