@@ -11,6 +11,7 @@ import { railRunManifests } from "@/modules/manifests/schema"
 import { postAssignments, posts } from "@/modules/org-structure/schema"
 import { particles } from "@/modules/particles/schema"
 import { railNodes, rails } from "@/modules/rails/schema"
+import { cycleVisibleToUserPredicate } from "./queries"
 import { cycles, railRuns, type Cycle, type CycleChecklistItem } from "./schema"
 import {
   cancelRailRunInput,
@@ -34,12 +35,17 @@ async function loadCycleForUser(ctx: Ctx, cycleId: string): Promise<Cycle> {
     .select({ cycle: cycles })
     .from(cycles)
     .innerJoin(postAssignments, eq(postAssignments.postId, cycles.postId))
+    .innerJoin(railRuns, eq(railRuns.id, cycles.railRunId))
     .where(
       and(
         eq(cycles.id, cycleId),
         eq(cycles.organizationId, ctx.activeOrg.id),
         eq(postAssignments.userId, ctx.session.user.id),
         isNull(cycles.deletedAt),
+        // Same Initialize-narrowing as the inbox queries: if the run's
+        // post_holder_assignments narrowed this post to a different holder,
+        // this user can't act on it.
+        cycleVisibleToUserPredicate(ctx.session.user.id),
       ),
     )
     .limit(1)

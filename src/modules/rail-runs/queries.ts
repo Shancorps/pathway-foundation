@@ -1,5 +1,5 @@
 import "server-only"
-import { aliasedTable, and, asc, count, desc, eq, inArray, isNull, lt } from "drizzle-orm"
+import { aliasedTable, and, asc, count, desc, eq, inArray, isNull, lt, sql } from "drizzle-orm"
 import { db } from "@/lib/db"
 import { user } from "@/modules/auth/schema"
 import {
@@ -11,6 +11,31 @@ import { posts, postAssignments } from "@/modules/org-structure/schema"
 import { particles } from "@/modules/particles/schema"
 import { railNodes, rails } from "@/modules/rails/schema"
 import { cycles, railRuns, type Cycle } from "./schema"
+
+/**
+ * Narrowing predicate for cycle visibility under Initialize.
+ *
+ * A cycle is visible to `userId` iff one of:
+ *  1. The run's `post_holder_assignments` has no entry for this cycle's
+ *     postId (default fan-out: every current holder sees it).
+ *  2. The entry matches `userId` (you're the chosen holder).
+ *  3. The chosen holder is no longer a holder of the Post (graceful
+ *     fallback per spec §9: re-open routing to all current holders).
+ *
+ * Used in tandem with the existing `postAssignments.userId = userId` filter,
+ * which already guarantees the caller currently holds the Post.
+ */
+export function cycleVisibleToUserPredicate(userId: string) {
+  return sql`(
+    ${railRuns.postHolderAssignments} ->> ${cycles.postId} is null
+    or ${railRuns.postHolderAssignments} ->> ${cycles.postId} = ${userId}
+    or not exists (
+      select 1 from ${postAssignments} pa
+      where pa.post_id = ${cycles.postId}
+        and pa.user_id = ${railRuns.postHolderAssignments} ->> ${cycles.postId}
+    )
+  )`
+}
 
 interface ListOptions {
   withDeleted?: boolean
@@ -89,6 +114,9 @@ export async function listMyActionCycles(orgId: string, userId: string): Promise
         isNull(cycles.cancelledAt),
         isNull(cycles.deletedAt),
         isNull(posts.deletedAt),
+        // Honor Initialize's post-holder pick: hide cycles narrowed to a
+        // different user (and don't show cycles to non-holders).
+        cycleVisibleToUserPredicate(userId),
       ),
     )
     .orderBy(asc(cycles.issuedAt))
@@ -155,6 +183,10 @@ export async function getCycleForUser(orgId: string, userId: string, cycleId: st
         eq(cycles.organizationId, orgId),
         eq(postAssignments.userId, userId),
         isNull(cycles.deletedAt),
+        // Honor Initialize's post-holder pick: cycle is hidden from non-chosen
+        // holders (unless the chosen holder no longer holds the Post — see
+        // cycleVisibleToUserPredicate).
+        cycleVisibleToUserPredicate(userId),
       ),
     )
     .limit(1)
@@ -445,6 +477,7 @@ export async function countMyActionCycles(orgId: string, userId: string): Promis
     .from(cycles)
     .innerJoin(postAssignments, eq(postAssignments.postId, cycles.postId))
     .innerJoin(posts, eq(posts.id, cycles.postId))
+    .innerJoin(railRuns, eq(railRuns.id, cycles.railRunId))
     .where(
       and(
         eq(cycles.organizationId, orgId),
@@ -453,6 +486,8 @@ export async function countMyActionCycles(orgId: string, userId: string): Promis
         isNull(cycles.cancelledAt),
         isNull(cycles.deletedAt),
         isNull(posts.deletedAt),
+        // Same Initialize-narrowing as the inbox list query.
+        cycleVisibleToUserPredicate(userId),
       ),
     )
   return row?.count ?? 0
