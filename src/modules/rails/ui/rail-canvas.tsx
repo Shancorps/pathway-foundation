@@ -420,6 +420,12 @@ function RailCanvasInner({
         fitViewOptions={{ padding: 0.2, minZoom: 0.4, maxZoom: 1.2 }}
         proOptions={{ hideAttribution: true }}
         nodesConnectable={false}
+        // Edges are auto-derived from node order (positional model). Users
+        // can't draw new ones, so we also prevent accidental deletion —
+        // otherwise the line disappears with no way to bring it back without
+        // a page refresh.
+        edgesFocusable={false}
+        edgesReconnectable={false}
         elementsSelectable
         panOnDrag
         panOnScroll
