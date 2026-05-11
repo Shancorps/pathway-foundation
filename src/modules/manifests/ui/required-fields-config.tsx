@@ -9,7 +9,22 @@ interface Props {
   attachedManifests: Manifest[]
   value: RailNodeRequiredManifestField[]
   onChange: (next: RailNodeRequiredManifestField[]) => void
+  /**
+   * Section heading. Defaults to "Required manifest fields" — the wording for
+   * Task / Approval nodes ("required to advance"). The Initialize dialog
+   * overrides this to "Required at start".
+   */
+  label?: string
+  /**
+   * Helper text shown directly under the heading. Defaults to the
+   * Task/Approval phrasing ("This cycle cannot complete until each checked
+   * field has a value."). Initialize overrides with its own.
+   */
+  helperText?: string
 }
+
+const DEFAULT_LABEL = "Required manifest fields"
+const DEFAULT_HELPER_TEXT = "This cycle cannot complete until each checked field has a value."
 
 /**
  * Per-node required-manifest-fields config. Renders a checklist grouped by
@@ -19,7 +34,13 @@ interface Props {
  * The cycle for the node hosting this config cannot complete until every
  * checked field has a non-empty value in the rail run's manifest data.
  */
-export function RequiredFieldsConfig({ attachedManifests, value, onChange }: Props) {
+export function RequiredFieldsConfig({
+  attachedManifests,
+  value,
+  onChange,
+  label = DEFAULT_LABEL,
+  helperText = DEFAULT_HELPER_TEXT,
+}: Props) {
   function toggle(manifestId: string, fieldSlug: string) {
     const exists = value.some((v) => v.manifestId === manifestId && v.fieldSlug === fieldSlug)
     if (exists) {
@@ -32,7 +53,7 @@ export function RequiredFieldsConfig({ attachedManifests, value, onChange }: Pro
   if (attachedManifests.length === 0) {
     return (
       <div className="space-y-2 rounded-md border border-[var(--color-border)] p-3">
-        <Label className="text-sm">Required manifest fields</Label>
+        <Label className="text-sm">{label}</Label>
         <p className="text-xs" style={{ color: "var(--bp-text-muted)", lineHeight: 1.5 }}>
           No manifests attached to this rail. Attach one in the Manifests panel (top bar) to
           configure required fields.
@@ -44,7 +65,7 @@ export function RequiredFieldsConfig({ attachedManifests, value, onChange }: Pro
   return (
     <div className="space-y-2 rounded-md border border-[var(--color-border)] p-3">
       <div className="flex items-center justify-between">
-        <Label className="text-sm">Required manifest fields</Label>
+        <Label className="text-sm">{label}</Label>
         {value.length > 0 && (
           <span
             style={{
@@ -59,7 +80,7 @@ export function RequiredFieldsConfig({ attachedManifests, value, onChange }: Pro
         )}
       </div>
       <p className="text-xs" style={{ color: "var(--bp-text-muted)", lineHeight: 1.5 }}>
-        This cycle cannot complete until each checked field has a value.
+        {helperText}
       </p>
       <div className="space-y-2">
         {attachedManifests.map((m) => {
