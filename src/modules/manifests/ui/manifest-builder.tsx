@@ -17,6 +17,25 @@ interface Props {
   manifest: Manifest
 }
 
+/**
+ * Deterministic stringify with sorted keys at every level. Plain JSON.stringify
+ * is key-insertion-order-dependent, so the same data structure with different
+ * key orderings (e.g. state built from spread + add vs prop from Postgres
+ * JSONB) produces different strings. That made the dirty check stay true after
+ * a successful save when only key order had shifted.
+ */
+function canonicalStringify(v: unknown): string {
+  return JSON.stringify(v, (_key: string, val: unknown): unknown => {
+    if (val && typeof val === "object" && !Array.isArray(val)) {
+      const obj = val as Record<string, unknown>
+      const out: Record<string, unknown> = {}
+      for (const k of Object.keys(obj).sort()) out[k] = obj[k]
+      return out
+    }
+    return val
+  })
+}
+
 export function ManifestBuilder({ manifest }: Props) {
   const router = useRouter()
   const [name, setName] = useState(manifest.name)
@@ -29,8 +48,8 @@ export function ManifestBuilder({ manifest }: Props) {
   const dirty =
     name !== manifest.name ||
     description !== (manifest.description ?? "") ||
-    JSON.stringify(tags) !== JSON.stringify(manifest.tags) ||
-    JSON.stringify(fields) !== JSON.stringify(manifest.fields)
+    canonicalStringify(tags) !== canonicalStringify(manifest.tags) ||
+    canonicalStringify(fields) !== canonicalStringify(manifest.fields)
 
   const { execute, status, result } = useAction(updateManifest, {
     onSuccess: () => {
