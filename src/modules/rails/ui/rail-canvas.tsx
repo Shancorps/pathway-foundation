@@ -399,6 +399,13 @@ function RailCanvasInner({
       onDragOver={handleDragOver}
     >
       <LayoutToggle layout={layout} onChange={setLayout} />
+      {!isPublished && (
+        <AutoOrganizeButton
+          onClick={() => {
+            persistPositions({})
+          }}
+        />
+      )}
       {/*
         key={layout} forces ReactFlow to remount when the orientation flips.
         Without this, xyflow's internal node state holds the previous
@@ -426,6 +433,10 @@ function RailCanvasInner({
         // a page refresh.
         edgesFocusable={false}
         edgesReconnectable={false}
+        // Snap dragged nodes to a 16px grid so alignment feels deliberate
+        // rather than approximate. Matches the background grid spacing.
+        snapToGrid
+        snapGrid={[16, 16]}
         elementsSelectable
         panOnDrag
         panOnScroll
@@ -472,6 +483,30 @@ function LayoutToggle({ layout, onChange }: { layout: Layout; onChange: (l: Layo
         <ArrowDownToLine className="size-3.5" strokeWidth={2} aria-hidden />
       </LayoutBtn>
     </div>
+  )
+}
+
+function AutoOrganizeButton({ onClick }: { onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="absolute top-3 right-[7rem] z-10 inline-flex items-center gap-1 px-2 py-1 hover:bg-[var(--bp-surface-card-active)]"
+      style={{
+        border: "1px solid var(--bp-border-default)",
+        backgroundColor: "var(--bp-surface-card)",
+        color: "var(--bp-text-primary)",
+        fontFamily: "var(--font-mono)",
+        fontSize: 10,
+        fontWeight: 600,
+        letterSpacing: "0.08em",
+        textTransform: "uppercase",
+      }}
+      aria-label="Auto-organize nodes"
+      title="Reset node positions to the default grid layout"
+    >
+      Auto-Organize
+    </button>
   )
 }
 
