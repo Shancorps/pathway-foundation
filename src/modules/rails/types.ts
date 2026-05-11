@@ -46,14 +46,28 @@ export const addTaskNodeInput = z.object({
 })
 
 /**
- * Add a structural node (End / Sub-Flow / Approval). Approval ends up
- * needing a Post (the approver) — set via the edit dialog after drop;
- * default name comes from the type.
+ * Add a structural node (End / Sub-Flow / Approval / Initialize). Approval
+ * needs a Post (the approver) — set via the edit dialog after drop. Initialize
+ * is auto-snapped to position 1 by the rail-editor before this action is
+ * called. Default name comes from the type.
  */
 export const addStructuralNodeInput = z.object({
   railId: z.string(),
-  type: z.enum(["end", "sub_flow", "approval"]),
+  type: z.enum(["end", "sub_flow", "approval", "initialize"]),
   name: z.string().min(1).max(200).optional(),
+})
+
+/** Edit an Initialize node's name, description, and required-at-start fields. */
+export const updateInitializeConfigInput = z.object({
+  id: z.string(),
+  name: z.string().min(1).max(200).optional(),
+  description: z.string().max(2000).nullable().optional(),
+  requiredManifestFieldSlugs: z.array(
+    z.object({
+      manifestId: z.string(),
+      fieldSlug: z.string(),
+    }),
+  ),
 })
 
 /** Edit a Sub-Flow node's target rail + wait toggle. */

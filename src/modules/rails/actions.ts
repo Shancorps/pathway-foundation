@@ -12,6 +12,7 @@ import {
   rails,
   type RailNode,
   type RailNodeChecklistItem,
+  type RailNodeRequiredManifestField,
   type RailNodeToolsLink,
 } from "./schema"
 import { cycles, type CycleChecklistItem } from "@/modules/rail-runs/schema"
@@ -29,6 +30,7 @@ import {
   updateNodeInput,
   updateRailInput,
   updateApprovalConfigInput,
+  updateInitializeConfigInput,
   updateSubFlowConfigInput,
 } from "./types"
 
@@ -335,15 +337,11 @@ export const addStructuralNode = orgAction
   .action(async ({ parsedInput, ctx }) => {
     const rail = await loadRail(ctx, parsedInput.railId)
     void rail
-    const [maxRow] = await ctx.db
-      .select({ maxPosition: max(railNodes.position) })
-      .from(railNodes)
-      .where(and(eq(railNodes.railId, rail.id), isNull(railNodes.deletedAt)))
-    const nextPosition = (maxRow?.maxPosition ?? 0) + 1
     const defaultNames: Record<string, string> = {
       end: "End",
       sub_flow: "Sub-Flow",
       approval: "Approval",
+      initialize: "Initialize",
     }
     // Per-type default config so the dialog has somewhere to read from.
     const defaultConfig =
@@ -356,7 +354,55 @@ export const addStructuralNode = orgAction
               onRejection: "end",
               loopBackToNodeId: null,
             } as const)
-          : ({ kind: "none" } as const)
+          : parsedInput.type === "initialize"
+            ? {
+                kind: "initialize" as const,
+                requiredManifestFieldSlugs: [] as RailNodeRequiredManifestField[],
+              }
+            : ({ kind: "none" } as const)
+
+    // Initialize is special: it must live at position 1 (right after the
+    // trigger at position 0). Refuse a second one and shift any nodes at
+    // position >= 1 down by one before inserting.
+    let nextPosition: number
+    if (parsedInput.type === "initialize") {
+      const existingInitialize = await ctx.db
+        .select({ id: railNodes.id })
+        .from(railNodes)
+        .where(
+          and(
+            eq(railNodes.railId, rail.id),
+            eq(railNodes.type, "initialize"),
+            isNull(railNodes.deletedAt),
+          ),
+        )
+        .limit(1)
+      if (existingInitialize.length > 0) {
+        throw new ActionError("VALIDATION", "Only one Initialize per rail")
+      }
+      // Shift every non-trigger node down by one to make room at position 1.
+      const toShift = await ctx.db
+        .select({ id: railNodes.id, position: railNodes.position })
+        .from(railNodes)
+        .where(and(eq(railNodes.railId, rail.id), isNull(railNodes.deletedAt)))
+        .orderBy(railNodes.position)
+      for (const n of toShift) {
+        if (n.position >= 1) {
+          await ctx.db
+            .update(railNodes)
+            .set({ position: n.position + 1 })
+            .where(eq(railNodes.id, n.id))
+        }
+      }
+      nextPosition = 1
+    } else {
+      const [maxRow] = await ctx.db
+        .select({ maxPosition: max(railNodes.position) })
+        .from(railNodes)
+        .where(and(eq(railNodes.railId, rail.id), isNull(railNodes.deletedAt)))
+      nextPosition = (maxRow?.maxPosition ?? 0) + 1
+    }
+
     const id = createId()
     await ctx.db.insert(railNodes).values({
       id,
@@ -446,6 +492,50 @@ export const updateSubFlowConfig = orgAction
           railId: node.railId,
           targetRailId: parsedInput.targetRailId,
           waitForCompletion: parsedInput.waitForCompletion,
+        },
+      },
+    )
+    revalidatePath(`${RAILS_PATH}/${node.railId}`)
+    return { id: node.id }
+  })
+
+/** Update an Initialize node — name, description, and required-at-start fields. */
+export const updateInitializeConfig = orgAction
+  .metadata({ actionName: "rails.initialize_updated" })
+  .inputSchema(updateInitializeConfigInput)
+  .action(async ({ parsedInput, ctx }) => {
+    const node = await loadNode(ctx, parsedInput.id)
+    if (node.type !== "initialize") {
+      throw new ActionError("VALIDATION", "Node is not an Initialize")
+    }
+    await ctx.db
+      .update(railNodes)
+      .set({
+        name: parsedInput.name ?? node.name,
+        description: parsedInput.description ?? node.description,
+        config: {
+          kind: "initialize",
+          requiredManifestFieldSlugs: parsedInput.requiredManifestFieldSlugs,
+        },
+        updatedAt: new Date(),
+        updatedBy: ctx.session.user.id,
+      })
+      .where(eq(railNodes.id, node.id))
+    await audit(
+      {
+        db: ctx.db,
+        organizationId: ctx.activeOrg.id,
+        actorUserId: ctx.session.user.id,
+        ipAddress: ctx.ipAddress,
+        userAgent: ctx.userAgent,
+      },
+      "rails.initialize_updated",
+      {
+        resourceType: "rail_node",
+        resourceId: node.id,
+        metadata: {
+          railId: node.railId,
+          requiredFieldCount: parsedInput.requiredManifestFieldSlugs.length,
         },
       },
     )
