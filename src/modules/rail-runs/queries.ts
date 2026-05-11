@@ -2,6 +2,11 @@ import "server-only"
 import { aliasedTable, and, asc, count, desc, eq, inArray, isNull, lt } from "drizzle-orm"
 import { db } from "@/lib/db"
 import { user } from "@/modules/auth/schema"
+import {
+  manifests as manifestsTable,
+  railManifests,
+  type ManifestFieldDef,
+} from "@/modules/manifests/schema"
 import { posts, postAssignments } from "@/modules/org-structure/schema"
 import { particles } from "@/modules/particles/schema"
 import { railNodes, rails } from "@/modules/rails/schema"
@@ -451,4 +456,140 @@ export async function countMyActionCycles(orgId: string, userId: string): Promis
       ),
     )
   return row?.count ?? 0
+}
+
+/**
+ * Pre-flight for the Start Rail UI. Inspects the rail for an Initialize node
+ * and, if present, returns the requirements the operator must fulfill before
+ * the rail can start: the required manifest fields (resolved to their
+ * definitions for rendering) plus every multi-holder Post referenced by the
+ * rail (so the operator picks which single holder gets each cycle).
+ *
+ * Returns `{ requiresInitialize: false }` for rails without Initialize, for
+ * rails that don't exist, or for rails belonging to a different org — the
+ * caller can't distinguish missing-vs-foreign rails from this result, which is
+ * deliberate (don't leak existence across orgs).
+ */
+export type PrepareStartRailResult =
+  | { requiresInitialize: false }
+  | {
+      requiresInitialize: true
+      requirements: {
+        manifestFields: {
+          manifestId: string
+          manifestName: string
+          field: ManifestFieldDef
+        }[]
+        multiHolderPosts: {
+          postId: string
+          postTitle: string
+          holders: { userId: string; userName: string }[]
+        }[]
+      }
+    }
+
+export async function prepareStartRail(
+  orgId: string,
+  railId: string,
+  _particleId: string,
+): Promise<PrepareStartRailResult> {
+  // Confirm the rail belongs to this org. Cross-org / missing → treat as
+  // "no Initialize" so we don't leak existence.
+  const [rail] = await db
+    .select({ id: rails.id })
+    .from(rails)
+    .where(and(eq(rails.id, railId), eq(rails.organizationId, orgId), isNull(rails.deletedAt)))
+    .limit(1)
+  if (!rail) return { requiresInitialize: false }
+
+  const nodes = await db
+    .select()
+    .from(railNodes)
+    .where(and(eq(railNodes.railId, railId), isNull(railNodes.deletedAt)))
+    .orderBy(asc(railNodes.position))
+
+  const initializeNode = nodes.find((n) => n.type === "initialize")
+  if (!initializeNode) return { requiresInitialize: false }
+
+  // Resolve required manifest fields. Stale refs (manifest no longer attached
+  // to the rail, or field removed from the manifest) are silently skipped —
+  // same semantics as per-cycle required-field gating.
+  const requiredRefs =
+    initializeNode.config.kind === "initialize"
+      ? initializeNode.config.requiredManifestFieldSlugs
+      : []
+  const manifestFields: {
+    manifestId: string
+    manifestName: string
+    field: ManifestFieldDef
+  }[] = []
+  if (requiredRefs.length > 0) {
+    const attached = await db
+      .select({
+        manifestId: railManifests.manifestId,
+        manifestName: manifestsTable.name,
+        fields: manifestsTable.fields,
+      })
+      .from(railManifests)
+      .innerJoin(manifestsTable, eq(manifestsTable.id, railManifests.manifestId))
+      .where(and(eq(railManifests.railId, railId), isNull(manifestsTable.deletedAt)))
+    const byId = new Map(attached.map((a) => [a.manifestId, a]))
+    for (const ref of requiredRefs) {
+      const m = byId.get(ref.manifestId)
+      if (!m) continue
+      const field = m.fields.find((f) => f.key === ref.fieldSlug)
+      if (!field) continue
+      manifestFields.push({ manifestId: m.manifestId, manifestName: m.manifestName, field })
+    }
+  }
+
+  // Distinct Post ids referenced by any node on the rail. Skip nodes without
+  // a postId (trigger, end, sub_flow, initialize).
+  const postIds = Array.from(
+    new Set(nodes.map((n) => n.postId).filter((id): id is string => Boolean(id))),
+  )
+  const multiHolderPosts: {
+    postId: string
+    postTitle: string
+    holders: { userId: string; userName: string }[]
+  }[] = []
+  if (postIds.length > 0) {
+    const rows = await db
+      .select({
+        postId: posts.id,
+        postTitle: posts.title,
+        userId: user.id,
+        userName: user.name,
+      })
+      .from(posts)
+      .innerJoin(postAssignments, eq(postAssignments.postId, posts.id))
+      .innerJoin(user, eq(user.id, postAssignments.userId))
+      .where(
+        and(inArray(posts.id, postIds), eq(posts.organizationId, orgId), isNull(posts.deletedAt)),
+      )
+    const byPost = new Map<
+      string,
+      { postId: string; postTitle: string; holders: { userId: string; userName: string }[] }
+    >()
+    for (const r of rows) {
+      const existing = byPost.get(r.postId)
+      if (existing) {
+        existing.holders.push({ userId: r.userId, userName: r.userName })
+      } else {
+        byPost.set(r.postId, {
+          postId: r.postId,
+          postTitle: r.postTitle,
+          holders: [{ userId: r.userId, userName: r.userName }],
+        })
+      }
+    }
+    for (const entry of byPost.values()) {
+      if (entry.holders.length > 1) multiHolderPosts.push(entry)
+    }
+  }
+
+  return {
+    requiresInitialize: true,
+    requirements: { manifestFields, multiHolderPosts },
+  }
 }
