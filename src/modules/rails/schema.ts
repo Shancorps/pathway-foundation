@@ -33,6 +33,7 @@ export type RailStatus = (typeof railStatuses)[number]
  */
 export const railNodeTypes = [
   "trigger",
+  "initialize",
   "task",
   "end",
   "approval",
@@ -65,6 +66,10 @@ export type RailNodeConfig =
       mode: "approve_reject" | "with_reason"
       onRejection: "loop_back" | "end" | "branch"
       loopBackToNodeId: string | null
+    }
+  | {
+      kind: "initialize"
+      requiredManifestFieldSlugs: RailNodeRequiredManifestField[]
     }
   | { kind: "none" }
 
