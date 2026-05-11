@@ -762,6 +762,22 @@ export const publishRail = orgAction
     if (!nodes.some((n) => n.type === "trigger")) {
       throw new ActionError("VALIDATION", "Rail is missing a Trigger node")
     }
+    // Initialize structural rules: at most one per rail, and if present it
+    // must sit immediately after the Trigger (position 1). The builder
+    // auto-snaps drops to position 1 and the palette refuses a second one,
+    // but enforce it at publish-time too so a hand-edited DB or future
+    // re-ordering bug can't slip past.
+    const initializeNodes = nodes.filter((n) => n.type === "initialize")
+    if (initializeNodes.length > 1) {
+      throw new ActionError("VALIDATION", "A rail cannot have more than one Initialize node.")
+    }
+    const initializeNode = initializeNodes[0]
+    if (initializeNode && initializeNode.position !== 1) {
+      throw new ActionError(
+        "VALIDATION",
+        "The Initialize node must be at position 1 (right after the trigger).",
+      )
+    }
     const tasks = nodes.filter((n) => n.type === "task")
     if (tasks.length === 0) {
       throw new ActionError("VALIDATION", "Rail must have at least one Task")
@@ -779,7 +795,7 @@ export const publishRail = orgAction
     // Block publishing rails that reference node types whose runtime hasn't
     // shipped yet — would produce a "Unsupported node type at runtime" error
     // mid-run otherwise.
-    const supportedTypes = ["trigger", "task", "end", "sub_flow", "approval"]
+    const supportedTypes = ["trigger", "task", "end", "sub_flow", "approval", "initialize"]
     const unsupported = nodes.find((n) => !supportedTypes.includes(n.type))
     if (unsupported) {
       throw new ActionError(
