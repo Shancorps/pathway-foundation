@@ -68,30 +68,13 @@ export const updateManifest = orgAction
     let addedKeys: string[] = []
     let removedKeys: string[] = []
 
-    // If fields are being updated, refuse when there are in-flight runs
-    // referencing this manifest. Detached manifests with surviving rail_run_manifests
-    // rows still count as "in flight" — covered by the same query.
+    // Field edits are allowed even while in-flight runs reference the manifest.
+    // The narrower field-deletion-enforcement below catches the actually-dangerous
+    // case: removing a slug that's referenced by a node's required list or a
+    // statistic's manifestField. Removing an unreferenced slug just leaves its
+    // value as orphan JSONB on existing runs — harmless (runtime silently skips
+    // unknown slugs per spec §5.4). Adding fields or editing labels is always safe.
     if (fields !== undefined) {
-      const inFlight = await ctx.db
-        .select({ count: sql<number>`count(*)::int` })
-        .from(railRunManifests)
-        .innerJoin(railRuns, eq(railRuns.id, railRunManifests.railRunId))
-        .where(
-          and(
-            eq(railRunManifests.manifestId, id),
-            // Only block on actively-running runs. Cancelled runs have
-            // completedAt = null but are no longer in flight.
-            eq(railRuns.status, "running"),
-          ),
-        )
-      const count = inFlight[0]?.count ?? 0
-      if (count > 0) {
-        throw new ActionError(
-          "CONFLICT",
-          `Cannot edit fields: ${String(count)} in-flight rail run(s) reference this manifest.`,
-        )
-      }
-
       // Field-deletion enforcement: if a field is being removed (or its key
       // changed) and that key is referenced by a rail node's
       // requiredManifestFieldSlugs OR a statistic node's manifestField,
