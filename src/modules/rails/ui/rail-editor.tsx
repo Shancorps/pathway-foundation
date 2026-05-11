@@ -240,8 +240,16 @@ export function RailEditor({
             onDelete={(node) => {
               void handleDeleteNode(node)
             }}
-            onAddAfter={() => {
-              setShowAddTask(true)
+            onAddAfter={(_pos, type) => {
+              if (type === "task") {
+                setShowAddTask(true)
+                return
+              }
+              // Remaining types (approval, end, sub_flow) all use addStructuralNode.
+              void addStructuralNode({ railId: rail.id, type }).then((result) => {
+                if (result.serverError) alert(result.serverError)
+                else notifyEditSaved()
+              })
             }}
             onPaletteDrop={(paletteId) => {
               if (paletteId === "task") {

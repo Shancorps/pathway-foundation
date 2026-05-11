@@ -35,6 +35,12 @@ import {
   Zap,
 } from "lucide-react"
 import "@xyflow/react/dist/style.css"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 import type { RailNode } from "../schema"
 import { PALETTE_DRAG_TYPE } from "./rail-palette"
 
@@ -63,17 +69,19 @@ interface CanvasNodeData extends Record<string, unknown> {
   onDelete: (node: RailNode) => void
 }
 
+export type AddableNodeType = "task" | "approval" | "end" | "sub_flow"
+
 interface CanvasEdgeData extends Record<string, unknown> {
   isPublished: boolean
   layout: Layout
   insertAfterPosition: number
-  onAddAfter: (afterPosition: number) => void
+  onAddAfter: (afterPosition: number, type: AddableNodeType) => void
 }
 
 interface TrailingAddData extends Record<string, unknown> {
   layout: Layout
   isPublished: boolean
-  onAdd: () => void
+  onAdd: (type: AddableNodeType) => void
 }
 
 const TRAILING_NODE_ID = "__trailing-add__"
@@ -158,7 +166,7 @@ export function RailCanvas(props: {
   isPublished: boolean
   onEdit: (node: RailNode) => void
   onDelete: (node: RailNode) => void
-  onAddAfter: (afterPosition: number) => void
+  onAddAfter: (afterPosition: number, type: AddableNodeType) => void
   onReorder: (newIdsInOrder: string[]) => void
   onPaletteDrop: (paletteId: string) => void
 }) {
@@ -188,7 +196,7 @@ function RailCanvasInner({
   isPublished: boolean
   onEdit: (node: RailNode) => void
   onDelete: (node: RailNode) => void
-  onAddAfter: (afterPosition: number) => void
+  onAddAfter: (afterPosition: number, type: AddableNodeType) => void
   onReorder: (newIdsInOrder: string[]) => void
   onPaletteDrop: (paletteId: string) => void
 }) {
@@ -251,7 +259,7 @@ function RailCanvasInner({
           onEdit,
           onDelete,
         },
-        draggable: !isPublished && n.type !== "trigger",
+        draggable: !isPublished,
         selectable: true,
       })
     })
@@ -270,8 +278,8 @@ function RailCanvasInner({
         data: {
           layout,
           isPublished,
-          onAdd: () => {
-            onAddAfter(railNodes.length - 1)
+          onAdd: (type) => {
+            onAddAfter(railNodes.length - 1, type)
           },
         },
         draggable: false,
@@ -732,30 +740,60 @@ function TrailingAddNode({ data }: NodeProps<Node<TrailingAddData>>) {
   const { isPublished, onAdd } = data
   if (isPublished) return null
   return (
-    <button
-      type="button"
-      // `nodrag nopan` tells xyflow to ignore drag/pan starts on this element.
-      // Stopping pointerdown propagation prevents xyflow's selection handler
-      // from swallowing the click before it reaches onClick.
-      className="nodrag nopan grid size-11 place-items-center bg-[var(--bp-surface-card)] transition-colors hover:bg-[var(--bp-surface-card-active)]"
-      onPointerDown={(e) => {
-        e.stopPropagation()
-      }}
-      onClick={(e) => {
-        e.stopPropagation()
-        onAdd()
-      }}
-      style={{
-        border: "1.5px dashed #E8711A",
-        cursor: "pointer",
-        color: "var(--bp-accent-orange)",
-        pointerEvents: "all",
-      }}
-      aria-label="Add task at end"
-      title="Add task at end"
-    >
-      <Plus className="size-5" strokeWidth={2.25} aria-hidden />
-    </button>
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <button
+          type="button"
+          // `nodrag nopan` tells xyflow to ignore drag/pan starts on this element.
+          // Stopping pointerdown propagation prevents xyflow's selection handler
+          // from swallowing the click before it reaches onClick.
+          className="nodrag nopan grid size-11 place-items-center bg-[var(--bp-surface-card)] transition-colors hover:bg-[var(--bp-surface-card-active)]"
+          onPointerDown={(e) => {
+            e.stopPropagation()
+          }}
+          style={{
+            border: "1.5px dashed #E8711A",
+            cursor: "pointer",
+            color: "var(--bp-accent-orange)",
+            pointerEvents: "all",
+          }}
+          aria-label="Add node at end"
+          title="Add node at end"
+        >
+          <Plus className="size-5" strokeWidth={2.25} aria-hidden />
+        </button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="start">
+        <DropdownMenuItem
+          onClick={() => {
+            onAdd("task")
+          }}
+        >
+          Task
+        </DropdownMenuItem>
+        <DropdownMenuItem
+          onClick={() => {
+            onAdd("approval")
+          }}
+        >
+          Approval
+        </DropdownMenuItem>
+        <DropdownMenuItem
+          onClick={() => {
+            onAdd("sub_flow")
+          }}
+        >
+          Sub-flow
+        </DropdownMenuItem>
+        <DropdownMenuItem
+          onClick={() => {
+            onAdd("end")
+          }}
+        >
+          End
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
   )
 }
 
@@ -788,37 +826,72 @@ function AddEdge({
       />
       {!isPublished && data && (
         <EdgeLabelRenderer>
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation()
-              data.onAddAfter(data.insertAfterPosition)
-            }}
-            className="nodrag nopan"
-            aria-label="Add task here"
+          <div
             style={{
               position: "absolute",
               transform: `translate(-50%, -50%) translate(${String(labelX)}px, ${String(labelY)}px)`,
               pointerEvents: "all",
-              width: 22,
-              height: 22,
-              display: "grid",
-              placeItems: "center",
-              backgroundColor: "var(--bp-surface-card)",
-              border: "1.5px solid #E8711A",
-              color: "var(--bp-accent-orange)",
-              cursor: "pointer",
-              transition: "background-color 120ms",
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = "var(--bp-surface-card-active)"
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = "var(--bp-surface-card)"
             }}
           >
-            <Plus className="size-3" strokeWidth={2.5} aria-hidden />
-          </button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button
+                  type="button"
+                  className="nodrag nopan"
+                  aria-label="Add node here"
+                  style={{
+                    width: 22,
+                    height: 22,
+                    display: "grid",
+                    placeItems: "center",
+                    backgroundColor: "var(--bp-surface-card)",
+                    border: "1.5px solid #E8711A",
+                    color: "var(--bp-accent-orange)",
+                    cursor: "pointer",
+                    transition: "background-color 120ms",
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.backgroundColor = "var(--bp-surface-card-active)"
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = "var(--bp-surface-card)"
+                  }}
+                >
+                  <Plus className="size-3" strokeWidth={2.5} aria-hidden />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start">
+                <DropdownMenuItem
+                  onClick={() => {
+                    data.onAddAfter(data.insertAfterPosition, "task")
+                  }}
+                >
+                  Task
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() => {
+                    data.onAddAfter(data.insertAfterPosition, "approval")
+                  }}
+                >
+                  Approval
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() => {
+                    data.onAddAfter(data.insertAfterPosition, "sub_flow")
+                  }}
+                >
+                  Sub-flow
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() => {
+                    data.onAddAfter(data.insertAfterPosition, "end")
+                  }}
+                >
+                  End
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         </EdgeLabelRenderer>
       )}
     </>
