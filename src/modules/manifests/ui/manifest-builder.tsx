@@ -24,6 +24,7 @@ export function ManifestBuilder({ manifest }: Props) {
   const [tags, setTags] = useState<string[]>(manifest.tags)
   const [fields, setFields] = useState<ManifestFieldDef[]>(manifest.fields)
   const [selectedKey, setSelectedKey] = useState<string | null>(null)
+  const [justSaved, setJustSaved] = useState(false)
 
   const dirty =
     name !== manifest.name ||
@@ -35,6 +36,11 @@ export function ManifestBuilder({ manifest }: Props) {
     onSuccess: () => {
       // Refresh the route to pick up the just-saved manifest from the DB.
       router.refresh()
+      // Briefly flash "Saved" so the click has visible feedback.
+      setJustSaved(true)
+      window.setTimeout(() => {
+        setJustSaved(false)
+      }, 2000)
     },
   })
 
@@ -87,6 +93,11 @@ export function ManifestBuilder({ manifest }: Props) {
         />
         <div className="flex items-center gap-3">
           {dirty && <span className="text-muted-foreground text-xs">Unsaved changes</span>}
+          {!dirty && justSaved && (
+            <span className="text-xs" style={{ color: "var(--bp-accent-orange)" }}>
+              Saved
+            </span>
+          )}
           <BlueprintButton
             variant="primary"
             particle
